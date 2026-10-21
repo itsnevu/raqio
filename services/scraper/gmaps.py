@@ -154,7 +154,8 @@ def details(places: list, limit: int = 20, headless: bool = True) -> None:
 
 
 if __name__ == "__main__":
-    import json, sys
+    import json
+    import sys
     logging.basicConfig(level=logging.INFO)
     res = search(" ".join(sys.argv[1:]) or "coffee shop kemang", max_results=30)
     details(res, limit=5)

@@ -14,9 +14,12 @@ raqio/
 Frontend memanggil endpoint data dengan path yang sama seperti versi lama (`/market/reports`, `/log`, dst).
 Next meneruskannya ke service Python lewat rewrite di `apps/web/next.config.ts`.
 
+Arsitektur target dan tahapan migrasi: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 ## Jalankan (development)
 
-Dua terminal.
+Perintah cepat lewat `make` (lihat `make help`): `make infra` (Postgres + Redis via Docker), `make dev-web`,
+`make dev-scraper`, `make test`, `make lint`. Atau manual, dua terminal.
 
 **Terminal 1, service scraper (Python):**
 
@@ -57,10 +60,13 @@ cd apps\api
 go run .                        # http://localhost:8080/healthz
 ```
 
-## Tes
+## Tes dan lint
 
 ```powershell
 cd services\scraper
 pip install -r requirements-dev.txt
 pytest tests
+ruff check .
 ```
+
+CI (`.github/workflows/ci.yml`) menjalankan lint, tes, dan build untuk tiap app yang berubah.
