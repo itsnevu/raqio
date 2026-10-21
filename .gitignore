@@ -2,9 +2,15 @@
 .venv/
 __pycache__/
 .DS_Store
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
 
 # rahasia, jangan pernah di-commit
 .env
+.env.local
 proxies.txt
 proxies_webshare.txt
 ig_state.json
@@ -16,3 +22,6 @@ report.html
 trends.csv
 website_state.json
 competitors.json
+
+# go
+apps/api/bin/

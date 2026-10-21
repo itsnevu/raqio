@@ -81,6 +81,61 @@ h1 { font-size: 34px; letter-spacing: -.035em; line-height: 1.1; margin: 0 0 8px
 @media (max-width: 1000px) { .stats { grid-template-columns: repeat(3, 1fr); } .stat:nth-child(3n) { border-right: 0; } .stat:nth-child(-n+3) { border-bottom: 1px solid var(--line-2); } }
 @media (max-width: 560px) { .stats { grid-template-columns: repeat(2, 1fr); } .stat { border-bottom: 1px solid var(--line-2); } .stat:nth-child(3n) { border-right: 1px solid var(--line-2); } .stat:nth-child(2n) { border-right: 0; } }
 
+
+/* kesimpulan awam */
+.verdict { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 24px 26px; margin-bottom: 12px; }
+.verdict .tag { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+.verdict h3 { margin: 0 0 8px; font-size: 26px; line-height: 1.25; letter-spacing: -.02em; font-weight: 600; }
+.verdict p.why { margin: 0; font-size: 16px; line-height: 1.6; color: var(--muted); max-width: 760px; }
+.verdict .next { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line-2); display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.verdict .next b { font-size: 16px; }
+.verdict .next span { color: var(--muted); font-size: 14px; }
+.reasons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
+.reason { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.reason .big { font-size: 30px; font-weight: 600; letter-spacing: -.03em; }
+.reason .big small { font-size: 13px; font-weight: 400; color: var(--muted); margin-left: 6px; letter-spacing: 0; }
+.reason p { margin: 6px 0 0; font-size: 14px; line-height: 1.5; }
+.reason .m { color: var(--muted); font-size: 12px; margin-top: 4px; }
+@media (max-width: 900px) { .reasons { grid-template-columns: 1fr; } .verdict h3 { font-size: 22px; } }
+details.raw { margin-top: 4px; }
+details.raw > summary { cursor: pointer; color: var(--muted); font-size: 13px; padding: 10px 0; list-style: none; }
+details.raw > summary::before { content: '▸ '; } details.raw[open] > summary::before { content: '▾ '; }
+details.raw > summary::-webkit-details-marker { display: none; }
+
+
+/* panduan hubungi prospek */
+.wiz { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 22px 24px; margin-top: 12px; }
+.wiz .prog { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; margin-bottom: 14px; flex-wrap: wrap; }
+.wiz .prog .t { flex: 1; min-width: 120px; height: 6px; background: var(--sunk); border-radius: 4px; overflow: hidden; }
+.wiz .prog .fill { height: 100%; background: var(--good); }
+.wiz .step { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
+.wiz .step .n { width: 26px; height: 26px; border-radius: 50%; background: var(--ink); color: var(--ink-text); display: grid; place-items: center; font-size: 13px; font-weight: 600; flex: none; }
+.wiz .step b { display: block; font-size: 15px; margin-bottom: 2px; }
+.wiz .step span { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.wiz .offerin { width: 100%; max-width: 560px; margin-top: 8px; padding: 10px 12px; font: inherit; background: var(--sunk); border: 1px solid var(--line); border-radius: 8px; color: var(--text); }
+.wiz .who { border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin: 8px 0 12px; }
+.wiz .who h4 { margin: 0; font-size: 18px; }
+.wiz .who .sub { margin-top: 4px; }
+.wiz .who .gap { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.wiz textarea.msg { width: 100%; min-height: 120px; padding: 12px; font: inherit; font-size: 14px; line-height: 1.55; background: var(--sunk); border: 1px solid var(--line); border-radius: 8px; color: var(--text); resize: vertical; box-sizing: border-box; }
+.wiz .acts2 { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+.wiz .acts2 .btn.wa { background: var(--good); color: #000; }
+.wiz .acts2 .sp { flex: 1; }
+.wiz .done { text-align: center; padding: 20px 0; }
+.wiz .done h4 { font-size: 22px; margin: 0 0 8px; }
+.wiz .done p { color: var(--muted); margin: 0 0 14px; }
+
+
+/* tujuan riset */
+.goal { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; }
+.goal label { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; cursor: pointer; flex: 1; min-width: 240px; }
+.goal label.on { border-color: var(--accent); background: var(--accent-soft); }
+.goal input { margin-top: 3px; }
+.goal b { display: block; font-size: 14px; }
+.goal span { color: var(--muted); font-size: 12px; line-height: 1.45; }
+.goalwarn { font-size: 13px; color: var(--warn); margin: -4px 0 10px; display: none; }
+.goalwarn button { font: inherit; color: var(--text); background: none; border: 0; text-decoration: underline; cursor: pointer; padding: 0; }
+
 /* insight cards */
 .cols { display: grid; grid-template-columns: 1.3fr 1fr; gap: 12px; margin-top: 12px; }
 @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
@@ -213,6 +268,11 @@ svg.sc circle:hover { stroke: var(--text); }
   <h1>Peta pasar industri apa pun.</h1>
   <p class="lead">Scraping langsung dari Google Maps dan website bisnis. Data dibersihkan, tanpa duplikat. Tanpa login.</p>
   <div class="mode" id="mode"><button class="on" data-m="one">Satu wilayah</button><button data-m="cmp">Bandingkan wilayah</button></div>
+  <div class="goal" id="goal">
+    <label class="on"><input type="radio" name="goal" value="client" checked><div><b>Cari calon klien</b><span>Isi industri bisnis yang mau kamu tawari. Contoh: kamu agency, isi "coffee shop" atau "klinik gigi".</span></div></label>
+    <label><input type="radio" name="goal" value="rival"><div><b>Pelajari pesaing</b><span>Isi industri bisnismu sendiri. Contoh: kamu agency, isi "digital agency". Hasilnya pesaing, bukan klien.</span></div></label>
+  </div>
+  <div class="goalwarn" id="goalwarn"></div>
   <form class="search" id="f">
     <input id="industry" placeholder="Industri, mis. coffee shop, salon, digital agency" required autocomplete="off">
     <span class="sep"></span>
@@ -266,7 +326,7 @@ function gapsOf(p) {
 }
 const isGem = p => p.rating >= 4.7 && p.reviews >= 15 && p.reviews < 300;
 const isWeak = p => p.rating && p.rating < 4.3 && p.reviews >= 150;
-const isProspect = p => { const g = gapsOf(p); return g && g.length && p.reviews <= 800 && (waOf(p) || p.instagram); };
+const isProspect = p => { if (isRival()) return false; const g = gapsOf(p); return g && g.length && p.reviews <= 800 && (waOf(p) || p.instagram); };
 const LEAD_ST = ['baru', 'dihubungi', 'tertarik', 'deal', 'tolak'];
 const leadKey = p => p.place_id || p.maps_url || '';
 async function setLead(p, status) {
@@ -284,6 +344,24 @@ const FILTERS = [
   ['gem', 'Hidden gem', isGem],
   ['weak', 'Rating rendah, ramai', isWeak],
 ];
+
+// ---------- tujuan riset: cari klien vs pelajari pesaing ----------
+const GOAL_KEY = 'goal:';
+const goalKey = (ind, area) => GOAL_KEY + String(ind).trim().toLowerCase() + '|' + String(area).trim().toLowerCase();
+const goalOf = () => { try { return localStorage.getItem(goalKey(R.industry, R.area)) || 'client'; } catch (e) { return 'client'; } };
+const isRival = () => goalOf() === 'rival';
+const SELF_WORDS = /agency|agensi|marketing|digital|web ?dev|website|branding|design|desain|seo|advertis|iklan|konsultan|freelance|software|studio kreatif|creative/i;
+function goalSel() { const el = document.querySelector('#goal input:checked'); return el ? el.value : 'client'; }
+function syncGoalUi() {
+  document.querySelectorAll('#goal label').forEach(l => l.classList.toggle('on', l.querySelector('input').checked));
+  const w = $('#goalwarn'), ind = $('#industry').value;
+  if (goalSel() === 'client' && SELF_WORDS.test(ind)) {
+    w.style.display = ''; w.innerHTML = `"${esc(ind)}" terdengar seperti bisnismu sendiri. Bisnis di industri ini akan dianggap calon klien. Kalau maksudmu mau lihat pesaing, <button id="toRival">ganti ke Pelajari pesaing</button>.`;
+    $('#toRival').onclick = () => { document.querySelector('#goal input[value=rival]').checked = true; syncGoalUi(); };
+  } else w.style.display = 'none';
+}
+document.querySelectorAll('#goal input').forEach(i => i.onchange = syncGoalUi);
+$('#industry').addEventListener('input', syncGoalUi);
 
 // ---------- outreach draft ----------
 const OFFER_KEY = 'offer';
@@ -316,7 +394,117 @@ async function show(id) {
   await renderReport();
 }
 
+
+// ---------- panduan hubungi prospek, satu per satu ----------
+let wiz = {msg: null, key: null, skipped: new Set()};
+function wizQueue() {
+  const all = R.all || [];
+  return all.filter(isProspect).filter(p => !p.lead || !p.lead.status).filter(p => !wiz.skipped.has(leadKey(p)))
+            .sort((a, b) => (b.lead_score || 0) - (a.lead_score || 0));
+}
+function renderWizard() {
+  const box = $('#wiz'); if (!box) return;
+  const all = R.all || [], total = all.filter(isProspect).length, queue = wizQueue();
+  const done = all.filter(p => isProspect(p) && p.lead && p.lead.status).length;
+  const defOffer = offer() === 'meningkatkan penjualan lewat kehadiran online';
+  const prog = `<div class="prog"><span>${done} dari ${total} sudah dihubungi</span><div class="t"><div class="fill" style="width:${total ? done / total * 100 : 0}%"></div></div><span>${queue.length} tersisa</span></div>`;
+  if (!total) { box.innerHTML = `${prog}<div class="done"><h4>Belum ada yang bisa dihubungi.</h4><p>Klik tombol <b>Cek</b> di tab Semua pemain untuk mengambil nomor dan IG beberapa bisnis, nanti prospeknya muncul di sini.</p></div>`; return; }
+  if (!queue.length) { box.innerHTML = `${prog}<div class="done"><h4>Semua prospek sudah kamu hubungi.</h4><p>Besok atau lusa cek siapa yang balas, lalu tandai Tertarik atau Deal di papan Prospek.</p><a class="btn" href="/prospects">Buka papan Prospek</a></div>`; return; }
+  const p = queue[0], wa = waOf(p), g = gapsOf(p) || [];
+  const msg = wiz.msg != null && wiz.key === leadKey(p) ? wiz.msg : draft(p);
+  wiz.key = leadKey(p); wiz.msg = msg;
+  const how = wa ? 'Klik tombol hijau. WhatsApp terbuka dengan pesan ini sudah terisi, tinggal tekan kirim.'
+            : p.instagram ? 'Bisnis ini tidak ada nomor WhatsApp. Salin pesannya, buka Instagram-nya, lalu kirim lewat DM.'
+            : 'Salin pesannya lalu kirim lewat kontak yang kamu temukan.';
+  let n = 0;
+  box.innerHTML = `${prog}
+    ${defOffer ? `<div class="step"><div class="n">${++n}</div><div><b>Tulis dulu jasa yang kamu tawarkan</b><span>Satu kalimat saja, dipakai otomatis di semua pesan.</span>
+      <input class="offerin" id="wizoffer" placeholder="mis. bikin website dan katalog online, atau kelola Instagram"></div></div>` : ''}
+    <div class="step"><div class="n">${++n}</div><div><b>Kirim pesan ke bisnis ini</b><span>${how}</span></div></div>
+    <div class="who"><h4>${esc(p.name)}</h4>
+      <div class="sub">${p.rating ? '★ ' + String(p.rating).replace('.', ',') + ' · ' : ''}${num(p.reviews)} ulasan${p.category ? ' · ' + esc(p.category) : ''}</div>
+      <div class="gap">${g.map(x => `<span class="badge w">${esc(x)}</span>`).join('')}${p.instagram ? `<a class="lnk" href="https://instagram.com/${esc(p.instagram)}" target="_blank">@${esc(p.instagram)}</a>` : ''}<a class="lnk" href="${esc(p.maps_url)}" target="_blank">Maps</a></div></div>
+    <textarea class="msg" id="wizmsg">${esc(msg)}</textarea>
+    <div class="acts2">
+      ${wa ? `<a class="btn wa" id="wizwa" href="${wa}?text=${encodeURIComponent(msg)}" target="_blank">Kirim via WhatsApp</a>` : ''}
+      <button class="btn ghost" id="wizcopy">Salin pesan</button>
+      <span class="sp"></span>
+      <button class="btn ghost" id="wizskip">Lewati</button>
+      <button class="btn" id="wizdone">Sudah dikirim, lanjut</button>
+    </div>
+    <div class="step" style="margin:14px 0 0"><div class="n">${++n}</div><div><b>Setelah kirim, klik "Sudah dikirim, lanjut"</b><span>Bisnis ini ditandai Dihubungi dan prospek berikutnya muncul. Kalau nanti dibalas, ubah statusnya di papan Prospek.</span></div></div>`;
+  const oi = $('#wizoffer'); if (oi) oi.onchange = () => { try { localStorage.setItem(OFFER_KEY, oi.value); } catch (e) {} wiz.msg = null; const o = $('#offer'); if (o) o.value = oi.value; renderWizard(); renderRows(); };
+  $('#wizmsg').oninput = e => { wiz.msg = e.target.value; const a = $('#wizwa'); if (a) a.href = wa + '?text=' + encodeURIComponent(wiz.msg); };
+  $('#wizcopy').onclick = async e => { try { await navigator.clipboard.writeText(wiz.msg); e.target.textContent = 'Tersalin'; } catch (x) { e.target.textContent = 'Gagal'; } };
+  $('#wizskip').onclick = () => { wiz.skipped.add(leadKey(p)); wiz.msg = null; renderWizard(); };
+  $('#wizdone').onclick = async e => { e.target.disabled = true; await setLead(p, 'dihubungi'); wiz.msg = null; Shell.toast(`${clean(p.name)} ditandai dihubungi`); renderWizard(); renderRows(); };
+}
+
 // ---------- report ----------
+// ---------- kesimpulan bahasa awam ----------
+function verdictRival(all) {
+  const s = R.summary, d = R.digital, n = s.businesses, dec = x => String(x).replace('.', ',');
+  const leaders = (R.leaders || []).slice(0, 3), top = leaders[0];
+  const weak = all.filter(isWeak), gems = all.filter(isGem);
+  const noWeb = d.sampled ? 100 - d.website : null, noIg = d.sampled ? 100 - d.instagram : null;
+  const crowd = s.top3_share >= 50 ? `dikuasai ${top ? clean(top.name) : 'beberapa nama besar'}` : s.top3_share >= 30 ? 'punya beberapa pesaing kuat, tapi belum ada yang menguasai' : 'tidak punya pemimpin jelas, semua pesaing masih kecil';
+  const headline = `Kamu punya ${n}${s.capped ? '+' : ''} pesaing ${R.industry} di ${R.area}. Pasar ini ${crowd}.`;
+  let edge;
+  if (weak.length) edge = `${weak.length} pesaing ramai tapi ratingnya rendah (mis. ${clean(weak[0].name)}). Pelanggan mereka tidak puas, itu yang paling gampang direbut.`;
+  else if (noIg != null && noIg >= 30) edge = `${noIg}% pesaing tidak aktif di Instagram. Kalau kamu rajin posting, kamu langsung lebih terlihat.`;
+  else if (noWeb != null && noWeb >= 30) edge = `${noWeb}% pesaing tidak punya website. Website yang rapi sudah jadi pembeda.`;
+  else if (s.avg_rating >= 4.5) edge = `Semua pesaing ratingnya tinggi (rata-rata ${dec(s.avg_rating)}). Sulit menang lewat rating, harus lewat spesialisasi atau harga.`;
+  else edge = `Rating rata-rata pesaing ${dec(s.avg_rating)}. Layanan yang lebih baik saja sudah cukup untuk menonjol.`;
+  const next = top ? [`Pelajari ${leaders.map(l => clean(l.name)).join(', ')}.`, 'Buka Maps dan Instagram mereka, catat harga, paket, dan apa yang dipuji pelanggan di ulasan. Lalu tentukan satu hal yang kamu bisa lebih baik.']
+                   : ['Belum ada pesaing yang menonjol.', 'Ini kesempatan jadi yang pertama rapi di wilayah ini.'];
+  const reasons = [
+    [n + (s.capped ? '+' : ''), 'pesaing', s.top3_share >= 50 ? `${s.top3_share}% ulasan dipegang 3 teratas, mereka yang harus dikejar` : `3 teratas cuma pegang ${s.top3_share}% ulasan, posisi teratas masih terbuka`, 'seberapa ramai'],
+    [s.avg_rating != null ? dec(s.avg_rating) : '-', 'rating pesaing', s.avg_rating >= 4.5 ? 'standar tinggi, kamu harus minimal 4,5 untuk dilirik' : 'standar biasa saja, layanan bagus langsung menonjol', 'standar kualitas'],
+    [weak.length, 'pesaing rapuh', weak.length ? 'ramai tapi rating rendah, pelanggannya bisa direbut' : 'tidak ada yang rapuh, menang lewat pembeda', 'celah yang bisa diambil'],
+  ];
+  return {headline, why: edge, next, reasons, leaders};
+}
+function verdict(all) {
+  if (isRival()) return verdictRival(all);
+  const s = R.summary, d = R.digital, n = s.businesses;
+  const pros = all.filter(isProspect), nPros = pros.length;
+  const gems = all.filter(isGem).length, weak = all.filter(isWeak).length;
+  const noWeb = d.sampled ? 100 - d.website : null, noIg = d.sampled ? 100 - d.instagram : null;
+  const small = R.size_buckets ? (R.size_buckets.find(b => b[0] === '<50') || [0, 0])[1] : 0;
+  const pctSmall = n ? Math.round(small / n * 100) : 0;
+  const top = (R.leaders || [])[0];
+  const dec = x => String(x).replace('.', ',');
+
+  // seberapa ramai
+  const crowd = s.top3_share >= 50 ? `dikuasai ${top ? short(top.name) : 'satu dua nama besar'}`
+    : s.top3_share >= 30 ? 'ramai, ada beberapa nama besar tapi tidak ada yang menguasai'
+    : 'ramai dan merata, belum ada yang dominan';
+
+  // celah utama: pilih satu yang paling besar
+  let gap, gapWhy, offerHint;
+  if (noWeb != null && noWeb >= 30) { gap = 'website'; gapWhy = `${noWeb}% belum punya website`; offerHint = 'bikin website atau katalog online'; }
+  else if (noIg != null && noIg >= 30) { gap = 'Instagram'; gapWhy = `${noIg}% belum terlihat aktif di Instagram`; offerHint = 'kelola dan rapikan Instagram'; }
+  else if (pctSmall >= 40) { gap = 'ulasan'; gapWhy = `${pctSmall}% masih punya kurang dari 50 ulasan`; offerHint = 'bantu dapat ulasan dan tampil di Google'; }
+  else if (weak) { gap = 'layanan'; gapWhy = `${weak} bisnis ramai tapi ratingnya rendah`; offerHint = 'perbaiki layanan dan reputasi'; }
+  else { gap = null; gapWhy = 'hampir semua sudah rapi secara digital'; offerHint = 'tawarkan sesuatu yang benar-benar beda'; }
+
+  const sat = noWeb != null && noWeb < 15 ? `Hampir semua sudah punya website (${d.website}%), jadi jualan "bikin website" akan sulit laku di sini.` : '';
+  const headline = `Pasar ${R.industry} di ${R.area} ${crowd}.`;
+  const why = gap ? `Celah paling besar ada di ${gap}: ${gapWhy}. ${sat}`.trim()
+    : `${gapWhy.charAt(0).toUpperCase() + gapWhy.slice(1)}. ${sat}`.trim();
+
+  const next = nPros
+    ? [`Hubungi ${nPros} bisnis yang punya celah itu.`, `Tawarkan jasa ${offerHint}. Mulai dari yang ratingnya tinggi tapi ${gap || 'digitalnya'} masih kosong, mereka paling gampang diyakinkan.`]
+    : ['Belum ada bisnis yang cocok dihubungi.', 'Coba cek detail lebih banyak bisnis (tombol Cek di tab Semua pemain), atau cari wilayah lain.'];
+
+  const reasons = [
+    [n + (s.capped ? '+' : ''), 'bisnis', s.top3_share >= 50 ? `tapi ${s.top3_share}% ulasan dipegang 3 teratas saja` : s.top3_share >= 30 ? `3 teratas memegang ${s.top3_share}% ulasan, sisanya kecil-kecil` : `ulasan tersebar, 3 teratas cuma ${s.top3_share}%`, 'seberapa ramai pasarnya'],
+    [s.avg_rating != null ? dec(s.avg_rating) : '-', 'rating rata-rata', s.avg_rating >= 4.5 ? 'pelanggan di sini terbiasa puas, rating di bawah 4,5 terlihat kalah' : 'masih banyak yang bisa dikalahkan lewat layanan lebih baik', 'standar kualitas'],
+    [nPros, 'bisa dihubungi', gap ? `punya celah ${gap} dan ada nomor WhatsApp atau IG` : 'punya celah dan ada kontaknya', 'peluang untukmu'],
+  ];
+  return {headline, why, next, reasons};
+}
+
 function keyPoints(all) {
   const s = R.summary, d = R.digital, n = s.businesses, pros = all.filter(isProspect).length;
   const crowd = s.top3_share >= 50 ? `Dikuasai segelintir pemain besar: 3 teratas memegang ${s.top3_share}% dari semua ulasan. Pendatang baru perlu pembeda yang jelas.`
@@ -341,6 +529,7 @@ function showTab(t) {
   const tools = document.querySelector('#report .tools');
   if (tools) tools.style.display = t === 'pros' ? 'none' : '';
   $('#proshint').style.display = t === 'pros' ? '' : 'none';
+  const wz = $('#wiz'); if (wz) { wz.style.display = t === 'pros' ? '' : 'none'; if (t === 'pros') renderWizard(); }
   renderRows();
   if (t === 'players') renderCharts();
 }
@@ -356,12 +545,20 @@ async function renderReport() {
   const nPros = all.filter(isProspect).length;
   $('#report').innerHTML = `
     <div class="rh"><div><h2>${esc(R.industry)} · ${esc(R.area)}</h2>
-        <div class="meta">Discrape ${new Date(R.created).toLocaleString('id-ID', {dateStyle: 'medium', timeStyle: 'short'})} dari Google Maps</div></div>
+        <div class="meta">Discrape ${new Date(R.created).toLocaleString('id-ID', {dateStyle: 'medium', timeStyle: 'short'})} dari Google Maps · ${isRival() ? 'dilihat sebagai <b>pesaing</b>' : 'dilihat sebagai <b>calon klien</b>'} <button class="mini" id="swapgoal" style="margin-left:6px">${isRival() ? 'ubah jadi calon klien' : 'ubah jadi pesaing'}</button></div></div>
       <div class="acts"><button class="btn ghost watch ${watched ? 'on' : ''}" id="watch">${watched ? '✓ Dipantau mingguan' : '+ Pantau mingguan'}</button>
         <button class="btn ghost" id="csv">Ekspor CSV</button></div></div>
     <div class="rtabs" id="rtabs"><button data-t="sum" class="on">Ringkasan</button><button data-t="players">Semua pemain<b>${all.length}</b></button>
-      <button data-t="pros">Prospek<b>${nPros}</b></button></div>
+      ${isRival() ? '' : `<button data-t="pros">Prospek<b>${nPros}</b></button>`}</div>
     <section data-tab="sum">
+    ${(() => { const v = verdict(all); return `
+    <div class="verdict"><div class="tag">${isRival() ? 'Kesimpulan: posisi kamu di antara pesaing' : 'Kesimpulan: peluang dapat klien'}</div>
+      <h3>${esc(v.headline)}</h3><p class="why">${esc(v.why)}</p>
+      ${!isRival() && SELF_WORDS.test(R.industry) ? `<p class="why" style="color:var(--warn);margin-top:8px">Hati-hati: "${esc(R.industry)}" terdengar seperti bisnismu sendiri. Kalau iya, bisnis di daftar ini adalah pesaingmu, bukan calon klien. <button class="mini" id="swapgoal2">Ubah jadi pesaing</button></p>` : ''}
+      <div class="next"><div><b>Langkah berikutnya:</b> ${esc(v.next[0])}<br><span>${esc(v.next[1])}</span></div>
+        ${isRival() ? (v.leaders || []).map(l => `<a class="btn ghost" href="${esc(l.maps_url)}" target="_blank">${esc(l.name)}</a>`).join('') : nPros ? '<button class="btn" id="gopros">Lihat ' + nPros + ' prospek</button>' : ''}</div></div>
+    <div class="reasons">${v.reasons.map(([big, unit, txt, m]) => `<div class="reason"><div class="big">${esc(String(big))}<small>${esc(unit)}</small></div><p>${esc(txt)}</p><div class="m">${esc(m)}</div></div>`).join('')}</div>`; })()}
+    <details class="raw"><summary>Lihat angka lengkap dan detail teknis</summary>
     <div class="key3">${keyPoints(all).map(([k, v]) => `<div><small>${k}</small><p>${v}</p></div>`).join('')}</div>
     <div class="stats">
       <div class="stat"><div class="l">Bisnis</div><div class="v">${s.businesses}${s.capped ? '+' : ''}</div><div class="s">${q ? q.brands + ' brand' : 'yang muncul di Maps'}${s.capped ? ', bisa lebih banyak' : ''}</div></div>
@@ -383,6 +580,7 @@ async function renderReport() {
           ${q.out_of_area} di luar wilayah, ${q.duplicates_merged} duplikat digabung. ${q.chains} brand punya lebih dari satu cabang.</div>` : ''}
       </div>
     </div>
+    </details>
     </section>
     <section data-tab="players">
     <div class="viz">
@@ -399,6 +597,7 @@ async function renderReport() {
       <div class="ch"><div class="ch-h"><h3>Kematangan digital</h3><span class="hint">dari ${d.sampled} bisnis yang dicek detail</span></div><div id="digital"></div></div>
     </div>
     </section>
+    <div class="wiz" id="wiz" style="display:none"></div>
     <div class="tcard">
       <div class="tools">
         <label class="q">${ICON.search}<input id="q" placeholder="Cari nama, alamat, kategori, @ig, website"></label>
@@ -416,7 +615,7 @@ async function renderReport() {
     </div>
     <div class="legal">Semua baris hasil scraping Google Maps dan website bisnis. Kolom kosong berarti tidak tercantum di sumber, atau detailnya belum diambil (ditandai "belum dicek"). Hubungi secukupnya, satu pesan, jangan spam.</div>`;
 
-  $('#filters').innerHTML = FILTERS.map(([k, l, fn]) => `<button class="f ${k === view.filter ? 'on' : ''}" data-f="${k}">${l}<b>${all.filter(fn).length}</b></button>`).join('');
+  $('#filters').innerHTML = FILTERS.filter(([k]) => !(isRival() && (k === 'prospect' || k === 'followup'))).map(([k, l, fn]) => `<button class="f ${k === view.filter ? 'on' : ''}" data-f="${k}">${l}<b>${all.filter(fn).length}</b></button>`).join('');
   document.querySelectorAll('#filters .f').forEach(b => b.onclick = () => { view.filter = b.dataset.f; view.open = null;
     if (['prospect', 'followup'].includes(view.filter)) { view.sort = 'lead'; view.dir = -1; } renderRows();
     document.querySelectorAll('#filters .f').forEach(x => x.classList.toggle('on', x === b)); });
@@ -430,6 +629,9 @@ async function renderReport() {
     await fetch('/market/watch', {method: 'POST', body: JSON.stringify({industry: R.industry, area: R.area, on, last_run: R.created})});
   };
   $('#csv').onclick = exportCsv;
+  const sg2 = $('#swapgoal2'); if (sg2) sg2.onclick = () => $('#swapgoal').click();
+  $('#swapgoal').onclick = () => { try { localStorage.setItem(goalKey(R.industry, R.area), isRival() ? 'client' : 'rival'); } catch (e) {} view.filter = 'all'; renderReport(); };
+  const gp = $('#gopros'); if (gp) gp.onclick = () => { showTab('pros'); window.scrollTo({top: $('#rtabs').offsetTop - 20, behavior: 'smooth'}); };
   document.querySelectorAll('#rtabs button').forEach(b => b.onclick = () => showTab(b.dataset.t));
   showTab('sum');
 }
@@ -623,6 +825,7 @@ $('#f').onsubmit = async e => {
     r = await fetch('/market/compare/run', {method: 'POST', body: JSON.stringify(pending)});
   } else {
     pending = null;
+    try { localStorage.setItem(goalKey($('#industry').value, $('#area').value), goalSel()); } catch (e) {}
     r = await fetch('/market/run', {method: 'POST', body: JSON.stringify({industry: $('#industry').value, area: $('#area').value})});
   }
   const j = await r.json();

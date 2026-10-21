@@ -1,0 +1,11 @@
+.loginp { min-height: calc(100vh - 69px); display: grid; place-items: center; padding: 24px 16px; }
+.loginp .box { width: 100%; max-width: 420px; border: 1px solid var(--line); background: var(--panel); padding: 32px 28px; }
+.loginp h1 { font-size: 34px !important; margin: 0 0 6px; }
+.loginp .lead { font-size: 15px !important; margin-bottom: 22px; }
+.loginp label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-top: 14px; }
+.loginp input { display: block; width: 100%; margin-top: 6px; font: inherit; font-size: 15px; color: var(--text); background: var(--bg); border: 1px solid var(--line); padding: 11px 12px; }
+.loginp input:focus { outline: none; border-color: var(--faint); }
+.loginp .btn { width: 100%; margin-top: 22px; }
+.loginp .err { color: var(--bad); font-size: 13px; margin-top: 12px; min-height: 18px; }
+.loginp .foot { color: var(--faint); font-size: 12px; margin-top: 18px; line-height: 1.6; }
+.loginp .foot code { font-family: ui-monospace, monospace; background: var(--sunk); padding: 1px 5px; }

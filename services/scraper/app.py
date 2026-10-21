@@ -22,7 +22,7 @@ from pipeline import CATEGORIES
 from report_dashboard import CSS as REPORT_CSS, JS as REPORT_JS, build_html, fmt_num, load_profiles
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PORT = 8000
+PORT = int(os.environ.get("PORT", "8000"))
 
 
 def load_env(path=os.path.join(HERE, ".env")):
