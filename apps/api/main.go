@@ -1,15 +1,29 @@
-// Backend utama Raqio (Go). Masih kerangka: health check dan proxy ke service scraper Python.
-// Rencana: auth, DB, dan endpoint /market/* pindah ke sini satu per satu; Python tinggal jadi worker scraping.
+// raqio-api: backend utama. Auth, org, kuota, antrian job, dan endpoint data riset.
+// Path endpoint sengaja sama dengan versi Python lama supaya frontend tidak berubah.
 package main
 
 import (
+	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"strings"
+	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+type App struct {
+	mail       *Mailer
+	db         *pgxpool.Pool
+	secret     []byte
+	legacy     *httputil.ReverseProxy
+	secureCook bool
+	retention  time.Duration
+}
 
 func env(k, def string) string {
 	if v := os.Getenv(k); v != "" {
@@ -19,20 +33,176 @@ func env(k, def string) string {
 }
 
 func main() {
-	port := env("PORT", "8080")
-	scraper, err := url.Parse(env("SCRAPER_URL", "http://127.0.0.1:8000"))
+	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
+	ctx := context.Background()
+
+	dsn := env("DATABASE_URL", "postgres://raqio:raqio@127.0.0.1:5432/raqio?sslmode=disable")
+	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("db", "err", err)
+		os.Exit(1)
+	}
+	for i := 0; i < 30; i++ { // tunggu Postgres siap (compose)
+		if err = pool.Ping(ctx); err == nil {
+			break
+		}
+		time.Sleep(time.Second)
+	}
+	if err != nil {
+		slog.Error("db ping", "err", err)
+		os.Exit(1)
+	}
+	if err := migrate(ctx, pool); err != nil {
+		slog.Error("migrate", "err", err)
+		os.Exit(1)
 	}
 
+	secret := env("AUTH_SECRET", "")
+	if len(secret) < 16 {
+		slog.Error("AUTH_SECRET wajib diisi, minimal 16 karakter")
+		os.Exit(1)
+	}
+	legacyURL, _ := url.Parse(env("SCRAPER_URL", "http://127.0.0.1:8000"))
+	retention := 90 * 24 * time.Hour
+	if d, err := time.ParseDuration(env("RETENTION", "")); err == nil && d > 0 {
+		retention = d
+	}
+	app := &App{
+		mail: newMailer(),
+		db:   pool, secret: []byte(secret),
+		legacy:     httputil.NewSingleHostReverseProxy(legacyURL),
+		secureCook: env("COOKIE_SECURE", "0") == "1",
+		retention:  retention,
+	}
+
+	mux := app.router()
+
+	go app.scheduler(ctx)
+	go app.retentionLoop(ctx)
+
+	port := env("PORT", "8080")
+	slog.Info("raqio-api jalan", "port", port, "legacy", legacyURL.String())
+	srv := &http.Server{Addr: ":" + port, Handler: logRequests(secHeaders(mux)), ReadHeaderTimeout: 10 * time.Second}
+	if err := srv.ListenAndServe(); err != nil {
+		slog.Error("server", "err", err)
+		os.Exit(1)
+	}
+}
+
+// ---------- util http ----------
+
+func writeJSON(w http.ResponseWriter, code int, v any) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(v)
+}
+
+func errJSON(w http.ResponseWriter, code int, msg string) {
+	writeJSON(w, code, map[string]string{"error": msg})
+}
+
+func readJSON(r *http.Request, v any) error {
+	r.Body = http.MaxBytesReader(nil, r.Body, 64<<10)
+	dec := json.NewDecoder(r.Body)
+	if err := dec.Decode(v); err != nil && err.Error() != "EOF" {
+		return err
+	}
+	return nil
+}
+
+func secHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+		w.Header().Set("Referrer-Policy", "same-origin")
+		next.ServeHTTP(w, r)
+	})
+}
+
+type statusWriter struct {
+	http.ResponseWriter
+	code int
+}
+
+func (s *statusWriter) WriteHeader(c int) { s.code = c; s.ResponseWriter.WriteHeader(c) }
+
+func logRequests(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t := time.Now()
+		sw := &statusWriter{ResponseWriter: w, code: 200}
+		next.ServeHTTP(sw, r)
+		if strings.HasPrefix(r.URL.Path, "/log") || r.URL.Path == "/healthz" {
+			return // polling, jangan banjiri log
+		}
+		slog.Info("req", "m", r.Method, "path", r.URL.Path, "code", sw.code, "ms", time.Since(t).Milliseconds())
+	})
+}
+
+func trunc(s string, n int) string {
+	s = strings.TrimSpace(s)
+	if len(s) > n {
+		return s[:n]
+	}
+	return s
+}
+
+// router memasang semua endpoint; dipakai main dan tes integrasi.
+func (app *App) router() *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"status": "ok", "service": "raqio-api"})
+		if err := app.db.Ping(r.Context()); err != nil {
+			writeJSON(w, 503, map[string]string{"status": "db down"})
+			return
+		}
+		writeJSON(w, 200, map[string]string{"status": "ok", "service": "raqio-api"})
 	})
-	// Sementara: semua yang belum diport diteruskan ke service Python.
-	mux.Handle("/", httputil.NewSingleHostReverseProxy(scraper))
 
-	log.Printf("raqio-api jalan di http://localhost:%s (scraper: %s)", port, scraper)
-	log.Fatal(http.ListenAndServe(":"+port, mux))
+	// auth (tanpa sesi)
+	mux.HandleFunc("POST /auth/register", app.register)
+	mux.HandleFunc("POST /auth/login", app.login)
+	mux.HandleFunc("POST /auth/logout", app.logout)
+	mux.HandleFunc("POST /auth/forgot", app.forgot)
+	mux.HandleFunc("POST /auth/reset", app.resetPassword)
+	mux.HandleFunc("GET /auth/verify", app.verifyEmail)
+	mux.HandleFunc("GET /auth/invite", app.inviteInfo)
+	mux.HandleFunc("GET /billing/plans", app.listPlans)
+	mux.HandleFunc("POST /billing/webhook/xendit", app.xenditWebhook)
+
+	// butuh sesi
+	auth := app.requireSession
+	mux.Handle("GET /auth/me", auth(app.me))
+	mux.Handle("POST /auth/switch-org", auth(app.switchOrg))
+	mux.Handle("POST /auth/delete-account", auth(app.deleteAccount))
+	mux.Handle("GET /org", auth(app.orgInfo))
+	mux.Handle("POST /org/invite", auth(app.orgInviteEmail))
+	mux.Handle("POST /org/remove-member", auth(app.removeMember))
+	mux.Handle("POST /auth/accept-invite", auth(app.acceptInvite))
+	mux.Handle("POST /auth/resend-verify", auth(app.resendVerify))
+	mux.Handle("POST /auth/change-password", auth(app.changePassword))
+	mux.Handle("POST /billing/checkout", auth(app.checkout))
+	mux.Handle("GET /billing/invoices", auth(app.listInvoices))
+	mux.Handle("GET /org/settings", auth(app.getSettings))
+	mux.Handle("POST /org/settings", auth(app.putSettings))
+
+	mux.Handle("GET /market/reports", auth(app.listReports))
+	mux.Handle("GET /market/report", auth(app.getReport))
+	mux.Handle("POST /market/run", auth(app.runMarket))
+	mux.Handle("POST /market/compare/run", auth(app.runCompare))
+	mux.Handle("GET /market/compare", auth(app.getCompare))
+	mux.Handle("GET /market/watches", auth(app.listWatches))
+	mux.Handle("POST /market/watch", auth(app.setWatch))
+	mux.Handle("POST /market/lead", auth(app.setLead))
+	mux.Handle("POST /market/detail", auth(app.detail))
+	mux.Handle("GET /prospects/data", auth(app.prospects))
+	mux.Handle("GET /watch/data", auth(app.watchData))
+	mux.Handle("GET /log", auth(app.jobLog))
+	mux.Handle("POST /stop", auth(app.stopJob))
+	mux.Handle("GET /jobs", auth(app.listJobs))
+
+	// fitur IG lama masih di Python; diteruskan, tetap wajib login
+	for _, p := range []string{"/business", "/chat", "/chat/", "/run", "/ask", "/tools", "/competitors", "/report", "/static/"} {
+		mux.Handle(p, auth(app.legacy.ServeHTTP))
+	}
+
+	return mux
 }
