@@ -22,6 +22,8 @@ from pipeline import CATEGORIES
 from report_dashboard import CSS as REPORT_CSS, JS as REPORT_JS, build_html, fmt_num, load_profiles
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+# folder data (ig.db, state); di Docker diarahkan ke volume lewat RAQIO_DATA_DIR
+DATA_DIR = os.environ.get("RAQIO_DATA_DIR", HERE)
 PORT = int(os.environ.get("PORT", "8000"))
 
 
@@ -390,7 +392,7 @@ def launch(cmd):
 
 
 def competitors_html():
-    db = os.path.join(HERE, "ig.db")
+    db = os.path.join(DATA_DIR, "ig.db")
     rows = []
     if os.path.exists(db):
         conn = sqlite3.connect(db)
@@ -769,9 +771,9 @@ def template(name):
 
 def ig_profile(username):
     """Ringkasan profil IG yang pernah di-scrape (untuk panel detail bisnis)."""
-    if not username or not os.path.exists(os.path.join(HERE, "ig.db")):
+    if not username or not os.path.exists(os.path.join(DATA_DIR, "ig.db")):
         return {"found": False}
-    conn = sqlite3.connect(os.path.join(HERE, "ig.db"))
+    conn = sqlite3.connect(os.path.join(DATA_DIR, "ig.db"))
     try:
         row = conn.execute("SELECT data, followers_history, last_scraped FROM profiles WHERE lower(username)=?",
                            (username,)).fetchone()
@@ -920,8 +922,8 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(res, ensure_ascii=False), "application/json")
         elif path == "/market/reports":
             rows = []
-            if os.path.exists(os.path.join(HERE, "ig.db")):
-                conn = sqlite3.connect(os.path.join(HERE, "ig.db"))
+            if os.path.exists(os.path.join(DATA_DIR, "ig.db")):
+                conn = sqlite3.connect(os.path.join(DATA_DIR, "ig.db"))
                 try:
                     rows = [{"id": i, "industry": a, "area": b, "created": c} for i, a, b, c in conn.execute(
                         "SELECT id, industry, area, created FROM market_reports ORDER BY id DESC LIMIT 12")]
@@ -932,7 +934,7 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps(rows, ensure_ascii=False), "application/json")
         elif path == "/market/report":
             rid = re.sub(r"\D", "", (self.path.split("id=", 1) + [""])[1].split("&")[0])
-            conn = sqlite3.connect(os.path.join(HERE, "ig.db"))
+            conn = sqlite3.connect(os.path.join(DATA_DIR, "ig.db"))
             try:
                 row = conn.execute("SELECT report FROM market_reports WHERE id=?", (rid or 0,)).fetchone()
             finally:
@@ -960,7 +962,7 @@ class Handler(BaseHTTPRequestHandler):
         elif path == "/competitors":
             self._send(200, competitors_html())
         elif path == "/report":
-            profiles = load_profiles(os.path.join(HERE, "ig.db"))
+            profiles = load_profiles(os.path.join(DATA_DIR, "ig.db"))
             if profiles:
                 self._send(200, build_html(profiles))
             else:
@@ -1118,7 +1120,7 @@ def watch_loop():
 
 if __name__ == "__main__":
     threading.Thread(target=watch_loop, daemon=True).start()
-    server = ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    server = ThreadingHTTPServer((os.environ.get("BIND", "127.0.0.1"), PORT), Handler)
     print(f"UI jalan di http://localhost:{PORT}  (Ctrl+C untuk berhenti)")
     try:
         server.serve_forever()

@@ -27,7 +27,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefm
 log = logging.getLogger("market")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DB = os.path.join(HERE, "ig.db")
+# folder data (ig.db, state); di Docker diarahkan ke volume lewat RAQIO_DATA_DIR
+DATA_DIR = os.environ.get("RAQIO_DATA_DIR", HERE)
+DB = os.path.join(DATA_DIR, "ig.db")
 IG_RE = re.compile(r"instagram\.com/([A-Za-z0-9_.]{3,30})")
 LINK_PAGES = ("linktr.ee", "heylink.me", "linkin.bio", "bio.link", "lynk.id", "msha.ke", "beacons.ai", "s.id")
 

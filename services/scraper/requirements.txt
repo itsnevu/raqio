@@ -8,3 +8,4 @@ apscheduler
 beautifulsoup4
 pytrends
 google-api-python-client
+psycopg[binary]>=3.2

@@ -92,7 +92,7 @@ CFG = {
     "request_jitter": (2.5, 5.5),
     "max_requests_per_hour": 200,
     "robots_check": True,
-    "db_path": "ig.db",
+    "db_path": os.path.join(os.environ.get("RAQIO_DATA_DIR", os.path.dirname(os.path.abspath(__file__))), "ig.db"),
     "state_file": "ig_state.json",
     # profil TLS/HTTP2 curl_cffi; dipilih acak per sesi, ganti saat 403 (ala Impit)
     "impersonate_pool": ["chrome136", "chrome133a", "chrome131"],

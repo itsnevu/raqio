@@ -25,7 +25,9 @@ import netutil
 from pipeline import CATEGORIES
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DB = os.path.join(HERE, "ig.db")
+# folder data (ig.db, state); di Docker diarahkan ke volume lewat RAQIO_DATA_DIR
+DATA_DIR = os.environ.get("RAQIO_DATA_DIR", HERE)
+DB = os.path.join(DATA_DIR, "ig.db")
 API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 # kosong = pilih otomatis model gratis (":free") yang mendukung tool calling
 MODEL = os.getenv("OPENROUTER_MODEL", "")
