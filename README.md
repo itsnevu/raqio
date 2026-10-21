@@ -1,72 +1,93 @@
 # Raqio
 
-Monorepo. Satu repo, tiga bagian:
+Riset pasar per industri dan wilayah: siapa pemainnya, siapa yang lemah, siapa yang layak dihubungi.
+Monorepo multi-tenant (SaaS).
 
 ```
 raqio/
 ├── apps/
-│   ├── web/        Next.js (frontend, port 3000)
-│   └── api/        Go (backend utama, port 8080, masih kerangka)
-└── services/
-    └── scraper/    Python (scraping Google Maps, IG, laporan, port 8000)
+│   ├── web/              Next.js 15: UI, login/daftar, middleware sesi        → :3000
+│   └── api/              Go: auth, org, kuota, antrian job, endpoint data     → :8080
+├── services/
+│   └── scraper/          Python: worker.py (riset), app.py (fitur IG legacy)  → :8000 (legacy)
+├── deploy/               compose.dev.yml (Postgres+Redis), compose.yml (produksi), Caddyfile
+├── docs/ARCHITECTURE.md  arsitektur target dan tahapan
+└── .github/workflows     CI per app (path filter)
 ```
 
-Frontend memanggil endpoint data dengan path yang sama seperti versi lama (`/market/reports`, `/log`, dst).
-Next meneruskannya ke service Python lewat rewrite di `apps/web/next.config.ts`.
-
-Arsitektur target dan tahapan migrasi: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+Alur data: browser → Next (rewrite) → Go API → Postgres. Riset dijalankan worker Python yang mengambil job dari
+tabel `jobs` di Postgres, lalu menulis laporan ke tabel `reports` milik org. Frontend memakai path endpoint yang sama
+seperti versi lama (`/market/reports`, `/log`, dst), Go yang melayaninya.
 
 ## Jalankan (development)
 
-Perintah cepat lewat `make` (lihat `make help`): `make infra` (Postgres + Redis via Docker), `make dev-web`,
-`make dev-scraper`, `make test`, `make lint`. Atau manual, dua terminal.
-
-**Terminal 1, service scraper (Python):**
+Prasyarat: Node 22, Go 1.23, Python 3.12, Docker.
 
 ```powershell
-cd services\scraper
-python -m venv .venv            # sekali saja
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt # sekali saja
-playwright install chromium     # sekali saja
-copy .env.example .env          # opsional, isi token kalau mau alert / AI
-python app.py                   # http://localhost:8000
-```
+# 1. Postgres (port 5433, supaya tidak bentrok dengan Postgres lain di 5432) + Redis
+docker compose -f deploy/compose.dev.yml up -d
 
-**Terminal 2, frontend (Next.js):**
-
-```powershell
-cd apps\web
-npm install                     # sekali saja
-copy .env.example .env.local    # sekali saja, lalu isi AUTH_USER, AUTH_PASS, AUTH_SECRET
-npm run dev                     # http://localhost:3000
-```
-
-Buka http://localhost:3000, kamu diarahkan ke `/login`. Halaman `/tools`, `/competitors`, dan `/report` masih dirender Python dan ikut diteruskan.
-
-## Login
-
-Semua halaman dan endpoint data dikunci oleh `apps/web/middleware.ts`. Sesi disimpan di cookie HttpOnly yang
-ditandatangani HMAC dengan `AUTH_SECRET`, berlaku 7 hari. Untuk sekarang hanya ada satu akun dari env
-(`AUTH_USER` / `AUTH_PASS`). Multi-user dan penyimpanan akun direncanakan di backend Go.
-
-Catatan: service Python di port 8000 tetap bisa diakses langsung tanpa login dari mesin yang sama. Jangan
-buka port 8000 ke luar, cukup port 3000.
-
-**Backend Go (opsional, belum dipakai frontend):**
-
-```powershell
+# 2. Go API
 cd apps\api
-go run .                        # http://localhost:8080/healthz
+copy .env.example .env            # isi AUTH_SECRET (acak, min 16 karakter)
+go run .                          # http://localhost:8080/healthz
+
+# 3. Worker Python (terminal baru)
+cd services\scraper
+python -m venv .venv; .\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt "psycopg[binary]"; playwright install chromium
+$env:DATABASE_URL = "postgres://raqio:raqio@127.0.0.1:5432/raqio"
+python worker.py
+
+# 4. (opsional) fitur IG legacy: chat agent, scrape IG manual
+python app.py                     # :8000, hanya diakses lewat Go API
+
+# 5. Frontend (terminal baru)
+cd apps\web
+npm install
+copy .env.example .env.local      # AUTH_SECRET harus sama dengan apps/api
+npm run dev                       # http://localhost:3000
 ```
+
+Buka http://localhost:3000, daftar akun, lalu riset. `make help` memuat perintah singkatnya.
+
+Catatan: Go membaca env dari proses, bukan dari file `.env`. Di PowerShell: `Get-Content .env | % { $k,$v = $_ -split '=',2; [Environment]::SetEnvironmentVariable($k,$v) }` sebelum `go run .`.
+
+## Produksi (satu VPS)
+
+```bash
+cp deploy/.env.example deploy/.env   # isi DOMAIN, PG_PASSWORD, AUTH_SECRET
+docker compose -f deploy/compose.yml --env-file deploy/.env up -d --build
+```
+
+Caddy mengurus TLS. Hanya port 80/443 yang terbuka. Worker bisa diperbanyak lewat `WORKER_REPLICAS`.
+
+## Model multi-tenant
+
+- `orgs`, `users`, `memberships` (owner/member), `sessions`. Satu user bisa anggota beberapa org.
+- Semua data (`reports`, `leads`, `watches`, `jobs`, `org_settings`, `usage`) punya `org_id`; setiap query difilter dari sesi.
+- Kuota per paket (`apps/api/jobs.go`): free 5 riset, 30 cek kontak, 1 wilayah pantau per bulan. Pembayaran belum ada.
+- Sesi: cookie HttpOnly `sid.exp.sig`. Next memverifikasi tanda tangan (stateless), Go memverifikasi tanda tangan dan baris `sessions` (bisa dicabut).
+- Retensi: laporan dihapus setelah 90 hari (`RETENTION`), job 30 hari. Hapus akun ada di Pengaturan.
+- Pendaftaran publik bisa ditutup dengan `ALLOW_REGISTER=0`.
+- Email (verifikasi, lupa password, undangan tim): lewat SMTP (`SMTP_*`). Tanpa `SMTP_HOST`, tautan dicatat di log API (mode dev).
+- Pembayaran: Xendit Invoice (`XENDIT_SECRET_KEY`, webhook `/billing/webhook/xendit` dengan `XENDIT_CALLBACK_TOKEN`).
+  Tanpa key, mode manual: user minta aktivasi, pengelola set `orgs.plan` dan `plan_until` di DB. Paket turun ke free otomatis saat habis.
 
 ## Tes dan lint
 
 ```powershell
-cd services\scraper
-pip install -r requirements-dev.txt
-pytest tests
-ruff check .
+cd apps\api;          go vet ./... ; go test ./...   # tes integrasi butuh Postgres (TEST_DATABASE_URL, default :5433), dilewati kalau tidak ada
+cd services\scraper;  ruff check . ; pytest tests -q
+cd apps\web;          npx tsc --noEmit ; npm test ; npm run build
 ```
 
-CI (`.github/workflows/ci.yml`) menjalankan lint, tes, dan build untuk tiap app yang berubah.
+## Yang belum, dan peringatan
+
+- **Sumber data masih scraping Google Maps dan website bisnis** lewat Playwright. Ini melanggar ToS Google dan
+  akan diblokir pada volume SaaS. Sebelum ada pelanggan berbayar, ganti `services/scraper/gmaps.py` ke Google Places
+  API atau penyedia pihak ketiga. Audit lengkap ada di percakapan pengembangan dan `docs/ARCHITECTURE.md`.
+- Pelaporan error terpusat (Sentry) belum; log JSON ada di stdout tiap service.
+- Halaman IG legacy (`/tools`, `/competitors`, `/report`, chat agent) masih dari Python dan belum multi-tenant;
+  jangan diekspos ke pelanggan sebelum diport.
+- Draf kebijakan privasi di `/privacy` perlu ditinjau penasihat hukum.

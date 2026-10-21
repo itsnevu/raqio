@@ -1,0 +1,85 @@
+# Produksi satu VPS. Hanya Caddy (80/443) yang terbuka ke luar.
+#   cp deploy/.env.example deploy/.env  (isi rahasia)
+#   docker compose -f deploy/compose.yml --env-file deploy/.env up -d --build
+services:
+  caddy:
+    image: caddy:2-alpine
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    depends_on: [web, api]
+
+  web:
+    build:
+      context: ../apps/web
+      args: { API_URL: http://api:8080 }
+    environment:
+      API_URL: http://api:8080
+      AUTH_SECRET: ${AUTH_SECRET}
+    depends_on: [api]
+
+  api:
+    build: ../apps/api
+    environment:
+      DATABASE_URL: postgres://raqio:${PG_PASSWORD}@postgres:5432/raqio?sslmode=disable
+      AUTH_SECRET: ${AUTH_SECRET}
+      SCRAPER_URL: http://legacy:8000
+      COOKIE_SECURE: "1"
+      ALLOW_REGISTER: ${ALLOW_REGISTER:-1}
+      APP_URL: https://${DOMAIN}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-Raqio <no-reply@${DOMAIN}>}
+      XENDIT_SECRET_KEY: ${XENDIT_SECRET_KEY:-}
+      XENDIT_CALLBACK_TOKEN: ${XENDIT_CALLBACK_TOKEN:-}
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  worker:
+    build: ../services/scraper
+    command: python worker.py
+    environment:
+      DATABASE_URL: postgres://raqio:${PG_PASSWORD}@postgres:5432/raqio
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      RAQIO_DATA_DIR: /app/cache
+    volumes:
+      - scraper_cache:/app/cache
+    deploy:
+      replicas: ${WORKER_REPLICAS:-1}
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  # fitur IG lama (chat agent, scrape IG manual). Tidak terbuka ke luar, hanya lewat api.
+  legacy:
+    build: ../services/scraper
+    command: python app.py
+    environment:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      RAQIO_DATA_DIR: /app/cache
+      BIND: 0.0.0.0
+    volumes:
+      - scraper_cache:/app/cache
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: raqio
+      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_DB: raqio
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U raqio -d raqio"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
+  caddy_data:
+  scraper_cache:

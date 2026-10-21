@@ -7,14 +7,15 @@ PY      := python
 endif
 COMPOSE  = docker compose -f deploy/compose.dev.yml
 
-.PHONY: help infra infra-down dev-web dev-api dev-scraper test test-scraper test-api test-web lint build
+.PHONY: help infra infra-down dev-web dev-api dev-worker dev-scraper test test-scraper test-api test-web lint build
 
 help:
 	@echo "make infra        : Postgres + Redis (docker)"
 	@echo "make infra-down   : matikan infra dev"
 	@echo "make dev-web      : Next.js di :3000"
 	@echo "make dev-api      : Go API di :8080"
-	@echo "make dev-scraper  : service Python di :8000"
+	@echo "make dev-worker   : worker Python (riset, ambil job dari Postgres)"
+	@echo "make dev-scraper  : service Python legacy (fitur IG) di :8000"
 	@echo "make test         : semua tes"
 	@echo "make lint         : lint semua app"
 	@echo "make build        : build semua app"
@@ -31,6 +32,9 @@ dev-web:
 dev-api:
 	cd apps/api && go run .
 
+dev-worker:
+	cd services/scraper && $(abspath $(PY)) worker.py
+
 dev-scraper:
 	cd services/scraper && $(abspath $(PY)) app.py
 
@@ -40,7 +44,7 @@ test-scraper:
 	cd services/scraper && $(abspath $(PY)) -m pytest tests -q
 
 test-api:
-	cd apps/api && go vet ./... && go test ./...
+	cd apps/api && mkdir -p bin/gotmp && go vet ./... && GOTMPDIR=$(abspath apps/api/bin/gotmp) go test -count=1 ./...
 
 test-web:
 	cd apps/web && npx tsc --noEmit

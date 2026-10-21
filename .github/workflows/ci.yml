@@ -54,6 +54,15 @@ jobs:
     needs: changes
     if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: raqio, POSTGRES_PASSWORD: raqio, POSTGRES_DB: raqio }
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U raqio -d raqio" --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://raqio:raqio@127.0.0.1:5433/raqio?sslmode=disable
     defaults:
       run:
         working-directory: apps/api
@@ -83,6 +92,7 @@ jobs:
           cache-dependency-path: apps/web/package-lock.json
       - run: npm ci
       - run: npx tsc --noEmit
+      - run: npm test
       - run: npm run build
         env:
           AUTH_SECRET: ci-only-not-secret

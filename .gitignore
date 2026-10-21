@@ -25,3 +25,7 @@ competitors.json
 
 # go
 apps/api/bin/
+
+# cache tool
+.pytest_cache/
+.ruff_cache/
