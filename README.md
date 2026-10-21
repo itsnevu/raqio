@@ -21,6 +21,14 @@ seperti versi lama (`/market/reports`, `/log`, dst), Go yang melayaninya.
 
 ## Jalankan (development)
 
+Cara tercepat, satu terminal untuk semuanya (Postgres, Redis, Go API di container, worker, frontend):
+
+```powershell
+.\dev.ps1            # Ctrl+C untuk berhenti; -StopDocker ikut mematikan container
+```
+
+Lalu buka http://localhost:3000 dan klik "Coba tanpa daftar". Cara manual per terminal:
+
 Prasyarat: Node 22, Go 1.23, Python 3.12, Docker.
 
 ```powershell
@@ -36,7 +44,7 @@ go run .                          # http://localhost:8080/healthz
 cd services\scraper
 python -m venv .venv; .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt "psycopg[binary]"; playwright install chromium
-$env:DATABASE_URL = "postgres://raqio:raqio@127.0.0.1:5432/raqio"
+$env:DATABASE_URL = "postgres://raqio:raqio@127.0.0.1:5433/raqio"
 python worker.py
 
 # 4. (opsional) fitur IG legacy: chat agent, scrape IG manual
@@ -73,6 +81,12 @@ Caddy mengurus TLS. Hanya port 80/443 yang terbuka. Worker bisa diperbanyak lewa
 - Email (verifikasi, lupa password, undangan tim): lewat SMTP (`SMTP_*`). Tanpa `SMTP_HOST`, tautan dicatat di log API (mode dev).
 - Pembayaran: Xendit Invoice (`XENDIT_SECRET_KEY`, webhook `/billing/webhook/xendit` dengan `XENDIT_CALLBACK_TOKEN`).
   Tanpa key, mode manual: user minta aktivasi, pengelola set `orgs.plan` dan `plan_until` di DB. Paket turun ke free otomatis saat habis.
+
+## Panduan pengguna (tur)
+
+Tiap halaman punya tur interaktif (driver.js) yang muncul otomatis sekali per browser dan bisa diputar ulang
+lewat menu Lanjutan > Panduan. Isi langkah ada di `apps/web/lib/tours.ts`; langkah yang elemennya belum ada
+(misalnya sebelum ada laporan) dilewati otomatis.
 
 ## Dokumentasi API
 

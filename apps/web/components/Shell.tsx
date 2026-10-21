@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { replayTour } from "@/components/Tour";
 import { Biz, LEAD_ST, ST_LABEL, clean, draft, host, leadKey, num, postJson, saveLead, today, waOf, dec } from "@/lib/biz";
 
 type OpenCtx = { industry?: string; area?: string; report_id?: number | string | null; onChange?: (p: Biz) => void };
@@ -120,10 +121,15 @@ export function ShellProvider({ children }: { children: ReactNode }) {
 function Nav() {
   const here = usePathname();
   const [due, setDue] = useState(0);
+  const [guestHours, setGuestHours] = useState<number | null>(null);
   const moreRef = useRef<HTMLDetailsElement>(null);
   const isLogin = ["/login", "/register", "/forgot", "/reset", "/privacy"].includes(here);
   useEffect(() => {
     if (isLogin) return;
+    fetch("/auth/me")
+      .then((r) => r.json())
+      .then((j: { plan?: string }) => setGuestHours(j.plan === "guest" ? 24 : null))
+      .catch(() => {});
     fetch("/prospects/data")
       .then((r) => r.json())
       .then((j: { items: Biz[] }) => {
@@ -153,6 +159,7 @@ function Nav() {
       </div>
     );
   return (
+    <>
     <div className="top">
       <Link className="brand" href="/market" style={{ textDecoration: "none" }} aria-label="Raqio">
         <svg className="mark" viewBox="0 0 32 32" aria-hidden="true">
@@ -181,6 +188,9 @@ function Nav() {
                 <small>{d}</small>
               </a>
             ))}
+            <button type="button" className="tour-btn" onClick={() => { if (moreRef.current) moreRef.current.open = false; replayTour(); }}>
+              Panduan<small>Putar ulang tur halaman ini</small>
+            </button>
             <form method="post" action="/auth/logout">
               <button type="submit">
                 Keluar<small>Akhiri sesi di browser ini</small>
@@ -190,6 +200,13 @@ function Nav() {
         </details>
       </nav>
     </div>
+    {guestHours !== null && (
+      <div className="guest-bar" role="status">
+        Mode tamu: 2 riset, data dihapus otomatis setelah {guestHours} jam.{" "}
+        <Link href="/register?claim=1">Simpan jadi akun</Link> supaya riset dan prospek tetap tersimpan.
+      </div>
+    )}
+    </>
   );
 }
 

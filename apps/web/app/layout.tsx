@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Albert_Sans } from "next/font/google";
 import "./globals.css";
+import "./tour.css";
 import { ShellProvider } from "@/components/Shell";
 
 const sans = Albert_Sans({ subsets: ["latin"], weight: ["400", "700"], variable: "--font-sans", display: "swap" });
