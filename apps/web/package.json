@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "next lint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "gen:api": "openapi-typescript ../api/openapi.yaml -o lib/api.gen.d.ts"
   },
   "dependencies": {
     "next": "15.3.3",
@@ -19,6 +20,7 @@
     "@types/react": "19.1.6",
     "@types/react-dom": "19.1.5",
     "typescript": "5.8.3",
-    "vitest": "2.1.8"
+    "vitest": "2.1.8",
+    "openapi-typescript": "7.4.4"
   }
 }

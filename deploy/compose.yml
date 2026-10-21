@@ -37,6 +37,8 @@ services:
       SMTP_FROM: ${SMTP_FROM:-Raqio <no-reply@${DOMAIN}>}
       XENDIT_SECRET_KEY: ${XENDIT_SECRET_KEY:-}
       XENDIT_CALLBACK_TOKEN: ${XENDIT_CALLBACK_TOKEN:-}
+      RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-300}
+      JOB_RATE_LIMIT_PER_MINUTE: ${JOB_RATE_LIMIT_PER_MINUTE:-10}
     depends_on:
       postgres: { condition: service_healthy }
 
@@ -65,6 +67,37 @@ services:
     volumes:
       - scraper_cache:/app/cache
 
+  # backup harian pg_dump ke volume `backups`, simpan BACKUP_KEEP_DAYS hari. Pulihkan: lihat docs/runbook.md
+  backup:
+    image: postgres:16-alpine
+    environment:
+      PGPASSWORD: ${PG_PASSWORD}
+      KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+    volumes:
+      - backups:/backups
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          f=/backups/raqio-$$(date +%Y%m%d-%H%M%S).sql.gz
+          if pg_dump -h postgres -U raqio raqio | gzip > "$$f"; then echo "backup ok $$f"; else echo "backup GAGAL"; rm -f "$$f"; fi
+          find /backups -name 'raqio-*.sql.gz' -mtime +$$KEEP_DAYS -delete
+          sleep 86400
+        done
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  backup:
+    image: postgres:16-alpine
+    command: sh /backup.sh
+    environment:
+      DATABASE_URL: postgres://raqio:${PG_PASSWORD}@postgres:5432/raqio
+    volumes:
+      - ./backup.sh:/backup.sh:ro
+      - backups:/backups
+    depends_on:
+      postgres: { condition: service_healthy }
+
   postgres:
     image: postgres:16-alpine
     environment:
@@ -81,5 +114,7 @@ services:
 
 volumes:
   pgdata:
+  backups:
   caddy_data:
   scraper_cache:
+  backups:

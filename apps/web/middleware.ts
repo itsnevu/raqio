@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { COOKIE, verifyToken } from "@/lib/auth";
 
 // Semua halaman butuh sesi. Endpoint data juga dilindungi di sini (cek tanda tangan) dan di Go (cek DB).
-const PUBLIC = ["/login", "/register", "/forgot", "/reset", "/privacy", "/auth/login", "/auth/register", "/auth/forgot", "/auth/reset", "/auth/verify", "/auth/invite", "/billing/plans", "/billing/webhook/xendit", "/logo.svg"];
+const PUBLIC = ["/login", "/register", "/forgot", "/reset", "/privacy", "/auth/login", "/auth/register", "/auth/forgot", "/auth/reset", "/auth/verify", "/auth/invite", "/billing/plans", "/billing/webhook/xendit", "/openapi.yaml", "/docs", "/metrics", "/logo.svg"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

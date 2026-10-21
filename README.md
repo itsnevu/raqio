@@ -74,6 +74,17 @@ Caddy mengurus TLS. Hanya port 80/443 yang terbuka. Worker bisa diperbanyak lewa
 - Pembayaran: Xendit Invoice (`XENDIT_SECRET_KEY`, webhook `/billing/webhook/xendit` dengan `XENDIT_CALLBACK_TOKEN`).
   Tanpa key, mode manual: user minta aktivasi, pengelola set `orgs.plan` dan `plan_until` di DB. Paket turun ke free otomatis saat habis.
 
+## Dokumentasi API
+
+Spesifikasi OpenAPI ada di `apps/api/openapi.yaml`, dilayani di `/openapi.yaml`, dan Swagger UI di `/docs`
+(matikan dengan `DOCS=0`). Tipe TypeScript untuk frontend dibuat dari spesifikasi itu:
+
+```powershell
+cd apps\web; npm run gen:api     # menulis lib/api.gen.d.ts, CI memastikan file ini selalu sinkron
+```
+
+Metrik format Prometheus di `/metrics`, kesiapan di `/readyz`.
+
 ## Tes dan lint
 
 ```powershell

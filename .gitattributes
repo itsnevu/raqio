@@ -1,0 +1,7 @@
+# Simpan LF di repo untuk semua teks; hentikan peringatan CRLF di Windows.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.svg text
+*.ico binary
+*.db binary

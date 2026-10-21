@@ -1,0 +1,476 @@
+openapi: 3.1.0
+info:
+  title: Raqio API
+  version: 0.2.0
+  description: |
+    Backend Raqio. Semua endpoint selain yang ditandai `security: []` butuh cookie sesi `raqio_session`
+    (didapat dari /auth/login atau /auth/register). POST wajib same-origin (header Sec-Fetch-Site).
+    Kuota dicek per org per bulan; kalau habis, respons 402.
+servers:
+  - url: http://localhost:8080
+    description: dev
+components:
+  securitySchemes:
+    session:
+      type: apiKey
+      in: cookie
+      name: raqio_session
+  responses:
+    Error:
+      description: Gagal
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties: { error: { type: string } }
+    Ok:
+      type: object
+      required: [ok]
+      properties: { ok: { type: boolean } }
+    Limits:
+      type: object
+      required: [runs, details, watches, areas, members]
+      properties:
+        runs: { type: integer, description: riset per bulan }
+        details: { type: integer, description: cek kontak per bulan }
+        watches: { type: integer, description: wilayah pantau sekaligus }
+        areas: { type: integer, description: maks wilayah per perbandingan }
+        members: { type: integer, description: anggota tim }
+    Me:
+      type: object
+      required: [email, org_id, role, plan, orgs, limits, verified]
+      properties:
+        email: { type: string }
+        org_id: { type: string, format: uuid }
+        role: { type: string, enum: [owner, member] }
+        plan: { type: string, enum: [free, pro, team] }
+        verified: { type: boolean }
+        limits: { $ref: "#/components/schemas/Limits" }
+        orgs:
+          type: array
+          items:
+            type: object
+            required: [ID, Name, Role]
+            properties: { ID: { type: string }, Name: { type: string }, Role: { type: string } }
+    Org:
+      type: object
+      required: [name, plan, members, usage, limits]
+      properties:
+        name: { type: string }
+        plan: { type: string }
+        members:
+          type: array
+          items:
+            type: object
+            required: [email, role]
+            properties: { email: { type: string }, role: { type: string } }
+        usage:
+          type: object
+          additionalProperties: { type: integer }
+          description: pemakaian bulan ini per jenis (market_run, market_detail)
+        limits: { $ref: "#/components/schemas/Limits" }
+    Lead:
+      type: object
+      required: [status, note, remind, updated]
+      properties:
+        status: { type: string, enum: [baru, dihubungi, tertarik, deal, tolak] }
+        note: { type: string }
+        remind: { type: string, description: "YYYY-MM-DD atau kosong" }
+        updated: { type: string, format: date-time }
+    Place:
+      type: object
+      description: Satu bisnis di laporan. Bentuk ditentukan worker; field di bawah yang dijamin ada.
+      required: [name]
+      properties:
+        place_id: { type: string }
+        maps_url: { type: string }
+        name: { type: string }
+        category: { type: string }
+        address: { type: string }
+        rating: { type: number }
+        reviews: { type: integer }
+        reviews_per_month: { type: number, nullable: true }
+        phone: { type: string }
+        website: { type: string }
+        instagram: { type: string }
+        instagram_shared: { type: boolean }
+        emails: { type: array, items: { type: string } }
+        dist_km: { type: number, nullable: true }
+        branches_in_area: { type: integer }
+        lead_score: { type: integer, nullable: true }
+        lead_reasons: { type: array, items: { type: string } }
+        lead: { $ref: "#/components/schemas/Lead" }
+        _detailed: { type: boolean, description: telepon/website/IG sudah diambil dari Google Maps }
+      additionalProperties: true
+    ReportRow:
+      type: object
+      required: [id, industry, area, created]
+      properties:
+        id: { type: integer }
+        industry: { type: string }
+        area: { type: string }
+        created: { type: string, format: date-time }
+    Report:
+      type: object
+      required: [id, industry, area, created, summary, digital, insights, rating_buckets, size_buckets]
+      properties:
+        id: { type: integer }
+        industry: { type: string }
+        area: { type: string }
+        created: { type: string, format: date-time }
+        summary:
+          type: object
+          required: [businesses, top3_share]
+          properties:
+            businesses: { type: integer }
+            capped: { type: boolean }
+            avg_rating: { type: number, nullable: true }
+            median_reviews: { type: integer }
+            total_reviews: { type: integer }
+            top3_share: { type: integer }
+          additionalProperties: true
+        digital:
+          type: object
+          required: [sampled, website, instagram, whatsapp, phone]
+          properties:
+            sampled: { type: integer }
+            website: { type: integer }
+            instagram: { type: integer }
+            whatsapp: { type: integer }
+            phone: { type: integer }
+        data_quality:
+          type: object
+          nullable: true
+          additionalProperties: true
+        all: { type: array, items: { $ref: "#/components/schemas/Place" } }
+        leaders: { type: array, items: { $ref: "#/components/schemas/Place" } }
+        insights: { type: array, items: { type: string } }
+        ai_strategy: { type: array, items: { type: string }, nullable: true }
+        rating_buckets: { type: array, items: { type: array, prefixItems: [{ type: string }, { type: integer }] } }
+        size_buckets: { type: array, items: { type: array, prefixItems: [{ type: string }, { type: integer }] } }
+      additionalProperties: true
+    Watch:
+      type: object
+      required: [industry, area, every_days, last_run]
+      properties:
+        industry: { type: string }
+        area: { type: string }
+        every_days: { type: integer }
+        last_run: { type: string, format: date-time, nullable: true }
+    WatchItem:
+      type: object
+      required: [industry, area, report_id, created, businesses, watch, runs, changes]
+      properties:
+        industry: { type: string }
+        area: { type: string }
+        report_id: { type: integer }
+        created: { type: string, format: date-time }
+        prev_created: { type: string, format: date-time }
+        businesses: { type: integer }
+        runs: { type: integer }
+        watch: { oneOf: [{ $ref: "#/components/schemas/Watch" }, { type: "null" }] }
+        changes:
+          nullable: true
+          type: object
+          properties:
+            new: { type: array, items: { $ref: "#/components/schemas/Place" } }
+            gone: { type: array, items: { $ref: "#/components/schemas/Place" } }
+            rating_up: { type: array, items: { $ref: "#/components/schemas/Place" } }
+            rating_down: { type: array, items: { $ref: "#/components/schemas/Place" } }
+            reviews_jump: { type: array, items: { $ref: "#/components/schemas/Place" } }
+    JobLog:
+      type: object
+      required: [running, log, started, stopped]
+      properties:
+        running: { type: boolean }
+        log: { type: string }
+        started: { type: integer, nullable: true, description: unix detik }
+        stopped: { type: boolean }
+        job: { type: integer }
+        status: { type: string, enum: [queued, running, done, failed, cancelled] }
+    Compare:
+      type: object
+      required: [industry, areas, insights]
+      properties:
+        industry: { type: string }
+        insights: { type: array, items: { type: string } }
+        areas:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+            required: [area, report_id, opportunity, businesses]
+            properties:
+              area: { type: string }
+              report_id: { type: integer }
+              opportunity: { type: integer }
+              businesses: { type: integer }
+    Plan:
+      type: object
+      required: [name, price, runs, details, watches, areas, members]
+      properties:
+        name: { type: string }
+        price: { type: integer, description: rupiah per 30 hari, 0 = gratis }
+        runs: { type: integer }
+        details: { type: integer }
+        watches: { type: integer }
+        areas: { type: integer }
+        members: { type: integer }
+    Invoice:
+      type: object
+      required: [id, provider, plan, amount, status, url, created]
+      properties:
+        id: { type: integer }
+        provider: { type: string, enum: [xendit, manual] }
+        plan: { type: string }
+        amount: { type: integer }
+        status: { type: string, enum: [pending, paid, expired, failed] }
+        url: { type: string }
+        created: { type: string, format: date-time }
+    Settings:
+      type: object
+      required: [offer, goals]
+      properties:
+        offer: { type: string, description: jasa yang ditawarkan, dipakai di draf pesan }
+        goals:
+          type: object
+          additionalProperties: { type: string, enum: [client, rival] }
+          description: "kunci: industri|wilayah (huruf kecil)"
+
+security:
+  - session: []
+
+paths:
+  /healthz:
+    get:
+      security: []
+      summary: Cek hidup
+      responses:
+        "200": { description: ok }
+        "503": { description: db down }
+  /readyz:
+    get:
+      security: []
+      summary: Siap menerima trafik (DB bisa dicapai)
+      responses:
+        "200": { description: ready }
+        "503": { description: db down }
+  /metrics:
+    get:
+      security: []
+      summary: Metrik format teks Prometheus (request, rate limit, job per status, umur antrian)
+      responses:
+        "200": { description: ok, content: { text/plain: { schema: { type: string } } } }
+
+  /auth/register:
+    post:
+      security: []
+      summary: Daftar akun dan org baru, atau gabung org lewat token undangan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string }
+                password: { type: string, minLength: 8 }
+                name: { type: string }
+                org: { type: string, description: nama tim; diabaikan kalau ada invite }
+                invite: { type: string, description: token dari email undangan }
+      responses:
+        "200": { description: sesi dibuat (cookie), content: { application/json: { schema: { type: object, properties: { ok: { type: boolean }, org: { type: string } } } } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { description: pendaftaran ditutup }
+        "409": { description: email sudah terdaftar }
+  /auth/login:
+    post:
+      security: []
+      summary: Masuk
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [email, password], properties: { email: { type: string }, password: { type: string } } }
+      responses:
+        "200": { description: sesi dibuat (cookie) }
+        "401": { description: salah }
+        "429": { description: terkunci 15 menit setelah 10 kali gagal }
+  /auth/logout:
+    post: { security: [], summary: Keluar (hapus sesi), responses: { "200": { description: ok }, "303": { description: redirect ke /login kalau Accept text/html } } }
+  /auth/me:
+    get:
+      summary: Profil sesi aktif
+      responses:
+        "200": { description: ok, content: { application/json: { schema: { $ref: "#/components/schemas/Me" } } } }
+        "401": { $ref: "#/components/responses/Error" }
+  /auth/switch-org:
+    post:
+      summary: Pindah org aktif
+      requestBody: { content: { application/json: { schema: { type: object, required: [org_id], properties: { org_id: { type: string } } } } } }
+      responses: { "200": { description: ok }, "403": { description: bukan anggota } }
+  /auth/forgot:
+    post:
+      security: []
+      summary: Kirim tautan reset password (selalu 200)
+      requestBody: { content: { application/json: { schema: { type: object, required: [email], properties: { email: { type: string } } } } } }
+      responses: { "200": { description: ok }, "429": { description: terlalu sering } }
+  /auth/reset:
+    post:
+      security: []
+      summary: Set password baru dengan token; semua sesi lama dicabut
+      requestBody: { content: { application/json: { schema: { type: object, required: [token, password], properties: { token: { type: string }, password: { type: string, minLength: 8 } } } } } }
+      responses: { "200": { description: ok }, "400": { $ref: "#/components/responses/Error" } }
+  /auth/verify:
+    get:
+      security: []
+      summary: Verifikasi email dari tautan (redirect)
+      parameters: [{ name: token, in: query, required: true, schema: { type: string } }]
+      responses: { "303": { description: redirect ke /market?msg=verified atau /login?msg=verify-gagal } }
+  /auth/resend-verify:
+    post: { summary: Kirim ulang email verifikasi, responses: { "200": { description: ok } } }
+  /auth/change-password:
+    post:
+      summary: Ganti password (sesi lain dicabut)
+      requestBody: { content: { application/json: { schema: { type: object, required: [old, new], properties: { old: { type: string }, new: { type: string, minLength: 8 } } } } } }
+      responses: { "200": { description: ok }, "401": { description: password lama salah } }
+  /auth/invite:
+    get:
+      security: []
+      summary: Info undangan dari token (untuk halaman daftar)
+      parameters: [{ name: token, in: query, required: true, schema: { type: string } }]
+      responses:
+        "200": { description: ok, content: { application/json: { schema: { type: object, required: [email, org], properties: { email: { type: string }, org: { type: string } } } } } }
+        "404": { $ref: "#/components/responses/Error" }
+  /auth/accept-invite:
+    post:
+      summary: Terima undangan dengan akun yang sudah login (email harus cocok)
+      requestBody: { content: { application/json: { schema: { type: object, required: [token], properties: { token: { type: string } } } } } }
+      responses: { "200": { description: ok }, "400": { $ref: "#/components/responses/Error" } }
+  /auth/delete-account:
+    post:
+      summary: Hapus akun; org yang hanya dia anggotanya ikut terhapus beserta datanya
+      requestBody: { content: { application/json: { schema: { type: object, required: [password], properties: { password: { type: string } } } } } }
+      responses: { "200": { description: ok }, "401": { description: password salah } }
+
+  /org:
+    get:
+      summary: Info org aktif, anggota, pemakaian bulan ini
+      responses: { "200": { description: ok, content: { application/json: { schema: { $ref: "#/components/schemas/Org" } } } } }
+  /org/invite:
+    post:
+      summary: Undang anggota lewat email (owner)
+      requestBody: { content: { application/json: { schema: { type: object, required: [email], properties: { email: { type: string } } } } } }
+      responses: { "200": { description: ok }, "402": { description: kuota anggota habis }, "403": { description: bukan owner } }
+  /org/remove-member:
+    post:
+      summary: Keluarkan anggota (owner)
+      requestBody: { content: { application/json: { schema: { type: object, required: [email], properties: { email: { type: string } } } } } }
+      responses: { "200": { description: ok }, "403": { description: bukan owner } }
+  /org/settings:
+    get:
+      summary: Pengaturan org
+      responses: { "200": { description: ok, content: { application/json: { schema: { $ref: "#/components/schemas/Settings" } } } } }
+    post:
+      summary: Ubah pengaturan (field yang dikirim saja; goals digabung)
+      requestBody: { content: { application/json: { schema: { type: object, properties: { offer: { type: string }, goals: { type: object, additionalProperties: { type: string } } } } } } }
+      responses: { "200": { description: ok } }
+
+  /market/reports:
+    get:
+      summary: 12 laporan terakhir org
+      responses: { "200": { description: ok, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/ReportRow" } } } } } }
+  /market/report:
+    get:
+      summary: Satu laporan lengkap, status lead sudah digabung
+      parameters: [{ name: id, in: query, required: true, schema: { type: integer } }]
+      responses:
+        "200": { description: ok, content: { application/json: { schema: { $ref: "#/components/schemas/Report" } } } }
+        "404": { $ref: "#/components/responses/Error" }
+  /market/run:
+    post:
+      summary: Antrekan riset satu wilayah (kuota market_run 1)
+      requestBody: { content: { application/json: { schema: { type: object, required: [industry, area], properties: { industry: { type: string, maxLength: 60 }, area: { type: string, maxLength: 80 } } } } } }
+      responses:
+        "200": { description: job dibuat, content: { application/json: { schema: { type: object, properties: { ok: { type: boolean }, job: { type: integer } } } } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "402": { description: kuota habis }
+        "409": { description: masih ada job berjalan }
+  /market/compare/run:
+    post:
+      summary: Antrekan perbandingan beberapa wilayah (kuota market_run = jumlah wilayah)
+      requestBody: { content: { application/json: { schema: { type: object, required: [industry, areas], properties: { industry: { type: string }, areas: { type: array, items: { type: string }, minItems: 2 } } } } } }
+      responses: { "200": { description: ok }, "400": { $ref: "#/components/responses/Error" }, "402": { description: kuota habis }, "409": { description: sibuk } }
+  /market/compare:
+    get:
+      summary: Hasil perbandingan terakhir untuk industri
+      parameters: [{ name: industry, in: query, required: true, schema: { type: string } }, { name: areas, in: query, schema: { type: string }, description: dipisah ; (diabaikan, kompatibilitas) }]
+      responses: { "200": { description: ok, content: { application/json: { schema: { $ref: "#/components/schemas/Compare" } } } } }
+  /market/watches:
+    get:
+      summary: Daftar pantauan org
+      responses: { "200": { description: ok, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Watch" } } } } } }
+  /market/watch:
+    post:
+      summary: Nyalakan atau matikan pantauan mingguan
+      requestBody: { content: { application/json: { schema: { type: object, required: [industry, area, on], properties: { industry: { type: string }, area: { type: string }, on: { type: boolean }, every_days: { type: integer }, last_run: { type: string, format: date-time } } } } } }
+      responses: { "200": { description: ok }, "402": { description: kuota pantau habis } }
+  /market/lead:
+    post:
+      summary: Simpan status follow up; note/remind yang tidak dikirim dipertahankan
+      requestBody: { content: { application/json: { schema: { type: object, required: [key, status], properties: { key: { type: string }, name: { type: string }, status: { type: string, enum: [baru, dihubungi, tertarik, deal, tolak] }, note: { type: string, nullable: true }, remind: { type: string, nullable: true, description: YYYY-MM-DD } } } } } }
+      responses: { "200": { description: ok }, "400": { $ref: "#/components/responses/Error" } }
+  /market/detail:
+    post:
+      summary: Ambil telepon/website/IG satu bisnis dari Google Maps (sinkron, maks 90 detik, kuota market_detail 1)
+      requestBody: { content: { application/json: { schema: { type: object, required: [report_id, key], properties: { report_id: { type: integer }, key: { type: string } } } } } }
+      responses:
+        "200": { description: bisnis yang diperbarui, content: { application/json: { schema: { $ref: "#/components/schemas/Place" } } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "402": { description: kuota habis }
+        "409": { description: ada riset berjalan }
+  /prospects/data:
+    get:
+      summary: Papan prospek lintas laporan (skor >= 40 atau sudah punya lead)
+      responses: { "200": { description: ok, content: { application/json: { schema: { type: object, required: [items, statuses], properties: { items: { type: array, items: { $ref: "#/components/schemas/Place" } }, statuses: { type: array, items: { type: string } } } } } } } }
+  /watch/data:
+    get:
+      summary: Pantauan dan perubahan sejak riset sebelumnya
+      responses: { "200": { description: ok, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/WatchItem" } } } } } }
+  /log:
+    get:
+      summary: Status dan log job riset terakhir org (dipakai progress bar)
+      responses: { "200": { description: ok, content: { application/json: { schema: { $ref: "#/components/schemas/JobLog" } } } } }
+  /stop:
+    post: { summary: Batalkan job yang antre atau berjalan, responses: { "200": { description: ok, content: { application/json: { schema: { $ref: "#/components/schemas/Ok" } } } } } }
+  /jobs:
+    get:
+      summary: 50 job terakhir org
+      responses: { "200": { description: ok } }
+
+  /billing/plans:
+    get:
+      security: []
+      summary: Daftar paket dan penyedia pembayaran aktif
+      responses: { "200": { description: ok, content: { application/json: { schema: { type: object, required: [plans, provider], properties: { plans: { type: array, items: { $ref: "#/components/schemas/Plan" } }, provider: { type: string, enum: [xendit, manual] } } } } } } }
+  /billing/checkout:
+    post:
+      summary: Buat tagihan upgrade (owner). Xendit mengembalikan url; manual mengembalikan instruksi.
+      requestBody: { content: { application/json: { schema: { type: object, required: [plan], properties: { plan: { type: string, enum: [pro, team] } } } } } }
+      responses:
+        "200": { description: ok, content: { application/json: { schema: { type: object, properties: { ok: { type: boolean }, provider: { type: string }, url: { type: string }, invoice: { type: integer }, message: { type: string } } } } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { description: bukan owner }
+  /billing/invoices:
+    get:
+      summary: Riwayat tagihan org dan masa paket
+      responses: { "200": { description: ok, content: { application/json: { schema: { type: object, required: [invoices, plan, plan_until], properties: { invoices: { type: array, items: { $ref: "#/components/schemas/Invoice" } }, plan: { type: string }, plan_until: { type: string, format: date-time, nullable: true } } } } } } }
+  /billing/webhook/xendit:
+    post:
+      security: []
+      summary: Callback Xendit (header x-callback-token wajib)
+      responses: { "200": { description: ok }, "401": { description: token salah } }

@@ -10,6 +10,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,11 +33,18 @@ func env(k, def string) string {
 	return def
 }
 
+func envInt(k string, def int) int {
+	if n, err := strconv.Atoi(os.Getenv(k)); err == nil && n > 0 {
+		return n
+	}
+	return def
+}
+
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	ctx := context.Background()
 
-	dsn := env("DATABASE_URL", "postgres://raqio:raqio@127.0.0.1:5432/raqio?sslmode=disable")
+	dsn := env("DATABASE_URL", "postgres://raqio:raqio@127.0.0.1:5433/raqio?sslmode=disable")
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
 		slog.Error("db", "err", err)
@@ -82,7 +90,10 @@ func main() {
 
 	port := env("PORT", "8080")
 	slog.Info("raqio-api jalan", "port", port, "legacy", legacyURL.String())
-	srv := &http.Server{Addr: ":" + port, Handler: logRequests(secHeaders(mux)), ReadHeaderTimeout: 10 * time.Second}
+	// urutan: hitung metrik -> log -> rate limit per IP -> header keamanan -> router
+	ipLimit := newLimiter(envInt("RATE_LIMIT_PER_MINUTE", 300), envInt("RATE_LIMIT_BURST", 60))
+	handler := countRequests(logRequests(rateLimitIP(ipLimit, secHeaders(mux))))
+	srv := &http.Server{Addr: ":" + port, Handler: handler, ReadHeaderTimeout: 10 * time.Second}
 	if err := srv.ListenAndServe(); err != nil {
 		slog.Error("server", "err", err)
 		os.Exit(1)
@@ -131,7 +142,7 @@ func logRequests(next http.Handler) http.Handler {
 		t := time.Now()
 		sw := &statusWriter{ResponseWriter: w, code: 200}
 		next.ServeHTTP(sw, r)
-		if strings.HasPrefix(r.URL.Path, "/log") || r.URL.Path == "/healthz" {
+		if strings.HasPrefix(r.URL.Path, "/log") || r.URL.Path == "/healthz" || r.URL.Path == "/readyz" || r.URL.Path == "/metrics" {
 			return // polling, jangan banjiri log
 		}
 		slog.Info("req", "m", r.Method, "path", r.URL.Path, "code", sw.code, "ms", time.Since(t).Milliseconds())
@@ -149,13 +160,13 @@ func trunc(s string, n int) string {
 // router memasang semua endpoint; dipakai main dan tes integrasi.
 func (app *App) router() *http.ServeMux {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
-		if err := app.db.Ping(r.Context()); err != nil {
-			writeJSON(w, 503, map[string]string{"status": "db down"})
-			return
-		}
-		writeJSON(w, 200, map[string]string{"status": "ok", "service": "raqio-api"})
-	})
+	if env("DOCS", "1") == "1" {
+		mux.HandleFunc("GET /openapi.yaml", app.openapi)
+		mux.HandleFunc("GET /docs", app.swaggerUI)
+	}
+	mux.HandleFunc("GET /healthz", healthz)
+	mux.HandleFunc("GET /readyz", app.readyz)
+	mux.HandleFunc("GET /metrics", app.metrics)
 
 	// auth (tanpa sesi)
 	mux.HandleFunc("POST /auth/register", app.register)
@@ -186,13 +197,15 @@ func (app *App) router() *http.ServeMux {
 
 	mux.Handle("GET /market/reports", auth(app.listReports))
 	mux.Handle("GET /market/report", auth(app.getReport))
-	mux.Handle("POST /market/run", auth(app.runMarket))
-	mux.Handle("POST /market/compare/run", auth(app.runCompare))
+	// endpoint yang membuat job dibatasi per org, bukan hanya per IP
+	jobLimit := newLimiter(envInt("JOB_RATE_LIMIT_PER_MINUTE", 10), envInt("JOB_RATE_LIMIT_BURST", 5))
+	mux.Handle("POST /market/run", auth(app.rateLimitOrg(jobLimit, app.runMarket)))
+	mux.Handle("POST /market/compare/run", auth(app.rateLimitOrg(jobLimit, app.runCompare)))
 	mux.Handle("GET /market/compare", auth(app.getCompare))
 	mux.Handle("GET /market/watches", auth(app.listWatches))
 	mux.Handle("POST /market/watch", auth(app.setWatch))
 	mux.Handle("POST /market/lead", auth(app.setLead))
-	mux.Handle("POST /market/detail", auth(app.detail))
+	mux.Handle("POST /market/detail", auth(app.rateLimitOrg(jobLimit, app.detail)))
 	mux.Handle("GET /prospects/data", auth(app.prospects))
 	mux.Handle("GET /watch/data", auth(app.watchData))
 	mux.Handle("GET /log", auth(app.jobLog))

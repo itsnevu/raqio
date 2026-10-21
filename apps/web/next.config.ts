@@ -10,6 +10,9 @@ const API_PATHS = [
   "/org/:path*",
   "/jobs",
   "/billing/:path*",
+  "/openapi.yaml",
+  "/docs",
+  "/metrics",
   "/market/:path+",
   "/prospects/data",
   "/watch/data",
@@ -44,6 +47,10 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
           { key: "Referrer-Policy", value: "same-origin" },
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          {
+            key: "Content-Security-Policy",
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: https:; connect-src 'self'; frame-src 'self'; frame-ancestors 'self'",
+          },
         ],
       },
     ];

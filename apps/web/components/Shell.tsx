@@ -30,11 +30,16 @@ const NAV: [string, string][] = [
   ["/watch", "Pantau"],
   ["/", "Asisten"],
 ];
-const MORE: [string, string, string, boolean][] = [
+// Fitur IG lama (Python, belum multi-tenant) hanya tampil kalau NEXT_PUBLIC_LEGACY=1.
+const LEGACY: [string, string, string, boolean][] = [
   ["/competitors", "Kompetitor IG", "Akun Instagram pesaing di sekitar lokasi", true],
   ["/report", "Analisis IG", "Followers, engagement, dan konten akun", true],
   ["/tools", "Scrape manual", "Scrape IG manual dan pilihan koneksi", false],
+];
+const MORE: [string, string, string, boolean][] = [
+  ...(process.env.NEXT_PUBLIC_LEGACY === "1" ? LEGACY : []),
   ["/settings", "Pengaturan", "Tim, kuota, dan akun", false],
+  ["/docs", "Dokumentasi API", "Spesifikasi OpenAPI dan Swagger UI", true],
 ];
 
 export function ShellProvider({ children }: { children: ReactNode }) {

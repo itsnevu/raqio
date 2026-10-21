@@ -60,6 +60,7 @@ func setupIntegration(t *testing.T) *testEnv {
 	legacy, _ := url.Parse("http://127.0.0.1:1") // tidak ada; legacy tidak diuji di sini
 	app := &App{db: pool, secret: []byte("secret-tes-yang-cukup-panjang"), mail: &Mailer{}, retention: 24 * time.Hour}
 	app.legacy = httputil.NewSingleHostReverseProxy(legacy)
+	t.Setenv("JOB_RATE_LIMIT_BURST", "100") // rate limit per org diuji terpisah di ops_test; di sini fokus kuota
 	srv := httptest.NewServer(app.router())
 	t.Cleanup(func() { srv.Close(); pool.Close() })
 	return &testEnv{t: t, app: app, srv: srv}
