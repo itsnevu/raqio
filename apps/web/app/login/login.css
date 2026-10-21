@@ -9,3 +9,7 @@
 .loginp .err { color: var(--bad); font-size: 13px; margin-top: 12px; min-height: 18px; }
 .loginp .foot { color: var(--faint); font-size: 12px; margin-top: 18px; line-height: 1.6; }
 .loginp .foot code { font-family: ui-monospace, monospace; background: var(--sunk); padding: 1px 5px; }
+.loginp .foot a { color: var(--text); }
+.loginp label.chk { display: flex; gap: 8px; align-items: flex-start; text-transform: none; letter-spacing: 0; font-size: 13px; line-height: 1.5; margin-top: 16px; }
+.loginp label.chk input { width: auto; margin: 3px 0 0; }
+.loginp label.chk a { color: var(--text); }

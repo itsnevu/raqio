@@ -3,7 +3,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import "./prospects.css";
 import { useShell } from "@/components/Shell";
-import { Biz, ST_LABEL, clean, dec, downloadCsv, draft, getOffer, saveLead, setOffer, today, waOf } from "@/lib/biz";
+import { Biz, ST_LABEL, clean, dec, downloadCsv, draft, saveLead, today, waOf } from "@/lib/biz";
+import { getOffer, isDefaultOffer, loadSettings, setOffer } from "@/lib/settings";
 
 const COLS: [string, string, string][] = [
   ["baru", "Belum dihubungi", "Mulai dari skor tertinggi. Klik WhatsApp, lalu geser ke Dihubungi."],
@@ -34,8 +35,10 @@ export default function ProspectsPage() {
     setItems(j.items);
   }, []);
   useEffect(() => {
-    load();
-    setOfferState(getOffer() === "meningkatkan penjualan lewat kehadiran online" ? "" : getOffer());
+    loadSettings().then(() => {
+      setOfferState(isDefaultOffer() ? "" : getOffer());
+      load();
+    });
   }, [load]);
 
   if (!items) return <div className="wrap pros" />;

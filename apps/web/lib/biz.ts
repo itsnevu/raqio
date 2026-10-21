@@ -81,20 +81,8 @@ export const host = (u: string) => {
 
 export const leadKey = (p: Biz) => p.key || p.place_id || p.maps_url || "";
 
-const DEFAULT_OFFER = "meningkatkan penjualan lewat kehadiran online";
-export const getOffer = () => {
-  try {
-    return localStorage.getItem("offer") || DEFAULT_OFFER;
-  } catch {
-    return DEFAULT_OFFER;
-  }
-};
-export const isDefaultOffer = () => getOffer() === DEFAULT_OFFER;
-export const setOffer = (v: string) => {
-  try {
-    localStorage.setItem("offer", v);
-  } catch {}
-};
+export { getOffer, isDefaultOffer, setOffer } from "./settings";
+import { getOffer } from "./settings";
 
 export const short = (n: string) => clean(n).split(/\s[-|@·,(]\s?/)[0].trim();
 

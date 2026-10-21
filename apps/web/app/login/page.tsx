@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import "./login.css";
@@ -14,7 +15,7 @@ export default function LoginPage() {
 function Login() {
   const router = useRouter();
   const params = useSearchParams();
-  const [user, setUser] = useState("");
+  const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -23,7 +24,7 @@ function Login() {
     e.preventDefault();
     setBusy(true);
     setErr("");
-    const r = await fetch("/api/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ user, pass }) });
+    const r = await fetch("/auth/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, password: pass }) });
     const j = await r.json().catch(() => ({}));
     setBusy(false);
     if (!r.ok) {
@@ -39,10 +40,10 @@ function Login() {
     <div className="loginp">
       <form className="box" onSubmit={submit}>
         <h1>Masuk</h1>
-        <p className="lead">Riset pasar, prospek, dan pantauan hanya untuk akun yang diizinkan.</p>
+        <p className="lead">Riset pasar, prospek, dan pantauan untuk tim kamu.</p>
         <label>
-          Username
-          <input value={user} onChange={(e) => setUser(e.target.value)} autoComplete="username" autoFocus required />
+          Email
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" autoFocus required />
         </label>
         <label>
           Password
@@ -53,7 +54,7 @@ function Login() {
         </button>
         <div className="err">{err}</div>
         <div className="foot">
-          Akun diatur lewat <code>AUTH_USER</code> dan <code>AUTH_PASS</code> di <code>apps/web/.env.local</code>.
+          Belum punya akun? <Link href="/register">Daftar</Link> · <Link href="/forgot">Lupa password</Link>
         </div>
       </form>
     </div>

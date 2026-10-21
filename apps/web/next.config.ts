@@ -1,11 +1,16 @@
 import type { NextConfig } from "next";
 
-// Semua endpoint data masih dilayani service Python (services/scraper/app.py).
-// Path fetch di frontend tetap sama persis seperti versi HTML lama, Next hanya meneruskan.
-const BACKEND = process.env.BACKEND_URL || "http://127.0.0.1:8000";
+// Semua endpoint data dilayani Go API (apps/api). Path fetch di frontend sama persis dengan versi lama,
+// Next hanya meneruskan. Halaman IG lama masih dirender Python, tapi lewat Go (tetap wajib login).
+const API = process.env.API_URL || "http://127.0.0.1:8080";
 
-const BACKEND_PATHS = [
-  "/market/:path+", // /market/reports, /market/report, /market/run, /market/lead, ...
+const API_PATHS = [
+  "/auth/:path*",
+  "/org",
+  "/org/:path*",
+  "/jobs",
+  "/billing/:path*",
+  "/market/:path+",
   "/prospects/data",
   "/watch/data",
   "/business",
@@ -15,7 +20,6 @@ const BACKEND_PATHS = [
   "/run",
   "/ask",
   "/stop",
-  // halaman lama yang masih dirender Python (belum diport)
   "/tools",
   "/competitors",
   "/report",
@@ -27,12 +31,22 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return {
       beforeFiles: [],
-      afterFiles: BACKEND_PATHS.map((source) => ({
-        source,
-        destination: `${BACKEND}${source}`,
-      })),
+      afterFiles: API_PATHS.map((source) => ({ source, destination: `${API}${source}` })),
       fallback: [],
     };
+  },
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Referrer-Policy", value: "same-origin" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+        ],
+      },
+    ];
   },
 };
 

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import "./market.css";
 import { useShell } from "@/components/Shell";
+import { getGoal, loadSettings, setGoal } from "@/lib/settings";
 import {
   Biz, LEAD_ST, clean, dec, downloadCsv, draft, fmtPhone, gapsOf, getOffer, host, isDefaultOffer, isGem, isProspect, isWeak, leadKey, num, postJson,
   setOffer, waOf,
@@ -54,19 +55,8 @@ const ICON = {
 };
 
 // ---------- tujuan riset ----------
-const goalKey = (ind: string, area: string) => "goal:" + String(ind).trim().toLowerCase() + "|" + String(area).trim().toLowerCase();
-const readGoal = (ind: string, area: string) => {
-  try {
-    return localStorage.getItem(goalKey(ind, area)) || "client";
-  } catch {
-    return "client";
-  }
-};
-const writeGoal = (ind: string, area: string, g: string) => {
-  try {
-    localStorage.setItem(goalKey(ind, area), g);
-  } catch {}
-};
+const readGoal = getGoal;
+const writeGoal = setGoal;
 const SELF_WORDS = /agency|agensi|marketing|digital|web ?dev|website|branding|design|desain|seo|advertis|iklan|konsultan|freelance|software|studio kreatif|creative/i;
 
 const FILTERS: [string, string, (p: Biz, rival: boolean) => boolean][] = [
@@ -224,7 +214,7 @@ function Market() {
         setCurrent("cmp");
         loadRecent();
       } else {
-        const m = [...log.matchAll(/REPORT_ID=(\d+)/g)].pop();
+        const m = [...log.matchAll(/REPORT_PG_ID=(\d+)/g)].pop();
         setStatus(m ? "Selesai." : "Gagal: " + (log.trim().split("\n").filter((l) => !/^\[selesai/.test(l)).slice(-1)[0] || ""));
         if (m) notify("Riset selesai", "Laporan sudah siap dibuka.");
         loadRecent(m ? +m[1] : null, true);
@@ -235,7 +225,7 @@ function Market() {
 
   useEffect(() => {
     const id = params.get("id");
-    loadRecent(id ? +id : null);
+    loadSettings().then(() => loadRecent(id ? +id : null));
     poll();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

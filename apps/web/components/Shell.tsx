@@ -33,7 +33,8 @@ const NAV: [string, string][] = [
 const MORE: [string, string, string, boolean][] = [
   ["/competitors", "Kompetitor IG", "Akun Instagram pesaing di sekitar lokasi", true],
   ["/report", "Analisis IG", "Followers, engagement, dan konten akun", true],
-  ["/tools", "Pengaturan lanjutan", "Scrape manual dan pilihan koneksi", false],
+  ["/tools", "Scrape manual", "Scrape IG manual dan pilihan koneksi", false],
+  ["/settings", "Pengaturan", "Tim, kuota, dan akun", false],
 ];
 
 export function ShellProvider({ children }: { children: ReactNode }) {
@@ -115,7 +116,7 @@ function Nav() {
   const here = usePathname();
   const [due, setDue] = useState(0);
   const moreRef = useRef<HTMLDetailsElement>(null);
-  const isLogin = here === "/login";
+  const isLogin = ["/login", "/register", "/forgot", "/reset", "/privacy"].includes(here);
   useEffect(() => {
     if (isLogin) return;
     fetch("/prospects/data")
@@ -175,7 +176,7 @@ function Nav() {
                 <small>{d}</small>
               </a>
             ))}
-            <form method="post" action="/api/auth/logout">
+            <form method="post" action="/auth/logout">
               <button type="submit">
                 Keluar<small>Akhiri sesi di browser ini</small>
               </button>
@@ -190,7 +191,7 @@ function Nav() {
 function Fab() {
   const here = usePathname();
   const { openDrawer } = useShell();
-  if (here === "/" || here === "/login") return null;
+  if (["/", "/login", "/register", "/forgot", "/reset", "/privacy"].includes(here)) return null;
   return (
     <button className="fab" onClick={() => openDrawer("Asisten", <iframe src="/?embed=1" title="Asisten" />, true)}>
       Tanya asisten
