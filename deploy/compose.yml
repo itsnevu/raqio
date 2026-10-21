@@ -87,17 +87,6 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
 
-  backup:
-    image: postgres:16-alpine
-    command: sh /backup.sh
-    environment:
-      DATABASE_URL: postgres://raqio:${PG_PASSWORD}@postgres:5432/raqio
-    volumes:
-      - ./backup.sh:/backup.sh:ro
-      - backups:/backups
-    depends_on:
-      postgres: { condition: service_healthy }
-
   postgres:
     image: postgres:16-alpine
     environment:
@@ -117,4 +106,3 @@ volumes:
   backups:
   caddy_data:
   scraper_cache:
-  backups:
