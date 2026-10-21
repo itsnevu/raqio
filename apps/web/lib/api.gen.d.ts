@@ -1511,6 +1511,120 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/business": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ringkasan profil Instagram dari cache hasil scrape (untuk panel detail bisnis) */
+        get: {
+            parameters: {
+                query: {
+                    /** @description username tanpa @ */
+                    ig: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description ok */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            found: boolean;
+                            /** @description sedang dianalisis worker */
+                            pending?: boolean;
+                            username?: string;
+                            full_name?: string;
+                            biography?: string;
+                            followers?: number;
+                            following?: number;
+                            posts_count?: number;
+                            engagement_rate?: number | null;
+                            posts_per_week?: number | null;
+                            avg_likes?: number;
+                            best_day?: string;
+                            followers_delta?: number | null;
+                            top_posts?: unknown[];
+                            tracked_since?: string;
+                            /** Format: date-time */
+                            last_scraped?: string;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Antrekan analisis akun Instagram (maks 5, tiap akun memakai kuota market_detail) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @description username dipisah koma atau spasi */
+                        targets: string;
+                        /** @description scrape ulang walau baru */
+                        force?: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description ok */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            ok?: boolean;
+                            jobs?: number[];
+                        };
+                    };
+                };
+                400: components["responses"]["Error"];
+                /** @description kuota habis */
+                402: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/billing/plans": {
         parameters: {
             query?: never;

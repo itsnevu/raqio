@@ -30,6 +30,7 @@ DSN = os.environ.get("DATABASE_URL", "postgres://raqio:raqio@127.0.0.1:5433/raqi
 WORKER_ID = f"{socket.gethostname()}:{os.getpid()}"
 POLL_SEC = float(os.environ.get("WORKER_POLL", "2"))
 JOB_TIMEOUT = int(os.environ.get("JOB_TIMEOUT", str(25 * 60)))
+HEARTBEAT_SEC = 30  # API menganggap worker mati kalau heartbeat > 10 menit
 STOP = False
 
 
@@ -53,6 +54,10 @@ def claim(conn):
         return None
     return {"id": row[0], "org_id": str(row[1]), "kind": row[2], "params": row[3],
             "attempts": row[4], "max_attempts": row[5]}
+
+
+def heartbeat(conn, jid):
+    conn.execute("UPDATE jobs SET heartbeat_at = now() WHERE id=%s", (jid,))
 
 
 def append_log(conn, jid, text):
@@ -89,9 +94,9 @@ def insert_report(conn, org_id, jid, report):
 
 # ---------- jalankan market.py sebagai subprocess (log mengalir ke jobs.log, bisa dibatalkan) ----------
 
-def run_market_cmd(conn, jid, args):
-    cmd = [sys.executable, "-W", "ignore", "-u", "market.py"] + args
-    append_log(conn, jid, "$ " + " ".join(args) + "\n")
+def run_cmd(conn, jid, script, args):
+    cmd = [sys.executable, "-W", "ignore", "-u", script] + args
+    append_log(conn, jid, "$ " + script + " " + " ".join(args) + "\n")
     env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUTF8="1")
     proc = subprocess.Popen(cmd, cwd=HERE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding="utf-8",
                             errors="replace", env=env)
@@ -105,9 +110,14 @@ def run_market_cmd(conn, jid, args):
     t = threading.Thread(target=reader, daemon=True)
     t.start()
     t0 = time.time()
+    last_beat = t0
     cancelled = False
     while proc.poll() is None:
         time.sleep(1)
+        # heartbeat tetap jalan walau market.py diam lama (Playwright), supaya API tidak mengira worker mati
+        if time.time() - last_beat > HEARTBEAT_SEC:
+            heartbeat(conn, jid)
+            last_beat = time.time()
         if buf and time.time() - last_flush > 1.5:
             chunk, buf[:] = "".join(buf), []
             append_log(conn, jid, chunk)
@@ -142,6 +152,10 @@ def last_error_line(out):
 
 
 # ---------- handler per jenis job ----------
+
+def run_market_cmd(conn, jid, args):
+    return run_cmd(conn, jid, "market.py", args)
+
 
 def do_market_run(conn, job):
     import re
@@ -222,7 +236,37 @@ def do_market_detail(conn, job):
     return "done", biz, None
 
 
-HANDLERS = {"market_run": do_market_run, "market_compare": do_market_compare, "market_detail": do_market_detail}
+def do_ig_profile(conn, job):
+    """Scrape satu akun IG lewat ig_scraper.py, lalu salin profilnya ke Postgres (cache bersama)."""
+    import re
+    import sqlite3
+    u = str(job["params"].get("username", "")).lower()
+    if not re.fullmatch(r"[A-Za-z0-9._]{1,30}", u):
+        return "failed", None, "username tidak valid"
+    args = ["--mode", "direct", "--targets", u, "--out", "hasil"]
+    if job["params"].get("force"):
+        args += ["--refresh-hours", "0"]
+    out, code, cancelled = run_cmd(conn, job["id"], "ig_scraper.py", args)
+    if cancelled:
+        return "cancelled", None, "Dihentikan."
+    db = os.path.join(os.environ.get("RAQIO_DATA_DIR", HERE), "ig.db")
+    sconn = sqlite3.connect(db)
+    try:
+        row = sconn.execute("SELECT data, followers, last_scraped, followers_history FROM profiles WHERE lower(username)=?", (u,)).fetchone()
+    finally:
+        sconn.close()
+    if not row:
+        return "failed", None, last_error_line(out) if code else "akun tidak ditemukan atau Instagram menolak"
+    data, followers, last, hist = row
+    conn.execute("""INSERT INTO ig_profiles (username, data, followers, history, last_scraped) VALUES (%s,%s,%s,%s,%s)
+        ON CONFLICT (username) DO UPDATE SET data=excluded.data, followers=excluded.followers,
+        history=excluded.history, last_scraped=excluded.last_scraped""",
+                 (u, data, followers, hist or "[]", last or datetime.now(timezone.utc).isoformat()))
+    return "done", {"username": u, "followers": followers}, None
+
+
+HANDLERS = {"market_run": do_market_run, "market_compare": do_market_compare, "market_detail": do_market_detail,
+            "ig_profile": do_ig_profile}
 
 
 def handle(conn, job):

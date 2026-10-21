@@ -452,6 +452,43 @@ paths:
       summary: 50 job terakhir org
       responses: { "200": { description: ok } }
 
+  /business:
+    get:
+      summary: Ringkasan profil Instagram dari cache hasil scrape (untuk panel detail bisnis)
+      parameters: [{ name: ig, in: query, required: true, schema: { type: string }, description: username tanpa @ }]
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [found]
+                properties:
+                  found: { type: boolean }
+                  pending: { type: boolean, description: sedang dianalisis worker }
+                  username: { type: string }
+                  full_name: { type: string }
+                  biography: { type: string }
+                  followers: { type: integer }
+                  following: { type: integer }
+                  posts_count: { type: integer }
+                  engagement_rate: { type: number, nullable: true }
+                  posts_per_week: { type: number, nullable: true }
+                  avg_likes: { type: number }
+                  best_day: { type: string }
+                  followers_delta: { type: integer, nullable: true }
+                  top_posts: { type: array, items: {} }
+                  tracked_since: { type: string }
+                  last_scraped: { type: string, format: date-time }
+  /run:
+    post:
+      summary: Antrekan analisis akun Instagram (maks 5, tiap akun memakai kuota market_detail)
+      requestBody: { content: { application/json: { schema: { type: object, required: [targets], properties: { targets: { type: string, description: username dipisah koma atau spasi }, force: { type: boolean, description: scrape ulang walau baru } } } } } }
+      responses:
+        "200": { description: ok, content: { application/json: { schema: { type: object, properties: { ok: { type: boolean }, jobs: { type: array, items: { type: integer } } } } } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "402": { description: kuota habis }
   /billing/plans:
     get:
       security: []

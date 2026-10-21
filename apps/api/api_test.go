@@ -530,3 +530,49 @@ func TestIntegrationCSRF(t *testing.T) {
 		t.Fatalf("lintas situs harus 403, dapat %d", resp.StatusCode)
 	}
 }
+
+// ---------- Instagram lewat job ----------
+
+func TestIntegrationIG(t *testing.T) {
+	e := setupIntegration(t)
+	a := e.client()
+	a.register("ig@x.id", "IG")
+
+	code, j := a.get("/business?ig=belum.ada")
+	a.must(200, code, j)
+	if j["found"] != false || j["pending"] != false {
+		t.Fatalf("profil kosong: %v", j)
+	}
+	code, j = a.post("/run", map[string]any{"targets": "a b!"})
+	a.must(400, code, j)
+	code, j = a.post("/run", map[string]any{"targets": ""})
+	a.must(400, code, j)
+	code, j = a.post("/run", map[string]any{"targets": "@Kopi.Enak, belum.ada"})
+	a.must(200, code, j)
+	if len(j["jobs"].([]any)) != 2 {
+		t.Fatalf("jobs: %v", j)
+	}
+	code, j = a.get("/business?ig=belum.ada")
+	if j["pending"] != true {
+		t.Fatalf("harus pending: %v", j)
+	}
+	var kind, user string
+	e.app.db.QueryRow(context.Background(), `SELECT kind, params->>'username' FROM jobs ORDER BY id LIMIT 1`).Scan(&kind, &user)
+	if kind != "ig_profile" || user != "kopi.enak" {
+		t.Fatalf("job: %s %s", kind, user)
+	}
+	_, j = a.get("/org")
+	if j["usage"].(map[string]any)["market_detail"].(float64) != 2 {
+		t.Fatalf("kuota ig: %v", j["usage"])
+	}
+
+	// profil tersimpan oleh worker -> ringkasan
+	e.app.db.Exec(context.Background(), `INSERT INTO ig_profiles (username, data, followers, history) VALUES ('kopi.enak',
+		'{"username":"kopi.enak","followers":1500,"stats":{"engagement_rate":2.5,"posts_per_week":3,"top_posts":[1,2,3,4]}}', 1500,
+		'[{"ts":"2026-01-01","followers":1000},{"ts":"2026-02-01","followers":1500}]')`)
+	code, j = a.get("/business?ig=@Kopi.Enak")
+	a.must(200, code, j)
+	if j["found"] != true || j["followers_delta"].(float64) != 500 || j["engagement_rate"].(float64) != 2.5 || len(j["top_posts"].([]any)) != 3 {
+		t.Fatalf("ringkasan IG: %v", j)
+	}
+}

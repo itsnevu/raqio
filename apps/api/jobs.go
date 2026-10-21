@@ -128,7 +128,11 @@ func (a *App) waitJob(ctx context.Context, org string, id int64, max time.Durati
 // Juga menangani job 'running' yang worker-nya mati (heartbeat > 10 menit): antrikan ulang selama attempts < max_attempts, sisanya failed.
 func (a *App) scheduler(ctx context.Context) {
 	for {
-		time.Sleep(5 * time.Minute)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(5 * time.Minute):
+		}
 		a.expirePlans(ctx)
 		a.db.Exec(ctx, `UPDATE jobs SET status='queued', error='worker tidak merespons', run_after=now()
 			WHERE status='running' AND heartbeat_at < now() - interval '10 minutes' AND attempts < max_attempts`)
@@ -174,6 +178,13 @@ func (a *App) retentionLoop(ctx context.Context) {
 		a.db.Exec(ctx, `DELETE FROM reports WHERE created_at < now() - ($1 || ' days')::interval`, fmt.Sprint(days))
 		a.db.Exec(ctx, `DELETE FROM jobs WHERE finished_at < now() - interval '30 days'`)
 		a.db.Exec(ctx, `DELETE FROM sessions WHERE expires_at < now()`)
-		time.Sleep(6 * time.Hour)
+		a.db.Exec(ctx, `DELETE FROM tokens WHERE expires_at < now() - interval '7 days' OR used_at < now() - interval '7 days'`)
+		a.db.Exec(ctx, `DELETE FROM login_attempts WHERE locked_until IS NULL OR locked_until < now() - interval '1 day'`)
+		a.db.Exec(ctx, `DELETE FROM audit_log WHERE at < now() - interval '365 days'`)
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(6 * time.Hour):
+		}
 	}
 }

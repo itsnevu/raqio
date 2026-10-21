@@ -10,8 +10,10 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -42,10 +44,22 @@ func envInt(k string, def int) int {
 
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
-	ctx := context.Background()
+	// ctx dibatalkan saat SIGINT/SIGTERM: scheduler berhenti, server shutdown rapi (compose stop, deploy ulang).
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
 	dsn := env("DATABASE_URL", "postgres://raqio:raqio@127.0.0.1:5433/raqio?sslmode=disable")
-	pool, err := pgxpool.New(ctx, dsn)
+	pcfg, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		slog.Error("db dsn", "err", err)
+		os.Exit(1)
+	}
+	pcfg.MaxConns = int32(envInt("DB_MAX_CONNS", 10))
+	pcfg.MinConns = 1
+	pcfg.MaxConnLifetime = time.Hour
+	pcfg.MaxConnIdleTime = 10 * time.Minute
+	pcfg.HealthCheckPeriod = 30 * time.Second
+	pool, err := pgxpool.NewWithConfig(ctx, pcfg)
 	if err != nil {
 		slog.Error("db", "err", err)
 		os.Exit(1)
@@ -92,12 +106,21 @@ func main() {
 	slog.Info("raqio-api jalan", "port", port, "legacy", legacyURL.String())
 	// urutan: hitung metrik -> log -> rate limit per IP -> header keamanan -> router
 	ipLimit := newLimiter(envInt("RATE_LIMIT_PER_MINUTE", 300), envInt("RATE_LIMIT_BURST", 60))
-	handler := countRequests(logRequests(rateLimitIP(ipLimit, secHeaders(mux))))
+	handler := requestID(recoverPanic(countRequests(logRequests(rateLimitIP(ipLimit, secHeaders(mux))))))
 	srv := &http.Server{Addr: ":" + port, Handler: handler, ReadHeaderTimeout: 10 * time.Second}
-	if err := srv.ListenAndServe(); err != nil {
+	go func() {
+		<-ctx.Done()
+		slog.Info("shutdown: berhenti menerima koneksi baru, tunggu request berjalan maksimal 15 detik")
+		sctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		defer cancel()
+		srv.Shutdown(sctx)
+	}()
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		slog.Error("server", "err", err)
 		os.Exit(1)
 	}
+	pool.Close()
+	slog.Info("shutdown selesai")
 }
 
 // ---------- util http ----------
@@ -145,7 +168,7 @@ func logRequests(next http.Handler) http.Handler {
 		if strings.HasPrefix(r.URL.Path, "/log") || r.URL.Path == "/healthz" || r.URL.Path == "/readyz" || r.URL.Path == "/metrics" {
 			return // polling, jangan banjiri log
 		}
-		slog.Info("req", "m", r.Method, "path", r.URL.Path, "code", sw.code, "ms", time.Since(t).Milliseconds())
+		slog.Info("req", "m", r.Method, "path", r.URL.Path, "code", sw.code, "ms", time.Since(t).Milliseconds(), "rid", reqID(r))
 	})
 }
 
@@ -213,7 +236,9 @@ func (app *App) router() *http.ServeMux {
 	mux.Handle("GET /jobs", auth(app.listJobs))
 
 	// fitur IG lama masih di Python; diteruskan, tetap wajib login
-	for _, p := range []string{"/business", "/chat", "/chat/", "/run", "/ask", "/tools", "/competitors", "/report", "/static/"} {
+	mux.Handle("GET /business", auth(app.igProfile))
+	mux.Handle("POST /run", auth(app.rateLimitOrg(jobLimit, app.igRun)))
+	for _, p := range []string{"/chat", "/chat/", "/ask", "/tools", "/competitors", "/report", "/static/"} {
 		mux.Handle(p, auth(app.legacy.ServeHTTP))
 	}
 

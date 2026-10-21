@@ -3,8 +3,13 @@
 package main
 
 import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
+	"log/slog"
 	"net/http"
+	"runtime/debug"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -102,6 +107,51 @@ func (a *App) rateLimitOrg(l *limiter, next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		next(w, r)
+	}
+}
+
+// ---------- request id + recover ----------
+
+type ctxKeyReqID struct{}
+
+// requestID: pakai X-Request-Id dari proxy kalau ada, kalau tidak buat sendiri. Ikut di log dan audit.
+func requestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := r.Header.Get("X-Request-Id")
+		if id == "" || len(id) > 64 {
+			b := make([]byte, 8)
+			rand.Read(b)
+			id = hex.EncodeToString(b)
+		}
+		w.Header().Set("X-Request-Id", id)
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), ctxKeyReqID{}, id)))
+	})
+}
+
+func reqID(r *http.Request) string { id, _ := r.Context().Value(ctxKeyReqID{}).(string); return id }
+
+// recoverPanic: handler yang panic dibalas 500 rapi dan dicatat, bukan memutus koneksi tanpa jejak.
+func recoverPanic(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if rec := recover(); rec != nil {
+				slog.Error("panic", "err", fmt.Sprint(rec), "path", r.URL.Path, "rid", reqID(r), "stack", string(debug.Stack()))
+				errJSON(w, 500, "Terjadi kesalahan di server.")
+			}
+		}()
+		next.ServeHTTP(w, r)
+	})
+}
+
+// ---------- audit ----------
+
+// audit mencatat aksi ke audit_log. Tidak pernah menggagalkan request; kalau insert gagal hanya dicatat di log.
+func (a *App) audit(r *http.Request, orgID, userID *string, action, target string, status int) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	if _, err := a.db.Exec(ctx, `INSERT INTO audit_log (org_id, user_id, action, target, ip, request_id, status) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+		orgID, userID, action, trunc(target, 200), clientIP(r), reqID(r), status); err != nil {
+		slog.Warn("audit gagal", "err", err, "action", action)
 	}
 }
 

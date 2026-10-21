@@ -104,7 +104,15 @@ func (a *App) requireSession(next http.HandlerFunc) http.Handler {
 				return
 			}
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), sessKey, s)))
+		r = r.WithContext(context.WithValue(r.Context(), sessKey, s))
+		if r.Method == http.MethodGet || r.Method == http.MethodHead {
+			next.ServeHTTP(w, r)
+			return
+		}
+		// semua request tulis yang bersesi masuk audit_log
+		sw := &statusWriter{ResponseWriter: w, code: 200}
+		next.ServeHTTP(sw, r)
+		a.audit(r, &s.OrgID, &s.UserID, r.Method+" "+r.URL.Path, "", sw.code)
 	})
 }
 
@@ -144,8 +152,16 @@ func (a *App) newSession(ctx context.Context, w http.ResponseWriter, userID, org
 		return err
 	}
 	a.setCookie(w, a.makeToken(sid, exp), sessionDays*86400)
+	if r, ok := ctx.Value(reqCtxKey{}).(*http.Request); ok {
+		a.audit(r, &orgID, &userID, "login", "", 200)
+	}
 	return nil
 }
+
+// reqCtxKey menyimpan *http.Request di ctx supaya newSession bisa mencatat audit tanpa mengubah tanda tangannya.
+type reqCtxKey struct{}
+
+func withReq(r *http.Request) context.Context { return context.WithValue(r.Context(), reqCtxKey{}, r) }
 
 func (a *App) register(w http.ResponseWriter, r *http.Request) {
 	var in struct{ Email, Password, Name, Org, Invite string }
@@ -210,7 +226,7 @@ func (a *App) register(w http.ResponseWriter, r *http.Request) {
 	if inv == nil {
 		a.sendVerify(ctx, email, uid)
 	}
-	if err := a.newSession(ctx, w, uid, oid); err != nil {
+	if err := a.newSession(withReq(r), w, uid, oid); err != nil {
 		errJSON(w, 500, "sesi")
 		return
 	}
@@ -244,7 +260,7 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 		errJSON(w, 500, "akun tidak punya org")
 		return
 	}
-	if err := a.newSession(ctx, w, uid, oid); err != nil {
+	if err := a.newSession(withReq(r), w, uid, oid); err != nil {
 		errJSON(w, 500, "sesi")
 		return
 	}

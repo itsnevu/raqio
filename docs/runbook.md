@@ -73,6 +73,16 @@ docker compose -f deploy/compose.yml exec postgres psql -U raqio -c \
 - Paksa ulang satu job: `UPDATE jobs SET status='queued', attempts=0, run_after=now() WHERE id=<id>;`
 - Batalkan: `UPDATE jobs SET cancel_requested=true WHERE id=<id>;`
 
+## Jejak audit
+
+Setiap request tulis yang bersesi (POST/PATCH/DELETE) dan setiap login dicatat ke tabel `audit_log` beserta org, user, IP, request id, dan status HTTP. Retensi 365 hari.
+
+```bash
+docker compose -f deploy/compose.yml exec postgres psql -U raqio -c   "SELECT at, action, status, ip, user_id FROM audit_log WHERE org_id='<org>' ORDER BY id DESC LIMIT 50"
+```
+
+Setiap respons API membawa header `X-Request-Id`. Nilai yang sama ada di log API (`rid`) dan di `audit_log.request_id`, jadi satu keluhan pengguna bisa dilacak ujung ke ujung.
+
 ## Backup dan pulihkan
 
 Service `backup` menjalankan `pg_dump` tiap 24 jam ke volume `backups`, menyimpan `BACKUP_KEEP_DAYS` hari (default 14).

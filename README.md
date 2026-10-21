@@ -99,6 +99,6 @@ cd apps\web;          npx tsc --noEmit ; npm test ; npm run build
   akan diblokir pada volume SaaS. Sebelum ada pelanggan berbayar, ganti `services/scraper/gmaps.py` ke Google Places
   API atau penyedia pihak ketiga. Audit lengkap ada di percakapan pengembangan dan `docs/ARCHITECTURE.md`.
 - Pelaporan error terpusat (Sentry) belum; log JSON ada di stdout tiap service.
-- Halaman IG legacy (`/tools`, `/competitors`, `/report`, chat agent) masih dari Python dan belum multi-tenant;
-  jangan diekspos ke pelanggan sebelum diport.
+- Analisis akun IG di panel detail bisnis sudah lewat worker (`/business`, `/run`). Yang masih Python legacy: chat agent,
+  `/tools`, `/competitors`, `/report`; tersembunyi dari menu kecuali `NEXT_PUBLIC_LEGACY=1`.
 - Draf kebijakan privasi di `/privacy` perlu ditinjau penasihat hukum.
