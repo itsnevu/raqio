@@ -71,6 +71,7 @@ class ApiClient extends ChangeNotifier {
   Future<void> _setToken(String? token) async {
     if (_token == token) return;
     _token = token;
+    if (token == null) lastMe = null;
     await _store.write(token);
     notifyListeners();
   }
@@ -137,7 +138,29 @@ class ApiClient extends ChangeNotifier {
     await _setToken(null);
   }
 
-  Future<Me> me() async => Me.fromJson(await get('/auth/me') as Map<String, dynamic>);
+  /// Profil terakhir yang diketahui (diisi oleh [me]); dipakai bilah tamu tanpa request ulang.
+  Me? lastMe;
+
+  Future<Me> me() async {
+    final m = Me.fromJson(await get('/auth/me') as Map<String, dynamic>);
+    lastMe = m;
+    notifyListeners();
+    return m;
+  }
+
+  /// Mode tamu: coba tanpa daftar. Org sementara dengan kuota kecil; bisa disimpan jadi akun lewat [claimGuest].
+  Future<void> guest() async {
+    await post('/auth/guest');
+    lastMe = null;
+  }
+
+  /// Tamu jadi akun betulan; data riset org tetap. existing=true berarti email sudah terdaftar, tidak ada perubahan.
+  Future<bool> claimGuest({required String email, required String password, String name = ''}) async {
+    final j = await post('/auth/claim-guest', {'email': email, 'password': password, 'name': name}) as Map<String, dynamic>;
+    final existing = j['existing'] == true;
+    if (!existing) await me();
+    return !existing;
+  }
   Future<Org> org() async => Org.fromJson(await get('/org') as Map<String, dynamic>);
 
   // ---------- riset ----------

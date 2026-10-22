@@ -16,6 +16,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Me? _me;
   Org? _org;
   final _offer = TextEditingController();
+  final _cEmail = TextEditingController();
+  final _cPass = TextEditingController();
+  final _cName = TextEditingController();
+  bool _claiming = false;
 
   @override
   void initState() {
@@ -25,8 +29,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   void dispose() {
-    _offer.dispose();
+    for (final c in [_offer, _cEmail, _cPass, _cName]) {
+      c.dispose();
+    }
     super.dispose();
+  }
+
+  Future<void> _claim() async {
+    if (_cPass.text.length < 8) {
+      toast(context, 'Password minimal 8 karakter.');
+      return;
+    }
+    setState(() => _claiming = true);
+    final api = _api;
+    final created = await guard(context, () => api.claimGuest(email: _cEmail.text.trim(), password: _cPass.text, name: _cName.text.trim()));
+    if (!mounted) return;
+    setState(() => _claiming = false);
+    if (created == null) return;
+    if (!created) {
+      toast(context, 'Email itu sudah terdaftar. Keluar lalu masuk dengan akun itu.');
+      return;
+    }
+    toast(context, 'Akun tersimpan. Riset dan prospek tetap ada, paket jadi gratis.');
+    _load();
   }
 
   ApiClient get _api => ApiScope.of(context);
@@ -59,9 +84,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Text(org.name, style: t.headlineMedium),
-                  Text('paket ${org.plan} · ${me.email} (${me.role})', style: t.bodySmall),
-                  if (!me.verified) ...[
+                  Text(me.guest ? 'Mode tamu' : org.name, style: t.headlineMedium),
+                  Text(me.guest ? 'Org sementara, dihapus otomatis setelah beberapa jam.' : 'paket ${org.plan} · ${me.email} (${me.role})', style: t.bodySmall),
+                  if (me.guest) ...[
+                    const SizedBox(height: 14),
+                    Panel(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        const Label('Simpan akun'),
+                        const SizedBox(height: 6),
+                        Text('Riset dan prospek yang sudah ada tetap tersimpan. Paket jadi gratis, bisa dipakai juga di Raqio web.', style: t.bodySmall),
+                        const SizedBox(height: 10),
+                        TextField(controller: _cName, decoration: const InputDecoration(labelText: 'Nama')),
+                        const SizedBox(height: 8),
+                        TextField(controller: _cEmail, keyboardType: TextInputType.emailAddress, autocorrect: false, decoration: const InputDecoration(labelText: 'Email')),
+                        const SizedBox(height: 8),
+                        TextField(controller: _cPass, obscureText: true, decoration: const InputDecoration(labelText: 'Password (min. 8)')),
+                        const SizedBox(height: 10),
+                        SizedBox(width: double.infinity, child: FilledButton(onPressed: _claiming ? null : _claim, child: Text(_claiming ? 'MENYIMPAN…' : 'SIMPAN AKUN'))),
+                      ]),
+                    ),
+                  ],
+                  if (!me.verified && !me.guest) ...[
                     const SizedBox(height: 10),
                     Panel(
                       child: Row(children: [
@@ -107,7 +150,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 8),
                   Panel(child: Text(org.members.join('\n'))),
                   const SizedBox(height: 24),
-                  OutlinedButton(onPressed: () => _api.logout(), child: const Text('KELUAR')),
+                  OutlinedButton(onPressed: () => _api.logout(), child: Text(me.guest ? 'KELUAR DARI MODE TAMU' : 'KELUAR')),
                   const SizedBox(height: 10),
                   Text('Server: ${_api.baseUrl}', style: t.labelSmall),
                 ],

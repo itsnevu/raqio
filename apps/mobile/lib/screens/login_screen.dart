@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../api/client.dart';
 import '../app.dart';
 import '../theme.dart';
+import '../widgets/logo.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -23,6 +24,20 @@ class _LoginScreenState extends State<LoginScreen> {
     _email.dispose();
     _pass.dispose();
     super.dispose();
+  }
+
+  Future<void> _guest() async {
+    setState(() {
+      _busy = true;
+      _err = '';
+    });
+    try {
+      await ApiScope.of(context).guest();
+    } on ApiException catch (e) {
+      setState(() => _err = e.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   Future<void> _submit() async {
@@ -59,12 +74,21 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const _Brand(),
+                      const RaqioLogo(),
                       const SizedBox(height: 18),
-                      Text('Masuk', style: t.headlineMedium),
+                      Text('Kenali pasarmu. Temukan celahnya.', style: t.headlineMedium),
                       const SizedBox(height: 6),
-                      Text('Akun yang sama dengan Raqio web. Laporan dan prospek tim ikut terbawa.', style: t.bodySmall),
+                      Text('Coba dulu tanpa akun. Masuk kalau mau menyimpan riset, menambah kuota, dan memakai akun yang sama dengan Raqio web.', style: t.bodySmall),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(key: const Key('guest'), onPressed: _busy ? null : _guest, child: const Text('COBA TANPA DAFTAR')),
+                      ),
                       const SizedBox(height: 18),
+                      const Divider(),
+                      const SizedBox(height: 12),
+                      Text('Sudah punya akun?', style: t.titleMedium),
+                      const SizedBox(height: 10),
                       const Label('Email'),
                       const SizedBox(height: 6),
                       TextField(
@@ -87,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 20),
                       SizedBox(
                         width: double.infinity,
-                        child: FilledButton(onPressed: _busy ? null : _submit, child: Text(_busy ? 'MEMERIKSA…' : 'MASUK')),
+                        child: OutlinedButton(onPressed: _busy ? null : _submit, child: Text(_busy ? 'MEMERIKSA…' : 'MASUK')),
                       ),
                       if (_err.isNotEmpty) ...[
                         const SizedBox(height: 10),
@@ -113,39 +137,4 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
     );
   }
-}
-
-class _Brand extends StatelessWidget {
-  const _Brand();
-  @override
-  Widget build(BuildContext context) => Row(
-        children: [
-          CustomPaint(size: const Size(22, 22), painter: _MarkPainter()),
-          const SizedBox(width: 10),
-          const Text('raqio', style: TextStyle(fontSize: 25, fontWeight: FontWeight.w500, letterSpacing: -1, color: RaqioColors.text)),
-        ],
-      );
-}
-
-/// Logo "R" yang sama dengan logo.svg di web.
-class _MarkPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final s = size.width / 32;
-    final stroke = Paint()
-      ..color = RaqioColors.text
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4 * s;
-    final path = Path()
-      ..moveTo(5 * s, 29 * s)
-      ..lineTo(5 * s, 3 * s)
-      ..lineTo(18 * s, 3 * s)
-      ..arcToPoint(Offset(18 * s, 19 * s), radius: Radius.circular(8 * s))
-      ..lineTo(11 * s, 19 * s);
-    canvas.drawPath(path, stroke);
-    canvas.drawLine(Offset(17 * s, 19 * s), Offset(27 * s, 29 * s), stroke..color = RaqioColors.good);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

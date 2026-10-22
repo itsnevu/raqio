@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'api/client.dart';
 import 'screens/home_shell.dart';
 import 'screens/login_screen.dart';
+import 'screens/splash_screen.dart';
 import 'theme.dart';
 
 /// Akses ApiClient dari mana saja: `ApiScope.of(context)`.
@@ -18,8 +19,16 @@ class ApiScope extends InheritedNotifier<ApiClient> {
 }
 
 class RaqioApp extends StatelessWidget {
-  const RaqioApp({super.key, required this.api});
+  /// [ready] selesai saat sesi tersimpan sudah dibaca; sampai saat itu layar pembuka berlogo tampil
+  /// (minimal [splashMinimum] supaya logo sempat terlihat, bukan berkedip).
+  const RaqioApp({super.key, required this.api, this.ready, this.splashMinimum = const Duration(milliseconds: 900)});
   final ApiClient api;
+  final Future<void>? ready;
+  final Duration splashMinimum;
+
+  Future<void> _boot() async {
+    await Future.wait([ready ?? Future.value(), Future<void>.delayed(splashMinimum)]);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,13 +38,26 @@ class RaqioApp extends StatelessWidget {
         title: 'Raqio',
         theme: raqioTheme(),
         debugShowCheckedModeBanner: false,
-        home: ListenableBuilder(
-          listenable: api,
-          builder: (context, _) => api.loggedIn ? const HomeShell() : const LoginScreen(),
-        ),
+        home: ready == null
+            ? _Root(api: api)
+            : FutureBuilder<void>(
+                future: _boot(),
+                builder: (context, snap) => snap.connectionState == ConnectionState.done ? _Root(api: api) : const SplashScreen(),
+              ),
       ),
     );
   }
+}
+
+class _Root extends StatelessWidget {
+  const _Root({required this.api});
+  final ApiClient api;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+        listenable: api,
+        builder: (context, _) => api.loggedIn ? const HomeShell() : const LoginScreen(),
+      );
 }
 
 /// Tampilkan pesan singkat di bawah layar.

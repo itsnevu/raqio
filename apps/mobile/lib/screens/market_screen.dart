@@ -135,7 +135,7 @@ class _MarketScreenState extends State<MarketScreen> {
               ],
               selected: {_goal},
               onSelectionChanged: (s) => setState(() => _goal = s.first),
-              style: const ButtonStyle(shape: WidgetStatePropertyAll(RoundedRectangleBorder())),
+              showSelectedIcon: false,
             ),
             if (_goal == 'client' && selfWords.hasMatch(_industry.text)) ...[
               const SizedBox(height: 8),

@@ -20,3 +20,11 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: Albert Sans
+      fonts:
+        - asset: assets/fonts/AlbertSans-Regular.ttf
+        - asset: assets/fonts/AlbertSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/AlbertSans-Bold.ttf
+          weight: 700

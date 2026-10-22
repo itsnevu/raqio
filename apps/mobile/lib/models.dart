@@ -224,11 +224,15 @@ class Me {
         role = _s(j['role']),
         plan = _s(j['plan']),
         verified = j['verified'] == true,
+        guest = j['guest'] == true,
         limits = Limits.fromJson(Map<String, dynamic>.from(j['limits'] as Map? ?? const {}));
   final String email;
   final String role;
   final String plan;
   final bool verified;
+
+  /// Org tamu: coba tanpa daftar, kuota kecil, hasil instan, dihapus otomatis setelah beberapa jam.
+  final bool guest;
   final Limits limits;
 }
 

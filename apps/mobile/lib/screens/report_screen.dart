@@ -8,8 +8,11 @@ import '../theme.dart';
 import 'place_sheet.dart';
 
 class ReportScreen extends StatefulWidget {
-  const ReportScreen({super.key, required this.reportId, this.goals = const {}, this.offer = ''});
+  const ReportScreen({super.key, required this.reportId, this.goals = const {}, this.offer = '', this.preloaded});
   final int reportId;
+
+  /// Laporan yang sudah ada (tes dan pratinjau); kalau null diambil dari API.
+  final Report? preloaded;
   final Map<String, String> goals;
   final String offer;
 
@@ -34,7 +37,7 @@ class _ReportScreenState extends State<ReportScreen> {
 
   Future<void> _load() async {
     try {
-      final r = await _api.report(widget.reportId);
+      final r = widget.preloaded ?? await _api.report(widget.reportId);
       _rival = widget.goals['${r.industry.toLowerCase()}|${r.area.toLowerCase()}'] == 'rival';
       if (mounted) setState(() => _r = r);
     } on ApiException catch (e) {
@@ -85,12 +88,15 @@ class _ReportScreenState extends State<ReportScreen> {
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('${r.industry} · ${r.area}'),
+          title: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${r.industry} · ${r.area}'),
+            Text(fmtDate(r.created, withTime: true), style: t.labelSmall),
+          ]),
           bottom: TabBar(
             indicatorColor: RaqioColors.text,
             labelColor: RaqioColors.text,
             unselectedLabelColor: RaqioColors.muted,
-            labelStyle: const TextStyle(fontSize: 11, letterSpacing: 0.8),
+            labelStyle: const TextStyle(fontFamily: 'Albert Sans', fontSize: 11, letterSpacing: 0.8),
             tabs: [
               const Tab(text: 'RINGKASAN'),
               Tab(text: 'PEMAIN ${r.all.length}'),
@@ -113,11 +119,6 @@ class _ReportScreenState extends State<ReportScreen> {
             _Prospects(r: r, rival: _rival, onOpen: _openPlace),
           ],
         ),
-        floatingActionButton: Padding(
-          padding: const EdgeInsets.only(bottom: 4),
-          child: Text(fmtDate(r.created, withTime: true), style: t.labelSmall),
-        ),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       ),
     );
   }
