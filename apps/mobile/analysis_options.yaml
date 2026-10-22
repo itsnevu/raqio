@@ -1,0 +1,11 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  errors:
+    # peringatan dianggap error di CI supaya tidak menumpuk
+    unused_import: error
+    dead_code: error
+  exclude:
+    - build/**
+    - android/**
+    - ios/**

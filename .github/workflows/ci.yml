@@ -16,6 +16,7 @@ jobs:
       scraper: ${{ steps.filter.outputs.scraper }}
       api: ${{ steps.filter.outputs.api }}
       web: ${{ steps.filter.outputs.web }}
+      mobile: ${{ steps.filter.outputs.mobile }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -30,6 +31,9 @@ jobs:
               - '.github/workflows/ci.yml'
             web:
               - 'apps/web/**'
+              - '.github/workflows/ci.yml'
+            mobile:
+              - 'apps/mobile/**'
               - '.github/workflows/ci.yml'
 
   scraper:
@@ -97,3 +101,20 @@ jobs:
       - run: npm run build
         env:
           AUTH_SECRET: ci-only-not-secret
+
+  mobile:
+    needs: changes
+    if: needs.changes.outputs.mobile == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze --fatal-infos
+      - run: flutter test

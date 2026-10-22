@@ -7,7 +7,8 @@ Monorepo multi-tenant (SaaS).
 raqio/
 ├── apps/
 │   ├── web/              Next.js 15: UI, login/daftar, middleware sesi        → :3000
-│   └── api/              Go: auth, org, kuota, antrian job, endpoint data     → :8080
+│   ├── api/              Go: auth, org, kuota, antrian job, endpoint data     → :8080
+│   └── mobile/           Flutter (Android, iOS): akun dan data yang sama dengan web
 ├── services/
 │   └── scraper/          Python: worker.py (riset), app.py (fitur IG legacy)  → :8000 (legacy)
 ├── deploy/               compose.dev.yml (Postgres+Redis), compose.yml (produksi), Caddyfile
@@ -81,6 +82,27 @@ Caddy mengurus TLS. Hanya port 80/443 yang terbuka. Worker bisa diperbanyak lewa
 - Email (verifikasi, lupa password, undangan tim): lewat SMTP (`SMTP_*`). Tanpa `SMTP_HOST`, tautan dicatat di log API (mode dev).
 - Pembayaran: Xendit Invoice (`XENDIT_SECRET_KEY`, webhook `/billing/webhook/xendit` dengan `XENDIT_CALLBACK_TOKEN`).
   Tanpa key, mode manual: user minta aktivasi, pengelola set `orgs.plan` dan `plan_until` di DB. Paket turun ke free otomatis saat habis.
+
+## Mobile (Flutter)
+
+`apps/mobile` adalah app Android dan iOS yang memakai **API, akun, org, dan kuota yang sama dengan web**. Tidak ada
+backend terpisah: app login ke `/auth/login`, menyimpan cookie sesi `raqio_session`, dan mengirimnya di setiap
+request. Riset yang dibuat di HP muncul di web, dan sebaliknya.
+
+```powershell
+cd apps\mobile
+flutter pub get
+flutter run --dart-define=API_URL=http://10.0.2.2:8080   # emulator Android ke API di laptop
+flutter run --dart-define=API_URL=https://raqio.example.com   # produksi
+```
+
+iOS simulator memakai `http://localhost:8080`. HP fisik: pakai IP laptop di jaringan yang sama, dan API harus
+bisa diakses dari luar loopback. Alamat API dibakar saat build lewat `--dart-define`, defaultnya 10.0.2.2:8080.
+
+Layar: Masuk/Daftar, Riset (form, progres job, laporan), Laporan (ringkasan dengan kesimpulan yang sama persis
+dengan web, daftar pemain, prospek), panel detail bisnis (WhatsApp dengan draf, cek kontak, status follow up),
+Prospek, Pantau, Akun. Logika skor dan kesimpulan di `lib/biz.dart` adalah port langsung dari `apps/web/lib/biz.ts`
+dan punya tes paritas. Tes: `flutter analyze` dan `flutter test` (tanpa Android SDK).
 
 ## Panduan pengguna (tur)
 
