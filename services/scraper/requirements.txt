@@ -11,5 +11,5 @@ beautifulsoup4==4.15.0
 pytrends==4.9.2
 google-api-python-client==2.201.0
 psycopg[binary]==3.3.6
-pillow==12.1.0
+pillow==13.0.0
 duckdb==2.0.0
