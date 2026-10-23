@@ -156,7 +156,7 @@ services:
   # lewat apk saat container start (butuh akses keluar ke dl-cdn.alpinelinux.org). Pulihkan: docs/runbook.md.
   backup:
     <<: *hardening
-    image: postgres:16.15-alpine
+    image: postgres:18.4-alpine
     entrypoint: ["/bin/sh", "/backup.sh"]
     environment:
       PGHOST: postgres
@@ -186,7 +186,7 @@ services:
   # memakainya di DATABASE_URL.
   postgres:
     <<: *hardening
-    image: postgres:16.15-alpine
+    image: postgres:18.4-alpine
     user: postgres
     shm_size: "256m"
     secrets: [pg_password]
