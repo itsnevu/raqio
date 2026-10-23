@@ -212,7 +212,7 @@ services:
   prometheus:
     <<: *hardening
     profiles: ["monitoring"]
-    image: prom/prometheus:v3.5.0
+    image: prom/prometheus:v3.15.0
     user: "65534:65534"
     entrypoint: ["/bin/sh", "/prometheus-entrypoint.sh"]
     environment:
@@ -234,7 +234,7 @@ services:
   alertmanager:
     <<: *hardening
     profiles: ["monitoring"]
-    image: prom/alertmanager:v0.28.1
+    image: prom/alertmanager:v0.34.1
     user: "65534:65534"
     entrypoint: ["/bin/sh", "/alertmanager-entrypoint.sh"]
     environment:
