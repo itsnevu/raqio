@@ -11,7 +11,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Cek hidup */
+        /** Proses hidup (tidak menyentuh DB) */
         get: {
             parameters: {
                 query?: never;
@@ -26,14 +26,12 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
-                };
-                /** @description db down */
-                503: {
-                    headers: {
-                        [name: string]: unknown;
+                    content: {
+                        "application/json": {
+                            status?: string;
+                            service?: string;
+                        };
                     };
-                    content?: never;
                 };
             };
         };
@@ -52,7 +50,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Siap menerima trafik (DB bisa dicapai) */
+        /** Siap menerima trafik (DB bisa dicapai); 3 kegagalan berturut memicu alarm ops */
         get: {
             parameters: {
                 query?: never;
@@ -93,7 +91,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Metrik format teks Prometheus (request, rate limit, job per status, umur antrian) */
+        /**
+         * Metrik format teks Prometheus
+         * @description Terbuka tanpa token di luar produksi; di produksi hanya dari IP privat, atau dengan `Authorization: Bearer METRICS_TOKEN`.
+         *     Metrik: raqio_http_requests_total{class}, raqio_http_inflight, raqio_rate_limited_total, raqio_uptime_seconds,
+         *     raqio_jobs{status}, raqio_jobs_oldest_queued_seconds, raqio_job_duration_seconds{kind,quantile="0.5"|"0.9"} (job done 24 jam),
+         *     raqio_jobs_failed_total{kind} (24 jam), raqio_chat_jobs_24h, raqio_webhook_outbox{state="pending"|"failed"|"delivered_24h"}, raqio_alerts_24h.
+         *
+         */
         get: {
             parameters: {
                 query?: never;
@@ -110,6 +115,85 @@ export interface paths {
                     };
                     content: {
                         "text/plain": string;
+                    };
+                };
+                /** @description bukan pemantau internal */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/openapi.yaml": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Spesifikasi ini (bisa dimatikan dengan DOCS=0) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description ok */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/yaml": string;
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/docs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Swagger UI (bisa dimatikan dengan DOCS=0) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description ok */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/html": string;
                     };
                 };
             };
@@ -131,7 +215,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Daftar akun dan org baru, atau gabung org lewat token undangan */
+        /**
+         * Daftar akun dan org baru, atau gabung org lewat token undangan
+         * @description Email yang sudah terdaftar dibalas 200 `{ok, existing:true}` (pemilik email diberi tahu lewat surel) supaya status tidak membocorkan email terdaftar.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -143,11 +230,12 @@ export interface paths {
                 content: {
                     "application/json": {
                         email: string;
+                        /** @description maksimal 72 byte */
                         password: string;
                         name?: string;
                         /** @description nama tim; diabaikan kalau ada invite */
                         org?: string;
-                        /** @description token dari email undangan */
+                        /** @description token dari email undangan (email harus cocok) */
                         invite?: string;
                     };
                 };
@@ -160,21 +248,23 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            ok?: boolean;
+                            ok: boolean;
                             org?: string;
+                            /** @description email sudah terdaftar */
+                            existing?: boolean;
                         };
                     };
                 };
                 400: components["responses"]["Error"];
-                /** @description pendaftaran ditutup */
-                403: {
+                /** @description anggota org pengundang sudah maksimal */
+                402: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content?: never;
                 };
-                /** @description email sudah terdaftar */
-                409: {
+                /** @description pendaftaran ditutup (ALLOW_REGISTER=0) */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -219,17 +309,134 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["Ok"];
+                    };
                 };
-                /** @description salah */
+                /** @description email atau password salah */
                 401: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content?: never;
                 };
-                /** @description terkunci 15 menit setelah 10 kali gagal */
+                /** @description terkunci per pasangan email+IP: 5 gagal = 1 menit, 10 = 15 menit, 20 = 1 jam */
                 429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/guest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mode tamu, coba tanpa daftar (org sementara, kuota kecil, dihapus setelah GUEST_TTL)
+         * @description Dibatasi 5 akun per jam per IP dan GUEST_MAX_PER_HOUR global. ALLOW_GUEST=0 mematikan (403).
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description sesi dibuat (cookie) */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                            guest: boolean;
+                            expires_in_hours: number;
+                            limits: components["schemas"]["Limits"];
+                        };
+                    };
+                };
+                /** @description mode tamu dimatikan */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description terlalu banyak akun tamu */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/claim-guest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tamu jadi akun betulan (data org tetap, paket jadi free, email harus diverifikasi) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        email: string;
+                        password: string;
+                        name?: string;
+                        /** @description nama tim */
+                        org?: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description ok {ok, org}; email sudah terdaftar: {ok, existing:true} tanpa perubahan */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                            org?: string;
+                            existing?: boolean;
+                        };
+                    };
+                };
+                /** @description bukan akun tamu */
+                400: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -310,7 +517,7 @@ export interface paths {
                         "application/json": components["schemas"]["Me"];
                     };
                 };
-                401: components["responses"]["Error"];
+                401: components["responses"]["Unauthorized"];
             };
         };
         put?: never;
@@ -330,7 +537,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Pindah org aktif */
+        /** Pindah org aktif (bukan lewat API key) */
         post: {
             parameters: {
                 query?: never;
@@ -377,7 +584,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Kirim tautan reset password (selalu 200) */
+        /** Kirim tautan reset password (selalu 200, dibatasi per IP) */
         post: {
             parameters: {
                 query?: never;
@@ -424,7 +631,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Set password baru dengan token; semua sesi lama dicabut */
+        /** Set password baru dengan token; semua sesi dan API key user dicabut */
         post: {
             parameters: {
                 query?: never;
@@ -464,7 +671,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Verifikasi email dari tautan (redirect) */
+        /** Verifikasi email dari tautan (redirect). Verifikasi pertama mencabut sesi lain dan API key user. */
         get: {
             parameters: {
                 query: {
@@ -512,12 +719,17 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
-                /** @description ok */
+                /** @description ok; {ok, already:true} kalau sudah terverifikasi */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            ok?: boolean;
+                            already?: boolean;
+                        };
+                    };
                 };
             };
         };
@@ -536,7 +748,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Ganti password (sesi lain dicabut) */
+        /** Ganti password (sesi lain dan API key dicabut) */
         post: {
             parameters: {
                 query?: never;
@@ -560,8 +772,59 @@ export interface paths {
                     };
                     content?: never;
                 };
+                400: components["responses"]["Error"];
                 /** @description password lama salah */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description lewat API key */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/logout-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Keluar dari semua perangkat (cabut seluruh sesi user, termasuk yang sekarang) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description ok */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Ok"];
+                    };
+                };
+                /** @description lewat API key */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -626,7 +889,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Terima undangan dengan akun yang sudah login (email harus cocok) */
+        /** Terima undangan dengan akun yang sudah login (email harus cocok); sesi pindah ke org itu */
         post: {
             parameters: {
                 query?: never;
@@ -647,9 +910,21 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            ok?: boolean;
+                            org_id?: string;
+                        };
+                    };
                 };
                 400: components["responses"]["Error"];
+                /** @description anggota org itu sudah maksimal */
+                402: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
             };
         };
         delete?: never;
@@ -667,7 +942,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Hapus akun; org yang hanya dia anggotanya ikut terhapus beserta datanya */
+        /**
+         * Hapus akun; org yang hanya dia anggotanya ikut terhapus beserta datanya (UU PDP)
+         * @description Owner satu-satunya di org yang masih punya anggota lain dibalas 409, kecuali `force:true` yang mengalihkan owner ke admin/anggota tertua.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -679,6 +957,7 @@ export interface paths {
                 content: {
                     "application/json": {
                         password: string;
+                        force?: boolean;
                     };
                 };
             };
@@ -692,6 +971,20 @@ export interface paths {
                 };
                 /** @description password salah */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description lewat API key */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description transfer owner dulu atau force */
+                409: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -750,7 +1043,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Undang anggota lewat email (owner) */
+        /** Undang anggota lewat email (admin, email terverifikasi); undangan pending ikut dihitung batas anggota */
         post: {
             parameters: {
                 query?: never;
@@ -762,6 +1055,11 @@ export interface paths {
                 content: {
                     "application/json": {
                         email: string;
+                        /**
+                         * @default analyst
+                         * @enum {string}
+                         */
+                        role?: "viewer" | "analyst" | "admin";
                     };
                 };
             };
@@ -773,6 +1071,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                400: components["responses"]["Error"];
                 /** @description kuota anggota habis */
                 402: {
                     headers: {
@@ -780,13 +1079,7 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description bukan owner */
-                403: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
+                403: components["responses"]["Forbidden"];
             };
         };
         delete?: never;
@@ -804,7 +1097,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Keluarkan anggota (owner) */
+        /** Keluarkan anggota (admin; tidak bisa peran setara/lebih tinggi); sesi dan API key-nya di org ini dicabut */
         post: {
             parameters: {
                 query?: never;
@@ -827,13 +1120,143 @@ export interface paths {
                     };
                     content?: never;
                 };
-                /** @description bukan owner */
-                403: {
+                /** @description diri sendiri */
+                400: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content?: never;
                 };
+                403: components["responses"]["Forbidden"];
+                /** @description bukan anggota */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/org/api-keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Daftar API key org (admin); raw key tidak pernah ditampilkan lagi */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description ok */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            keys: components["schemas"]["APIKey"][];
+                        };
+                    };
+                };
+                403: components["responses"]["Forbidden"];
+            };
+        };
+        put?: never;
+        /** Buat API key (admin, email terverifikasi, bukan tamu, bukan lewat API key); maksimal 20 aktif */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        label?: string;
+                        /**
+                         * @description tidak boleh lebih tinggi dari peran pembuat
+                         * @default analyst
+                         * @enum {string}
+                         */
+                        role?: "viewer" | "analyst" | "admin";
+                    };
+                };
+            };
+            responses: {
+                /** @description raw key hanya dikirim sekali */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                            id: number;
+                            key: string;
+                            prefix: string;
+                            role: string;
+                        };
+                    };
+                };
+                400: components["responses"]["Error"];
+                403: components["responses"]["Forbidden"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/org/api-keys/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cabut API key (admin) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        id: number;
+                    };
+                };
+            };
+            responses: {
+                /** @description ok false kalau id tidak ada atau sudah dicabut */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Ok"];
+                    };
+                };
+                403: components["responses"]["Forbidden"];
             };
         };
         delete?: never;
@@ -871,7 +1294,10 @@ export interface paths {
             };
         };
         put?: never;
-        /** Ubah pengaturan (field yang dikirim saja; goals digabung) */
+        /**
+         * Ubah pengaturan (admin; field yang dikirim saja; goals digabung). Semua divalidasi dulu, lalu disimpan sekaligus.
+         * @description Field notifikasi (notify_email, telegram_chat, webhook_url, webhook_secret) butuh email terverifikasi (403). Kalau webhook_url diisi dan secret belum ada, secret 32 hex dibuat dan dikembalikan sekali di webhook_secret_generated.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -884,8 +1310,15 @@ export interface paths {
                     "application/json": {
                         offer?: string;
                         goals?: {
-                            [key: string]: string;
+                            [key: string]: "client" | "rival";
                         };
+                        /** @description kosong = hapus */
+                        notify_email?: string;
+                        /** @description angka */
+                        telegram_chat?: string;
+                        /** @description https */
+                        webhook_url?: string;
+                        webhook_secret?: string;
                     };
                 };
             };
@@ -895,8 +1328,62 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                            webhook_secret_generated?: string;
+                        };
+                    };
+                };
+                400: components["responses"]["Error"];
+                403: components["responses"]["Forbidden"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/org/webhook/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Kirim event "ping" ke webhook org secara sinkron (admin), satu percobaan, timeout 5 detik */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description ok true kalau tujuan membalas < 300; kalau gagal ok false dengan error */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                            error?: string;
+                        };
+                    };
+                };
+                /** @description webhook_url belum diisi */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
                     content?: never;
                 };
+                403: components["responses"]["Forbidden"];
             };
         };
         delete?: never;
@@ -912,7 +1399,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** 12 laporan terakhir org */
+        /** 12 laporan terakhir org (ringkasan saja) */
         get: {
             parameters: {
                 query?: never;
@@ -989,7 +1476,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Antrekan riset satu wilayah (kuota market_run 1) */
+        /**
+         * Riset satu wilayah (analyst). Hasil instan dari cache lintas org bila ada, kalau tidak antrekan job (kuota market_run 1)
+         * @description Kalau pasangan industri+wilayah sudah dipindai org mana pun dalam MARKET_CACHE_DAYS, laporan disalin (hanya data dasar Maps,
+         *     tanpa kontak berbayar) tanpa job dan tanpa kuota: balasan `{cached:true, job:null, report_id, age_hours}`. `fresh:true` melewati cache;
+         *     tamu tidak boleh fresh (403 guest_no_fresh). Riset boleh antre sampai limits.queue job sekaligus (409 queue_full).
+         *
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1002,32 +1495,39 @@ export interface paths {
                     "application/json": {
                         industry: string;
                         area: string;
+                        /** @description abaikan cache */
+                        fresh?: boolean;
                     };
                 };
             };
             responses: {
-                /** @description job dibuat */
+                /** @description job dibuat atau hasil instan */
                 200: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            ok?: boolean;
-                            job?: number;
-                        };
+                        "application/json": components["schemas"]["RunResult"];
                     };
                 };
                 400: components["responses"]["Error"];
-                /** @description kuota habis */
-                402: {
+                402: components["responses"]["Quota"];
+                /** @description tamu dengan fresh (guest_no_fresh) */
+                403: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content?: never;
                 };
-                /** @description masih ada job berjalan */
+                /** @description antrean riset penuh (queue_full) */
                 409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description rate limit per org */
+                429: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1050,7 +1550,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Antrekan perbandingan beberapa wilayah (kuota market_run = jumlah wilayah) */
+        /** Antrekan perbandingan beberapa wilayah (analyst; kuota market_run = jumlah wilayah; wilayah ganda didedupe; maksimal limits.areas) */
         post: {
             parameters: {
                 query?: never;
@@ -1072,17 +1572,16 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                            job: number;
+                        };
+                    };
                 };
                 400: components["responses"]["Error"];
-                /** @description kuota habis */
-                402: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
-                /** @description sibuk */
+                402: components["responses"]["Quota"];
+                /** @description antrean riset penuh (queue_full) */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -1182,7 +1681,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Nyalakan atau matikan pantauan mingguan */
+        /** Nyalakan atau matikan pantauan berkala (analyst; every_days 1 sampai 90, default 7) */
         post: {
             parameters: {
                 query?: never;
@@ -1210,6 +1709,7 @@ export interface paths {
                     };
                     content?: never;
                 };
+                400: components["responses"]["Error"];
                 /** @description kuota pantau habis */
                 402: {
                     headers: {
@@ -1234,7 +1734,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Simpan status follow up; note/remind yang tidak dikirim dipertahankan */
+        /** Simpan status follow up (analyst); note/remind/assignee yang tidak dikirim dipertahankan */
         post: {
             parameters: {
                 query?: never;
@@ -1250,8 +1750,14 @@ export interface paths {
                         /** @enum {string} */
                         status: "baru" | "dihubungi" | "tertarik" | "deal" | "tolak";
                         note?: string | null;
-                        /** @description YYYY-MM-DD */
+                        /** @description YYYY-MM-DD; kosong = hapus pengingat */
                         remind?: string | null;
+                        /** @description uuid anggota org penanggung jawab; kosong = lepas */
+                        assignee?: string | null;
+                        /** @description snapshot fitur bisnis saat lead dibuat; disimpan sekali */
+                        features?: {
+                            [key: string]: unknown;
+                        };
                     };
                 };
             };
@@ -1281,7 +1787,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Ambil telepon/website/IG satu bisnis dari Google Maps (sinkron, maks 90 detik, kuota market_detail 1) */
+        /**
+         * Ambil telepon/website/IG satu bisnis dari Google Maps (analyst; kuota market_detail 1)
+         * @description Handler menunggu paling lama 25 detik. Kalau job belum selesai, 202 dengan id job; pantau lewat /log/stream?job=<id>.
+         */
         post: {
             parameters: {
                 query?: never;
@@ -1307,23 +1816,69 @@ export interface paths {
                         "application/json": components["schemas"]["Place"];
                     };
                 };
-                400: components["responses"]["Error"];
-                /** @description kuota habis */
-                402: {
+                /** @description masih diproses */
+                202: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                            job: number;
+                            pending: boolean;
+                            /** @enum {string} */
+                            status: "queued" | "running";
+                        };
+                    };
+                };
+                /** @description validation, not_found (laporan bukan milik org), atau job_failed */
+                400: {
                     headers: {
                         [name: string]: unknown;
                     };
                     content?: never;
                 };
-                /** @description ada riset berjalan */
-                409: {
+                402: components["responses"]["Quota"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/market/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pasangan industri+wilayah yang hasilnya tersedia instan (dipindai minimal SUGGEST_MIN_ORGS org, atau dikurasi SUGGEST_CURATED); maksimal 12 */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description ok */
+                200: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": {
+                            items: components["schemas"]["Suggest"][];
+                        };
+                    };
                 };
             };
         };
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1405,6 +1960,130 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/watch/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 50 alert pantauan terbaru org, yang belum dibaca di depan */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description ok */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            alerts: components["schemas"]["Alert"][];
+                            unread: number;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/watch/alerts/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tandai alert terbaca (satu id, atau semua) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        id?: number;
+                        all?: boolean;
+                    };
+                };
+            };
+            responses: {
+                /** @description ok */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Ok"];
+                    };
+                };
+                400: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/org/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Seluruh data org sebagai satu berkas JSON (admin; hak portabilitas data) */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description unduhan JSON: org, members, settings (rahasia disamarkan), watches, leads, usage, invoices, reports lengkap */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description bukan admin/owner */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/log": {
         parameters: {
             query?: never;
@@ -1412,10 +2091,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Status dan log job riset terakhir org (dipakai progress bar) */
+        /** Status dan log satu job (dipakai progress bar); tanpa `job` dipakai job riset terbaru org */
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description id job yang diikuti (poll fallback saat ada antrean) */
+                    job?: number;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -1441,6 +2123,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/log/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stream log job lewat Server-Sent Events (maksimal 3 stream sekaligus per org, hingga 30 menit)
+         * @description Tanpa `job` dipakai job riset terbaru org. Tiap detik hanya baris baru yang dikirim.
+         *     Event `log`: `{"job": 12, "status": "running", "append": "baris baru...", "error": null}` setiap ada tambahan atau perubahan status.
+         *     Event `done`: `{"job": 12, "status": "done|failed|cancelled"}` lalu koneksi ditutup; `{"status": "none"}` kalau job tidak ada atau bukan milik org.
+         *
+         */
+        get: {
+            parameters: {
+                query?: {
+                    job?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description text/event-stream */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "text/event-stream": string;
+                    };
+                };
+                /** @description terlalu banyak stream (too_many_streams) */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/stop": {
         parameters: {
             query?: never;
@@ -1450,7 +2183,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Batalkan job yang antre atau berjalan */
+        /** Batalkan job riset yang antre atau berjalan (analyst); kuota dikembalikan scheduler */
         post: {
             parameters: {
                 query?: never;
@@ -1499,7 +2232,9 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["Job"][];
+                    };
                 };
             };
         };
@@ -1547,6 +2282,7 @@ export interface paths {
                             followers?: number;
                             following?: number;
                             posts_count?: number;
+                            is_verified?: boolean;
                             engagement_rate?: number | null;
                             posts_per_week?: number | null;
                             avg_likes?: number;
@@ -1578,7 +2314,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Antrekan analisis akun Instagram (maks 5, tiap akun memakai kuota market_detail) */
+        /** Antrekan analisis akun Instagram (analyst; maksimal 5, tiap akun memakai kuota market_detail) */
         post: {
             parameters: {
                 query?: never;
@@ -1604,14 +2340,134 @@ export interface paths {
                     };
                     content: {
                         "application/json": {
-                            ok?: boolean;
-                            jobs?: number[];
+                            ok: boolean;
+                            jobs: number[];
                         };
                     };
                 };
                 400: components["responses"]["Error"];
-                /** @description kuota habis */
-                402: {
+                402: components["responses"]["Quota"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chat/sid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Buat sesi asisten baru (analyst; tamu boleh) */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description ok */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                            /** Format: uuid */
+                            sid: string;
+                        };
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Kirim pesan ke asisten (analyst; tamu boleh; kuota chat 1 per pesan)
+         * @description Pesan user disimpan dan job kind `chat` diantrekan ke worker dalam satu transaksi. Balasan `{job, sid}`; pantau lewat /chat/poll.
+         *     `sid` kosong atau milik org lain: sesi baru dibuat dan `sid` di balasan berbeda dari yang dikirim (klien wajib memakai sid balasan).
+         *     `sid` berbentuk UUID yang belum ada dipakai apa adanya. Judul sesi = 60 karakter pertama pesan pertama.
+         *     Satu job chat aktif per sesi: 409 `chat_busy` selama jawaban sebelumnya belum selesai. CHAT_ENABLED=0: 503 `chat_disabled`.
+         *     `context` opsional diteruskan ke worker setelah dibersihkan (bentuk bukan objek diabaikan).
+         *
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody: {
+                content: {
+                    "application/json": {
+                        /**
+                         * Format: uuid
+                         * @description sesi tujuan; kosong = sesi baru
+                         */
+                        sid?: string;
+                        /** @description dipangkas spasi; kosong 400 */
+                        message: string;
+                        context?: components["schemas"]["ChatContext"];
+                    };
+                };
+            };
+            responses: {
+                /** @description job dibuat */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                            job: number;
+                            /** Format: uuid */
+                            sid: string;
+                        };
+                    };
+                };
+                400: components["responses"]["Error"];
+                402: components["responses"]["Quota"];
+                403: components["responses"]["Forbidden"];
+                /** @description agent masih menjawab pesan sebelumnya di sesi ini (chat_busy) */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description rate limit per org */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description asisten dimatikan (chat_disabled) */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1625,6 +2481,284 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/chat/poll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Status jawaban asisten (polling tiap 1 sampai 2 detik)
+         * @description Job yang tidak ada atau bukan milik org dibalas 200 `{done:true, error:"job tidak ada", steps:[], answer:""}`, bukan 404.
+         */
+        get: {
+            parameters: {
+                query: {
+                    job: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description ok */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ChatPoll"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chat/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hentikan jawaban (analyst). Job yang masih antre langsung dibatalkan dan kuotanya dikembalikan; yang berjalan diminta berhenti ke worker. */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** @description id job */
+                        job: number | string;
+                    };
+                };
+            };
+            responses: {
+                /** @description ok false kalau job sudah selesai atau bukan milik org */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            ok: boolean;
+                            /** @enum {string} */
+                            status?: "running" | "cancelled";
+                        };
+                    };
+                };
+                400: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chat/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 30 sesi org terbaru yang sudah berisi pesan, urut pesan terakhir */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description ok */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            sessions: components["schemas"]["ChatSession"][];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chat/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pesan satu sesi milik org urut id (maksimal 200) plus id job chat yang masih berjalan */
+        get: {
+            parameters: {
+                query: {
+                    sid: string;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description ok */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** Format: uuid */
+                            sid: string;
+                            title: string;
+                            messages: components["schemas"]["ChatMessage"][];
+                            active_job: number | null;
+                        };
+                    };
+                };
+                /** @description sid bukan UUID */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description sesi tidak ada atau bukan milik org */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chat/sessions/delete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hapus sesi milik org beserta pesannya (analyst); job chat sesi itu diminta berhenti */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        /** Format: uuid */
+                        sid: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description ok false kalau sesi tidak ada atau bukan milik org */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Ok"];
+                    };
+                };
+                400: components["responses"]["Error"];
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/chat/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 3 sampai 5 pertanyaan pembuka sesuai konteks (analyst; tamu boleh)
+         * @description Dengan report_id milik org, pertanyaan tentang laporan itu (industri/wilayah diisi dari laporan); report_id org lain diabaikan. page=prospects tentang follow up jatuh tempo, page=watch tentang perubahan pantauan, selain itu contoh umum plus satu tentang laporan terbaru org bila ada.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description halaman asal: market, prospects, watch, ... */
+                    page?: string;
+                    report_id?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description ok */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            suggestions: string[];
+                            page: string;
+                            report_id?: number;
+                            industry?: string;
+                            area?: string;
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/billing/plans": {
         parameters: {
             query?: never;
@@ -1632,7 +2766,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Daftar paket dan penyedia pembayaran aktif */
+        /** Daftar paket (termasuk kuota chats) dan penyedia pembayaran aktif */
         get: {
             parameters: {
                 query?: never;
@@ -1674,7 +2808,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Buat tagihan upgrade (owner). Xendit mengembalikan url; manual mengembalikan instruksi. */
+        /** Buat tagihan upgrade (owner, email terverifikasi, bukan tamu). Xendit mengembalikan url; manual mengembalikan instruksi. */
         post: {
             parameters: {
                 query?: never;
@@ -1709,6 +2843,13 @@ export interface paths {
                 400: components["responses"]["Error"];
                 /** @description bukan owner */
                 403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description gateway pembayaran gagal */
+                502: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1772,7 +2913,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Callback Xendit (header x-callback-token wajib) */
+        /** Callback Xendit (header x-callback-token wajib); aktivasi idempoten */
         post: {
             parameters: {
                 query?: never;
@@ -1780,10 +2921,26 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
-            requestBody?: never;
+            requestBody?: {
+                content: {
+                    "application/json": {
+                        external_id?: string;
+                        /** @enum {string} */
+                        status?: "PAID" | "SETTLED" | "EXPIRED";
+                        paid_amount?: number;
+                    };
+                };
+            };
             responses: {
                 /** @description ok */
                 200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description body bukan JSON */
+                400: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1809,7 +2966,10 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         Error: {
+            /** @description kalimat untuk pengguna */
             error: string;
+            /** @description snake_case, mis. validation, quota_exceeded, queue_full, chat_busy */
+            code?: string;
         };
         Ok: {
             ok: boolean;
@@ -1825,16 +2985,29 @@ export interface components {
             areas: number;
             /** @description anggota tim */
             members: number;
+            /** @description pesan ke asisten per bulan */
+            chats: number;
+            /** @description riset yang boleh antre/berjalan sekaligus */
+            queue: number;
         };
         Me: {
+            /** @description lewat API key: apikey:<label> */
             email: string;
             /** Format: uuid */
             org_id: string;
             /** @enum {string} */
-            role: "owner" | "member";
+            role: "owner" | "admin" | "analyst" | "viewer";
             /** @enum {string} */
-            plan: "free" | "pro" | "team";
+            plan: "free" | "pro" | "team" | "guest";
+            /** @description email terverifikasi (tamu dianggap terverifikasi) */
             verified: boolean;
+            /** @description org tamu (plan guest) */
+            guest: boolean;
+            /**
+             * Format: date-time
+             * @description masa paket berbayar berakhir; null untuk free/guest
+             */
+            plan_until?: string | null;
             limits: components["schemas"]["Limits"];
             orgs: {
                 ID: string;
@@ -1846,14 +3019,48 @@ export interface components {
             name: string;
             plan: string;
             members: {
+                /** Format: uuid */
+                user_id: string;
                 email: string;
                 role: string;
             }[];
-            /** @description pemakaian bulan ini per jenis (market_run, market_detail) */
+            /** @description pemakaian bulan ini per jenis (market_run, market_detail, chat) */
             usage: {
                 [key: string]: number;
             };
             limits: components["schemas"]["Limits"];
+        };
+        APIKey: {
+            id: number;
+            label: string;
+            /** @description 11 karakter awal */
+            prefix: string;
+            /** @enum {string} */
+            role: "viewer" | "analyst" | "admin";
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            last_used_at?: string | null;
+            /** Format: date-time */
+            revoked_at?: string | null;
+        };
+        Settings: {
+            /** @description jasa yang ditawarkan */
+            offer: string;
+            /** @description kunci: industri|wilayah (huruf kecil) */
+            goals: {
+                [key: string]: "client" | "rival";
+            };
+            /** @description penerima alert dan pengingat; kosong = semua owner/admin */
+            notify_email: string;
+            /** @description id chat Telegram (angka */
+            telegram_chat: string;
+            /** @description wajib https dan bukan alamat internal */
+            webhook_url: string;
+            /** @description 4 karakter terakhir secret, kosong kalau belum ada */
+            webhook_secret_masked: string;
+            /** @description server punya TELEGRAM_BOT_TOKEN */
+            telegram_bot: boolean;
         };
         Lead: {
             /** @enum {string} */
@@ -1889,12 +3096,26 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        ReportSummary: {
+            businesses: number;
+            capped?: boolean;
+            avg_rating?: number | null;
+            median_reviews?: number;
+            total_reviews?: number;
+            top3_share: number;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Baris ringkas daftar laporan (tanpa JSON penuh). */
         ReportRow: {
             id: number;
             industry: string;
             area: string;
             /** Format: date-time */
             created: string;
+            summary: components["schemas"]["ReportSummary"];
+            /** @description salinan hasil instan dari cache lintas org (bukan pindai sendiri) */
+            cached: boolean;
         };
         Report: {
             id: number;
@@ -1902,16 +3123,7 @@ export interface components {
             area: string;
             /** Format: date-time */
             created: string;
-            summary: {
-                businesses: number;
-                capped?: boolean;
-                avg_rating?: number | null;
-                median_reviews?: number;
-                total_reviews?: number;
-                top3_share: number;
-            } & {
-                [key: string]: unknown;
-            };
+            summary: components["schemas"]["ReportSummary"];
             digital: {
                 sampled: number;
                 website: number;
@@ -1937,12 +3149,30 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** @description Riset diantrekan (job terisi) atau hasil instan dari cache (cached true, job null, report_id terisi). */
+        RunResult: {
+            ok: boolean;
+            /** @description id job; null kalau hasil instan */
+            job?: number | null;
+            cached?: boolean;
+            /** @description id laporan salinan (hanya hasil instan) */
+            report_id?: number;
+            /** @description umur laporan sumber dalam jam (hanya hasil instan) */
+            age_hours?: number;
+        };
         Watch: {
             industry: string;
             area: string;
             every_days: number;
             /** Format: date-time */
             last_run: string | null;
+        };
+        Changes: {
+            new?: components["schemas"]["Place"][];
+            gone?: components["schemas"]["Place"][];
+            rating_up?: components["schemas"]["Place"][];
+            rating_down?: components["schemas"]["Place"][];
+            reviews_jump?: components["schemas"]["Place"][];
         };
         WatchItem: {
             industry: string;
@@ -1955,13 +3185,31 @@ export interface components {
             businesses: number;
             runs: number;
             watch: components["schemas"]["Watch"] | null;
-            changes: {
-                new?: components["schemas"]["Place"][];
-                gone?: components["schemas"]["Place"][];
-                rating_up?: components["schemas"]["Place"][];
-                rating_down?: components["schemas"]["Place"][];
-                reviews_jump?: components["schemas"]["Place"][];
-            } | null;
+            changes: components["schemas"]["Changes"] | null;
+        };
+        Alert: {
+            id: number;
+            report_id: number;
+            prev_report_id?: number | null;
+            industry: string;
+            area: string;
+            /** @description makin besar makin penting */
+            severity: number;
+            summary: string;
+            changes: components["schemas"]["Changes"];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            notified_at?: string | null;
+            /** Format: date-time */
+            read_at?: string | null;
+        };
+        Suggest: {
+            industry: string;
+            area: string;
+            /** Format: date-time */
+            created_at: string;
+            businesses: number;
         };
         JobLog: {
             running: boolean;
@@ -1970,8 +3218,32 @@ export interface components {
             started: number | null;
             stopped: boolean;
             job?: number;
+            /**
+             * @description none = job tidak ada / bukan milik org
+             * @enum {string}
+             */
+            status?: "queued" | "running" | "done" | "failed" | "cancelled" | "none";
+        };
+        Job: {
+            id: number;
             /** @enum {string} */
-            status?: "queued" | "running" | "done" | "failed" | "cancelled";
+            kind: "market_run" | "market_compare" | "market_detail" | "ig_profile" | "chat";
+            /** @enum {string} */
+            status: "queued" | "running" | "done" | "failed" | "cancelled";
+            params: {
+                [key: string]: unknown;
+            };
+            log: string;
+            result?: {
+                [key: string]: unknown;
+            };
+            error: string | null;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            started_at: string | null;
+            /** Format: date-time */
+            finished_at: string | null;
         };
         Compare: {
             industry: string;
@@ -1994,6 +3266,8 @@ export interface components {
             watches: number;
             areas: number;
             members: number;
+            chats: number;
+            queue: number;
         };
         Invoice: {
             id: number;
@@ -2007,18 +3281,84 @@ export interface components {
             /** Format: date-time */
             created: string;
         };
-        Settings: {
-            /** @description jasa yang ditawarkan */
-            offer: string;
-            /** @description kunci: industri|wilayah (huruf kecil) */
-            goals: {
-                [key: string]: "client" | "rival";
-            };
+        /** @description Konteks halaman yang ikut ke worker (opsional). String dipotong 120 karakter; report_id hanya dipakai kalau laporan milik org. */
+        ChatContext: {
+            industry?: string;
+            area?: string;
+            report_id?: number;
+            /** @description key bisnis (place_id) yang sedang dibuka */
+            business_key?: string;
+            /** @description halaman asal, mis. market, prospects, watch */
+            page?: string;
+        };
+        ChatSession: {
+            /** Format: uuid */
+            id: string;
+            /** @description 60 karakter pertama pesan pertama */
+            title: string;
+            /** Format: date-time */
+            last_message_at: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        ChatMessage: {
+            id: number;
+            /** @enum {string} */
+            role: "user" | "assistant";
+            content: string;
+            /** Format: date-time */
+            created_at: string;
+            /** @description job chat yang membawa pesan ini */
+            job_id: number | null;
+        };
+        ChatPoll: {
+            job?: number;
+            /** @enum {string} */
+            status?: "queued" | "running" | "done" | "failed" | "cancelled";
+            /** @description status bukan queued/running */
+            done: boolean;
+            /** @description langkah worker urut waktu; baris berawalan "🔧 " adalah pemanggilan tool, mis. "🔧 list_competitors({})" */
+            steps: string[];
+            /** @description jawaban markdown (hanya saat done) */
+            answer: string;
+            /** @description kosong kalau sukses; "Dihentikan." bila dibatalkan; "job tidak ada" bila job tidak ditemukan */
+            error: string;
+            /** @description model LLM yang dipakai (bila ada) */
+            model?: string;
+            /** @description laporan riset yang dibuat selama menjawab */
+            report_ids?: number[];
         };
     };
     responses: {
         /** @description Gagal */
         Error: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Belum login atau sesi habis */
+        Unauthorized: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Peran tidak cukup, email belum diverifikasi, atau lintas situs */
+        Forbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+        /** @description Kuota paket habis (code quota_exceeded) */
+        Quota: {
             headers: {
                 [name: string]: unknown;
             };

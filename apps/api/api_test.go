@@ -1,7 +1,7 @@
 package main
 
 // Tes integrasi: API sungguhan + Postgres sungguhan (database raqio_test, dibuat ulang tiap run).
-// Lewat kalau Postgres tidak bisa dihubungi. Atur dengan TEST_DATABASE_URL (default: port 5433 lokal).
+// Lewat kalau Postgres tidak bisa dihubungi. Atur dengan TEST_DATABASE_URL (default: port 5433 lokal) dan TEST_DB_NAME.
 //   go test ./... -run Integration -v
 
 import (
@@ -12,13 +12,13 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
-	"net/http/httputil"
 	"net/url"
 	"os"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -42,14 +42,19 @@ func setupIntegration(t *testing.T) *testEnv {
 	if err := admin.Ping(ctx); err != nil {
 		t.Skip("postgres tidak tersedia:", err)
 	}
-	admin.Exec(ctx, `DROP DATABASE IF EXISTS raqio_test WITH (FORCE)`)
-	if _, err := admin.Exec(ctx, `CREATE DATABASE raqio_test`); err != nil {
+	// TEST_DB_NAME: nama database tes, supaya dua run paralel (mis. CI dan lokal) tidak saling menjatuhkan
+	dbName := os.Getenv("TEST_DB_NAME")
+	if dbName == "" {
+		dbName = "raqio_test"
+	}
+	admin.Exec(ctx, `DROP DATABASE IF EXISTS `+pgx.Identifier{dbName}.Sanitize()+` WITH (FORCE)`)
+	if _, err := admin.Exec(ctx, `CREATE DATABASE `+pgx.Identifier{dbName}.Sanitize()); err != nil {
 		t.Fatal(err)
 	}
 	admin.Close()
 
 	u, _ := url.Parse(base)
-	u.Path = "/raqio_test"
+	u.Path = "/" + dbName
 	pool, err := pgxpool.New(ctx, u.String())
 	if err != nil {
 		t.Fatal(err)
@@ -57,9 +62,8 @@ func setupIntegration(t *testing.T) *testEnv {
 	if err := migrate(ctx, pool); err != nil {
 		t.Fatal(err)
 	}
-	legacy, _ := url.Parse("http://127.0.0.1:1") // tidak ada; legacy tidak diuji di sini
-	app := &App{db: pool, secret: []byte("secret-tes-yang-cukup-panjang"), mail: &Mailer{}, retention: 24 * time.Hour}
-	app.legacy = httputil.NewSingleHostReverseProxy(legacy)
+	// ops alerter tanpa env OPS_*: alarm hanya dicatat di log (diuji terpisah di ops_alert_test)
+	app := &App{db: pool, secret: []byte("secret-tes-yang-cukup-panjang"), mail: &Mailer{}, retention: 24 * time.Hour, ops: newOpsAlerter()}
 	t.Setenv("JOB_RATE_LIMIT_BURST", "100") // rate limit per org diuji terpisah di ops_test; di sini fokus kuota
 	srv := httptest.NewServer(app.router())
 	t.Cleanup(func() { srv.Close(); pool.Close() })
@@ -140,8 +144,14 @@ func TestIntegrationAuth(t *testing.T) {
 		t.Fatalf("me salah: %v", j)
 	}
 
+	// email ganda: 200 {existing:true} supaya status tidak membocorkan email terdaftar; sesi lama tidak berubah
 	code, j = a.post("/auth/register", map[string]string{"email": "a@x.id", "password": "rahasia123"})
-	a.must(409, code, j)
+	a.must(200, code, j)
+	if j["existing"] != true {
+		t.Fatalf("register ganda harus existing:true: %v", j)
+	}
+	code, j = a.post("/auth/register", map[string]string{"email": "p@x.id", "password": strings.Repeat("x", 73)})
+	a.must(400, code, j) // > 72 byte ditolak, bukan dipotong diam-diam oleh bcrypt
 	code, j = a.post("/auth/register", map[string]string{"email": "b@x.id", "password": "pendek"})
 	a.must(400, code, j)
 	code, j = a.post("/auth/register", map[string]string{"email": "bukan-email", "password": "rahasia123"})
@@ -272,10 +282,16 @@ func TestIntegrationQuotaAndJobs(t *testing.T) {
 
 	code, j := a.post("/market/run", map[string]string{"industry": "", "area": "x"})
 	a.must(400, code, j)
-	code, j = a.post("/market/run", map[string]string{"industry": "kopi", "area": "kemang"})
-	a.must(200, code, j)
-	code, j = a.post("/market/run", map[string]string{"industry": "kopi", "area": "tebet"})
-	a.must(409, code, j) // masih ada job antre
+	// free boleh mengantrekan sampai 3 pencarian sekaligus (planLimits.Queue); yang ke-4 ditolak queue_full
+	for _, area := range []string{"kemang", "tebet", "senopati"} {
+		code, j = a.post("/market/run", map[string]string{"industry": "kopi", "area": area})
+		a.must(200, code, j)
+	}
+	code, j = a.post("/market/run", map[string]string{"industry": "kopi", "area": "cikini"})
+	a.must(409, code, j)
+	if j["code"] != "queue_full" {
+		t.Fatalf("409 tanpa code queue_full: %v", j)
+	}
 	code, j = a.get("/log")
 	a.must(200, code, j)
 	if j["running"] != true || !strings.Contains(j["log"].(string), "Menunggu") {
@@ -288,12 +304,9 @@ func TestIntegrationQuotaAndJobs(t *testing.T) {
 		t.Fatalf("stop: %v", j)
 	}
 
-	// free: 5 riset per bulan, 1 sudah terpakai; perbandingan 3 wilayah = 3
-	code, j = a.post("/market/compare/run", map[string]any{"industry": "kopi", "areas": []string{"a", "b", "c"}})
+	// free: 5 riset per bulan, 3 sudah terpakai; perbandingan 2 wilayah = 2
+	code, j = a.post("/market/compare/run", map[string]any{"industry": "kopi", "areas": []string{"a", "b"}})
 	a.must(200, code, j)
-	a.post("/stop", nil)
-	code, j = a.post("/market/run", map[string]string{"industry": "kopi", "area": "d"})
-	a.must(200, code, j) // ke-5
 	a.post("/stop", nil)
 	code, j = a.post("/market/run", map[string]string{"industry": "kopi", "area": "e"})
 	a.must(402, code, j) // kuota habis
@@ -350,8 +363,10 @@ func (e *testEnv) token(kind, email string) string {
 	// tes tidak bisa membaca email; ambil token mentah dengan menerbitkan ulang lewat fungsi yang sama
 	var uid *string
 	var oid *string
-	e.app.db.QueryRow(context.Background(), `SELECT user_id, org_id FROM tokens WHERE kind=$1 AND email=$2 ORDER BY created_at DESC LIMIT 1`, kind, email).Scan(&uid, &oid)
+	role := "analyst"
+	e.app.db.QueryRow(context.Background(), `SELECT user_id, org_id, role FROM tokens WHERE kind=$1 AND email=$2 ORDER BY created_at DESC LIMIT 1`, kind, email).Scan(&uid, &oid, &role)
 	raw, _ := e.app.issueToken(context.Background(), kind, email, uid, oid, time.Hour)
+	e.app.db.Exec(context.Background(), `UPDATE tokens SET role=$1 WHERE hash=$2`, role, hashToken(raw))
 	return raw
 }
 
@@ -418,7 +433,7 @@ func TestIntegrationVerifyResetInvite(t *testing.T) {
 	w.must(200, code, j)
 	_, j = w.get("/auth/me")
 	orgs := j["orgs"].([]any)
-	if len(orgs) != 1 || orgs[0].(map[string]any)["Name"] != "V" || j["role"] != "member" || j["verified"] != true {
+	if len(orgs) != 1 || orgs[0].(map[string]any)["Name"] != "V" || j["role"] != "analyst" || j["verified"] != true {
 		t.Fatalf("w: %v", j)
 	}
 	// member tidak boleh mengundang atau checkout; owner bisa mengeluarkan
@@ -438,6 +453,7 @@ func TestIntegrationBilling(t *testing.T) {
 	e := setupIntegration(t)
 	a := e.client()
 	a.register("bill@x.id", "Bill")
+	e.app.db.Exec(context.Background(), `UPDATE users SET email_verified_at=now() WHERE email='bill@x.id'`) // checkout wajib email terverifikasi
 
 	code, j := a.get("/billing/plans")
 	a.must(200, code, j)
@@ -457,6 +473,7 @@ func TestIntegrationBilling(t *testing.T) {
 	// webhook: token wajib
 	t.Setenv("XENDIT_CALLBACK_TOKEN", "cb-tes")
 	req, _ := http.NewRequest("POST", e.srv.URL+"/billing/webhook/xendit", strings.NewReader(`{"external_id":"ext-1","status":"PAID","paid_amount":149000}`))
+	req.Header.Set("Content-Type", "application/json")
 	resp, _ := http.DefaultClient.Do(req)
 	if resp.StatusCode != 401 {
 		t.Fatalf("webhook tanpa token: %d", resp.StatusCode)
@@ -466,6 +483,7 @@ func TestIntegrationBilling(t *testing.T) {
 	e.app.db.QueryRow(context.Background(), `SELECT id FROM orgs WHERE name='Bill'`).Scan(&orgID)
 	e.app.db.Exec(context.Background(), `INSERT INTO invoices (org_id, provider, external_id, plan, amount) VALUES ($1,'xendit','ext-1','pro',149000)`, orgID)
 	req, _ = http.NewRequest("POST", e.srv.URL+"/billing/webhook/xendit", strings.NewReader(`{"external_id":"ext-1","status":"PAID","paid_amount":100}`))
+	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-callback-token", "cb-tes")
 	http.DefaultClient.Do(req) // bayar kurang: tidak aktif
 	var plan string
@@ -474,6 +492,7 @@ func TestIntegrationBilling(t *testing.T) {
 		t.Fatal("bayar kurang tidak boleh mengaktifkan paket")
 	}
 	req, _ = http.NewRequest("POST", e.srv.URL+"/billing/webhook/xendit", strings.NewReader(`{"external_id":"ext-1","status":"PAID","paid_amount":149000}`))
+	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-callback-token", "cb-tes")
 	resp, _ = http.DefaultClient.Do(req)
 	if resp.StatusCode != 200 {
@@ -483,6 +502,16 @@ func TestIntegrationBilling(t *testing.T) {
 	e.app.db.QueryRow(context.Background(), `SELECT plan, plan_until FROM orgs WHERE id=$1`, orgID).Scan(&plan, &until)
 	if plan != "pro" || until == nil || until.Before(time.Now().Add(29*24*time.Hour)) {
 		t.Fatalf("paket tidak aktif: %s %v", plan, until)
+	}
+	// callback ganda: idempoten, masa paket tidak bertambah
+	req, _ = http.NewRequest("POST", e.srv.URL+"/billing/webhook/xendit", strings.NewReader(`{"external_id":"ext-1","status":"PAID","paid_amount":149000}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-callback-token", "cb-tes")
+	http.DefaultClient.Do(req)
+	var until2 *time.Time
+	e.app.db.QueryRow(context.Background(), `SELECT plan_until FROM orgs WHERE id=$1`, orgID).Scan(&until2)
+	if until2 == nil || !until2.Equal(*until) {
+		t.Fatalf("callback ganda memperpanjang paket: %v -> %v", until, until2)
 	}
 	// masa habis -> turun ke free
 	e.app.db.Exec(context.Background(), `UPDATE orgs SET plan_until = now() - interval '1 day' WHERE id=$1`, orgID)

@@ -5,9 +5,16 @@ on:
     branches: [main]
   pull_request:
 
+# Izin minimal untuk seluruh workflow; job docker-build menaikkan packages: write sendiri.
+permissions:
+  contents: read
+
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  GO_VULN_VERSION: latest
 
 jobs:
   changes:
@@ -17,6 +24,7 @@ jobs:
       api: ${{ steps.filter.outputs.api }}
       web: ${{ steps.filter.outputs.web }}
       mobile: ${{ steps.filter.outputs.mobile }}
+      e2e: ${{ steps.filter.outputs.e2e }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -35,6 +43,11 @@ jobs:
             mobile:
               - 'apps/mobile/**'
               - '.github/workflows/ci.yml'
+            e2e:
+              - 'e2e/**'
+              - 'apps/api/**'
+              - 'apps/web/**'
+              - '.github/workflows/ci.yml'
 
   scraper:
     needs: changes
@@ -49,24 +62,28 @@ jobs:
         with:
           python-version: "3.12"
           cache: pip
-          cache-dependency-path: services/scraper/requirements*.txt
-      - run: pip install -r requirements.txt -r requirements-dev.txt
+          cache-dependency-path: |
+            services/scraper/requirements*.txt
+            services/scraper/requirements.lock
+      # requirements.lock (hasil pip-compile / pip freeze) dipakai kalau ada supaya build reproducible
+      - name: Install dependencies
+        run: |
+          if [ -f requirements.lock ]; then
+            pip install -r requirements.lock
+          else
+            pip install -r requirements.txt
+          fi
+          pip install -r requirements-dev.txt pip-audit
       - run: ruff check .
       - run: pytest tests -q
+      # Gagal bila ada CVE di dependency yang terpasang. Abaikan ID tertentu dengan --ignore-vuln <ID> (sertakan alasan).
+      - name: pip-audit
+        run: pip-audit --strict --progress-spinner off
 
   api:
     needs: changes
     if: needs.changes.outputs.api == 'true'
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env: { POSTGRES_USER: raqio, POSTGRES_PASSWORD: raqio, POSTGRES_DB: raqio }
-        ports: ["5433:5432"]
-        options: >-
-          --health-cmd "pg_isready -U raqio -d raqio" --health-interval 5s --health-timeout 3s --health-retries 10
-    env:
-      TEST_DATABASE_URL: postgres://raqio:raqio@127.0.0.1:5433/raqio?sslmode=disable
     defaults:
       run:
         working-directory: apps/api
@@ -75,10 +92,41 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
       - run: test -z "$(gofmt -l .)"
       - run: go vet ./...
+      # tes unit; tes integrasi otomatis dilewati karena TEST_DATABASE_URL tidak diset (lihat job api-integration)
       - run: go test ./...
       - run: go build -o bin/api .
+      - name: govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@${GO_VULN_VERSION}
+          govulncheck ./...
+
+  api-integration:
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: raqio, POSTGRES_PASSWORD: raqio, POSTGRES_DB: raqio }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U raqio -d raqio" --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://raqio:raqio@localhost:5432/raqio?sslmode=disable
+      ALLOW_INSECURE_WEBHOOK: "1"
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
+      - run: go test -count=1 -race ./...
 
   web:
     needs: changes
@@ -96,11 +144,183 @@ jobs:
           cache-dependency-path: apps/web/package-lock.json
       - run: npm ci
       - run: npm run gen:api && git diff --exit-code -- lib/api.gen.d.ts
+      - run: npm run lint
       - run: npx tsc --noEmit
       - run: npm test
+      # hanya dependency runtime; devDependencies tidak ikut ke image
+      - run: npm audit --omit=dev --audit-level=high
       - run: npm run build
         env:
           AUTH_SECRET: ci-only-not-secret
+
+  # Ujung ke ujung: API Go + web Next (standalone) + Postgres, tanpa worker (tes toleran terhadap job yang hanya antre).
+  e2e:
+    needs: [changes, api, web]
+    if: always() && needs.changes.outputs.e2e == 'true' && needs.api.result != 'failure' && needs.web.result != 'failure'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_USER: raqio, POSTGRES_PASSWORD: raqio, POSTGRES_DB: raqio }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U raqio -d raqio" --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      AUTH_SECRET: 4f1c9e2a7b3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f
+      DATABASE_URL: postgres://raqio:raqio@localhost:5432/raqio?sslmode=disable
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            apps/web/package-lock.json
+            e2e/package-lock.json
+      - name: Jalankan API
+        working-directory: apps/api
+        env:
+          PORT: "8080"
+          APP_ENV: dev
+          APP_URL: http://127.0.0.1:3000
+          ALLOW_INSECURE_WEBHOOK: "1"
+          DOCS: "1"
+          CHAT_ENABLED: "1"
+        run: |
+          go build -o /tmp/raqio-api .
+          nohup /tmp/raqio-api > /tmp/api.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:8080/readyz && break; sleep 2; done
+          curl -sf http://127.0.0.1:8080/readyz
+      - name: Build dan jalankan web (standalone)
+        working-directory: apps/web
+        env:
+          API_URL: http://127.0.0.1:8080
+          AUTO_GUEST: "0"
+          NEXT_TELEMETRY_DISABLED: "1"
+        run: |
+          npm ci
+          npm run build
+          cp -r public .next/standalone/ && mkdir -p .next/standalone/.next && cp -r .next/static .next/standalone/.next/
+          PORT=3000 HOSTNAME=127.0.0.1 nohup node .next/standalone/server.js > /tmp/web.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:3000/login && break; sleep 2; done
+          curl -sf -o /dev/null http://127.0.0.1:3000/login
+      - name: Akun demo (terverifikasi, paket pro)
+        run: |
+          curl -sf -X POST http://127.0.0.1:8080/auth/register -H 'Content-Type: application/json'             -d '{"email":"demo@raqio.local","password":"demo12345","name":"Demo","org":"Demo Org"}'
+          PGPASSWORD=raqio psql -h localhost -U raqio -d raqio -v ON_ERROR_STOP=1 -c             "UPDATE users SET email_verified_at=now() WHERE email='demo@raqio.local';              UPDATE orgs SET plan='pro' WHERE id=(SELECT m.org_id FROM memberships m JOIN users u ON u.id=m.user_id WHERE u.email='demo@raqio.local' LIMIT 1);"
+      - name: Tes e2e
+        working-directory: e2e
+        env:
+          E2E_BASE_URL: http://127.0.0.1:3000
+          E2E_API_URL: http://127.0.0.1:8080
+          CI: "true"
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test
+      - name: Simpan laporan dan log saat gagal
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            e2e/report
+            e2e/test-results
+            /tmp/api.log
+            /tmp/web.log
+          if-no-files-found: ignore
+
+  # Keamanan: pemindaian rahasia di seluruh riwayat (gitleaks) dan analisis statis CodeQL untuk Go dan JavaScript/TypeScript.
+  secrets-scan:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  codeql:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [go, javascript-typescript]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        if: matrix.language == 'go'
+        with:
+          go-version-file: apps/api/go.mod
+          cache-dependency-path: apps/api/go.sum
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+      - uses: github/codeql-action/autobuild@v3
+        if: matrix.language == 'go'
+        with:
+          working-directory: apps/api
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  # Membangun ketiga image (selalu, untuk memastikan Dockerfile valid). Push ke GHCR hanya di push ke main.
+  docker-build:
+    needs: [changes, scraper, api, api-integration, web]
+    # jalan walau job tes dilewati (tidak ada perubahan), tapi tidak kalau ada yang gagal
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            context: apps/api
+          - name: web
+            context: apps/web
+          - name: worker
+            context: services/scraper
+    env:
+      PUSH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Login ke GHCR
+        if: env.PUSH == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/${{ matrix.name }}
+          tags: |
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+      - uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: ${{ env.PUSH == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,scope=${{ matrix.name }},mode=max
 
   mobile:
     needs: changes

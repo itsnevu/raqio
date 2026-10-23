@@ -5,6 +5,7 @@ import '../app.dart';
 import '../biz.dart';
 import '../models.dart';
 import '../theme.dart';
+import 'campaigns_screen.dart';
 import 'place_sheet.dart';
 import 'report_screen.dart' show PlaceTile;
 
@@ -35,6 +36,15 @@ class _ProspectsScreenState extends State<ProspectsScreen> {
   String _status = 'baru';
   bool _dueOnly = false;
   String _offer = '';
+  String _q = '';
+  String _area = ''; // batasi ke satu riset ("industri · wilayah"); kosong = semua
+  final _offerCtl = TextEditingController();
+
+  @override
+  void dispose() {
+    _offerCtl.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -52,7 +62,10 @@ class _ProspectsScreenState extends State<ProspectsScreen> {
     if (!mounted) return;
     setState(() {
       if (items != null) _items = items;
-      if (st != null) _offer = st.offer;
+      if (st != null) {
+        _offer = st.offer;
+        if (_offerCtl.text.isEmpty) _offerCtl.text = st.offer == defaultOffer ? '' : st.offer;
+      }
     });
   }
 
@@ -70,7 +83,18 @@ class _ProspectsScreenState extends State<ProspectsScreen> {
     final t = Theme.of(context).textTheme;
     final items = _items;
     return Scaffold(
-      appBar: AppBar(title: const Text('Prospek')),
+      appBar: AppBar(
+        title: const Text('Prospek'),
+        actions: [
+          TextButton(
+            onPressed: () async {
+              await Navigator.of(context).push(MaterialPageRoute(builder: (_) => const CampaignsScreen(openWizard: true)));
+              _load();
+            },
+            child: const Text('KAMPANYE', style: TextStyle(color: RaqioColors.good)),
+          ),
+        ],
+      ),
       body: items == null
           ? const Center(child: CircularProgressIndicator(strokeWidth: 2))
           : items.isEmpty
@@ -80,7 +104,16 @@ class _ProspectsScreenState extends State<ProspectsScreen> {
                   child: Builder(builder: (context) {
                     final due = items.where(_isDue).length;
                     int cnt(String s) => items.where((p) => _stOf(p) == s).length;
-                    final rows = items.where((p) => _stOf(p) == _status && (!_dueOnly || _isDue(p))).toList();
+                    final areas = {for (final p in items) '${p.industry} · ${p.area}'}.toList();
+                    final q = _q.toLowerCase();
+                    final rows = items
+                        .where((p) =>
+                            _stOf(p) == _status &&
+                            (!_dueOnly || _isDue(p)) &&
+                            (_area.isEmpty || '${p.industry} · ${p.area}' == _area) &&
+                            (q.isEmpty ||
+                                '${p.name} ${p.area} ${p.industry} ${p.category} ${p.lead?.note ?? ""}'.toLowerCase().contains(q)))
+                        .toList();
                     return ListView(
                       padding: const EdgeInsets.all(16),
                       children: [
@@ -94,6 +127,26 @@ class _ProspectsScreenState extends State<ProspectsScreen> {
                           ]),
                         ),
                         const SizedBox(height: 10),
+                        TextField(
+                          decoration: const InputDecoration(hintText: 'Cari nama, wilayah, catatan', prefixIcon: Icon(Icons.search, size: 18), isDense: true),
+                          onChanged: (v) => setState(() => _q = v),
+                        ),
+                        const SizedBox(height: 8),
+                        if (areas.length > 1)
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(children: [
+                              Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: ChoiceChip(label: const Text('Semua riset'), selected: _area.isEmpty, showCheckmark: false, onSelected: (_) => setState(() => _area = '')),
+                              ),
+                              ...areas.map((a) => Padding(
+                                    padding: const EdgeInsets.only(right: 6),
+                                    child: ChoiceChip(label: Text(a), selected: _area == a, showCheckmark: false, onSelected: (_) => setState(() => _area = a)),
+                                  )),
+                            ]),
+                          ),
+                        if (areas.length > 1) const SizedBox(height: 8),
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           child: Row(
@@ -105,6 +158,21 @@ class _ProspectsScreenState extends State<ProspectsScreen> {
                               FilterChip(label: const Text('Jatuh tempo'), selected: _dueOnly, showCheckmark: false, onSelected: (v) => setState(() => _dueOnly = v)),
                             ],
                           ),
+                        ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: _offerCtl,
+                          decoration: const InputDecoration(
+                            labelText: 'Jasa yang kamu tawarkan (dipakai di draf pesan)',
+                            hintText: 'mis. bikin website dan katalog online',
+                            isDense: true,
+                          ),
+                          onSubmitted: (v) async {
+                            final ok = await guardOk(context, () => _api.saveSettings(offer: v));
+                            if (!ok || !mounted) return;
+                            setState(() => _offer = v);
+                            if (context.mounted) toast(context, 'Tersimpan, dipakai di semua draf pesan');
+                          },
                         ),
                         const SizedBox(height: 10),
                         if (rows.isEmpty)

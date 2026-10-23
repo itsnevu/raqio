@@ -10,7 +10,9 @@ Semua hasil scraping lewat sini dulu:
   snapshot    : simpan riwayat hanya kalau angkanya berubah
 """
 import math
+import os
 import re
+import sqlite3
 import statistics
 from datetime import datetime, timezone
 from urllib.parse import parse_qsl, urlencode, urlparse, urlunparse
@@ -28,6 +30,20 @@ TRACKING = re.compile(r"^(utm_|fbclid|gclid|igshid|ref$|si$|mc_)")
 LINK_PAGES = ("linktr.ee", "heylink.me", "linkin.bio", "bio.link", "lynk.id", "msha.ke",
               "beacons.ai", "s.id", "wa.me", "api.whatsapp.com")
 CLOSED = ("tutup permanen", "permanently closed", "tutup sementara", "temporarily closed")
+
+SQLITE_BUSY_MS = int(os.environ.get("SQLITE_BUSY_TIMEOUT_MS", "5000"))
+
+
+def connect_sqlite(path, **kw):
+    """sqlite3.connect untuk ig.db dengan WAL + busy_timeout, supaya beberapa replika worker tidak saling kunci."""
+    kw.setdefault("timeout", SQLITE_BUSY_MS / 1000)
+    conn = sqlite3.connect(path, **kw)
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+    except sqlite3.OperationalError:
+        pass  # mis. filesystem read-only; tetap jalan dengan journal default
+    conn.execute(f"PRAGMA busy_timeout={SQLITE_BUSY_MS}")
+    return conn
 NAME_NOISE = re.compile(r"\b(cabang|branch|outlet|store|official|indonesia|jakarta|bandung|"
                         r"surabaya|tangerang|bekasi|depok|bogor|kota|kab\.?)\b", re.I)
 
@@ -186,18 +202,39 @@ def filter_area(places, max_km=None):
 # dedupe
 # ------------------------------------------------------------
 
+def _is_maps(p):
+    """Record hasil Google Maps (scraping / Places API). Record tanpa `sources` = laporan lama = Maps."""
+    return "maps" in (p.get("sources") or ["maps"]) or bool(p.get("on_maps"))
+
+
 def _same(a, b):
     if a.get("place_id") and a.get("place_id") == b.get("place_id"):
         return True
     if a.get("phone") and a["phone"] == b.get("phone") and is_mobile(a["phone"]):
         # HP sama + nama mirip = bisnis sama (HP pemilik kadang dipakai beberapa usaha)
         return _name_sim(a, b) >= 70
-    near = _near(a, b, 0.15)
+    # lintas sumber (Maps vs Overture/OSM): koordinat sumber lain kurang presisi, toleransi jarak lebih longgar
+    cross = _is_maps(a) != _is_maps(b)
+    near = _near(a, b, 0.4 if cross else 0.15)
     if near is not None and not near:
         return False
     if a.get("website") and a["website"] == b.get("website") and not is_link_page(a["website"]):
         return near is not False and _name_sim(a, b) >= 60
+    if a.get("instagram") and a["instagram"] == b.get("instagram"):
+        return near is not False and _name_sim(a, b) >= 60
+    if cross:
+        # token_set_ratio longgar untuk nama yang memuat nama lain ("Salon 2" vs "Salon 0 Studio" = 83): wajib juga
+        # sebagian besar kata nama yang lebih pendek ada di nama satunya ("Havena Salon" vs "Havena Salon Studio")
+        return near is True and _name_sim(a, b) >= 82 and _token_overlap(a, b) >= 0.67
     return near is True and _name_sim(a, b) >= 88
+
+
+def _token_overlap(a, b):
+    """Porsi kata nama yang lebih pendek yang juga ada di nama satunya (0..1)."""
+    ta, tb = set((a.get("name_key") or "").split()), set((b.get("name_key") or "").split())
+    if not ta or not tb:
+        return 0.0
+    return len(ta & tb) / min(len(ta), len(tb))
 
 
 def _name_sim(a, b):
@@ -215,16 +252,33 @@ def _near(a, b, km):
     return haversine_km((a["lat"], a["lon"]), (b["lat"], b["lon"])) <= km
 
 
+CONTACT_KEYS = ("phone", "website", "instagram", "emails")
+
+
 def _merge(dst, src):
+    """Gabungkan src ke dst: angka ulasan terbesar, email disatukan, field kosong diisi. Asal tiap kontak yang diisi
+    dari sumber lain dicatat di src_fields, daftar sumber disatukan, on_maps = salah satu dari Maps."""
+    srcs = set(dst.get("sources") or ["maps"]) | set(src.get("sources") or ["maps"])
+    fields = dict(dst.get("src_fields") or {})
     for k, v in src.items():
-        if v in (None, "", [], 0) or k in ("history",):
+        if v in (None, "", [], 0) or k in ("history", "sources", "src_fields", "on_maps", "source", "source_id"):
             continue
         if k == "reviews":
             dst[k] = max(dst.get(k) or 0, v)
         elif k == "emails":
+            if not dst.get(k) and src.get("source"):
+                fields[k] = src["source"]
             dst[k] = sorted(set(dst.get(k) or []) | set(v))[:5]
+        elif k == "confidence":
+            dst[k] = max(dst.get(k) or 0, v)
         elif not dst.get(k):
             dst[k] = v
+            if k in CONTACT_KEYS and src.get("source"):
+                fields[k] = src["source"]
+    dst["sources"] = sorted(srcs)
+    dst["on_maps"] = bool(dst.get("on_maps", "maps" in srcs) or src.get("on_maps"))
+    if fields:
+        dst["src_fields"] = fields
     dst.setdefault("merged_ids", []).append(src.get("place_id"))
 
 

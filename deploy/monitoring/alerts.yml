@@ -1,0 +1,51 @@
+# Aturan alert Prometheus untuk Raqio. Dikirim ke Alertmanager (Telegram) bila profile monitoring aktif.
+groups:
+  - name: raqio
+    rules:
+      - alert: RaqioApiDown
+        expr: up{job="raqio-api"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "API tidak bisa di-scrape"
+          description: "Prometheus gagal mengambil /metrics dari api:8080 selama 2 menit. Cek `docker compose ps` dan log api."
+
+      - alert: RaqioQueueStuck
+        expr: raqio_jobs_oldest_queued_seconds > 900
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "Job antre lebih dari 15 menit"
+          description: "Umur job tertua di antrean {{ $value | humanizeDuration }}. Worker mati atau kurang; naikkan WORKER_REPLICAS atau cek log worker."
+
+      - alert: RaqioHigh5xx
+        expr: rate(raqio_http_requests_total{class="5xx"}[5m]) * 60 > 4
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: "Lonjakan respons 5xx"
+          description: "{{ $value | printf \"%.1f\" }} respons 5xx per menit selama 5 menit. Cek log api (rid) dan Postgres."
+
+      - alert: RaqioJobsFailing
+        expr: sum(raqio_jobs_failed_total) > 5
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Banyak job gagal 24 jam terakhir"
+          description: "{{ $value }} job gagal final dalam 24 jam. Kemungkinan Google Maps memblokir IP atau selector berubah."
+
+      - alert: RaqioWebhookBacklog
+        expr: raqio_webhook_outbox{state="pending"} > 50
+        for: 15m
+        labels: { severity: warning }
+        annotations:
+          summary: "Outbox webhook menumpuk"
+          description: "{{ $value }} webhook pelanggan belum terkirim selama 15 menit. Cek endpoint pelanggan atau koneksi keluar."
+
+      - alert: RaqioRateLimitStorm
+        expr: rate(raqio_rate_limited_total[5m]) * 60 > 100
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "Rate limit sering terpicu"
+          description: "{{ $value | printf \"%.0f\" }} penolakan rate limit per menit. Mungkin ada yang membanjiri; lihat IP di log Caddy."

@@ -7,7 +7,7 @@ export const MARKET_TOUR: TourStep[] = [
   { element: ".goal", popover: { title: "Tujuan riset", description: "Cari calon klien: isi industri bisnis yang mau kamu tawari. Pelajari pesaing: isi industri bisnismu sendiri. Ini mengubah cara laporan dibaca." } },
   { element: "form.search", popover: { title: "Industri dan wilayah", description: "Contoh: \"coffee shop\" dan \"Kemang Jakarta\". Riset memakan 2 sampai 4 menit, kamu boleh pindah halaman sambil menunggu." } },
   { element: ".recent", popover: { title: "Riset sebelumnya", description: "Semua laporan tim kamu ada di sini. Klik untuk membuka lagi tanpa riset ulang." } },
-  { element: ".rh .acts", popover: { title: "Pantau dan ekspor", description: "Pantau mingguan meriset ulang otomatis dan menunjukkan apa yang berubah. Ekspor CSV untuk dibuka di spreadsheet." } },
+  { element: ".rh .acts", popover: { title: "Pantau, ekspor, cetak", description: "Pantau mingguan meriset ulang otomatis dan menunjukkan apa yang berubah. Ekspor CSV untuk spreadsheet, Cetak laporan untuk PDF rapi yang bisa dikirim ke klien." } },
   { element: ".rtabs", popover: { title: "Tiga tab laporan", description: "Ringkasan: kesimpulan bahasa awam. Semua pemain: grafik dan tabel lengkap. Prospek: daftar yang layak dihubungi, satu per satu." } },
   { element: ".verdict", popover: { title: "Kesimpulan", description: "Seberapa padat pasarnya, di mana celah terbesar, dan langkah berikutnya. Angka lengkap ada di bawahnya kalau mau dicek." } },
   { element: ".tools .filters", popover: { title: "Filter cepat", description: "Prospek, bisa WhatsApp, tanpa website, hidden gem, rating rendah tapi ramai. Klik kolom tabel untuk mengurutkan." } },
@@ -33,9 +33,10 @@ export const WATCH_TOUR: TourStep[] = [
 ];
 
 export const CHAT_TOUR: TourStep[] = [
-  { popover: { title: "Asisten", description: "Tanya bebas dalam bahasa Indonesia. Asisten membaca data riset tim kamu dan bisa mencari data baru." } },
-  { element: ".chips", popover: { title: "Contoh pertanyaan", description: "Klik salah satu untuk mencoba." } },
-  { element: ".chatp form", popover: { title: "Kirim", description: "Enter untuk kirim, Shift+Enter untuk baris baru. Tekan Stop kalau jawabannya kelamaan." } },
+  { popover: { title: "Asisten", description: "Tanya bebas dalam bahasa Indonesia. Asisten membaca data riset tim kamu, bisa mencari data baru, dan bisa mengubah status prospek atau pantauan atas permintaanmu." } },
+  { element: ".chips", popover: { title: "Saran pertanyaan", description: "Saran mengikuti halaman yang sedang kamu buka. Klik salah satu untuk mencoba." } },
+  { element: ".chatp form", popover: { title: "Kirim", description: "Enter untuk kirim, Shift+Enter untuk baris baru. Tekan Stop kalau jawabannya kelamaan. Sisa kuota chat bulan ini tertulis di bawahnya." } },
+  { element: ".chatbar", popover: { title: "Riwayat dan chat baru", description: "Percakapan tersimpan per tim. Buka Riwayat untuk melanjutkan yang lama, atau mulai Chat baru. Percakapan yang sama juga ada di tombol Tanya asisten di halaman lain." } },
 ];
 
 export const SETTINGS_TOUR: TourStep[] = [

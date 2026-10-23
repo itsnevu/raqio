@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../app.dart';
 import '../theme.dart';
+import 'chat_screen.dart';
 import 'market_screen.dart';
 import 'prospects_screen.dart';
 import 'settings_screen.dart';
 import 'watch_screen.dart';
 
-/// Navigasi bawah: Riset, Prospek, Pantau, Akun. Sama dengan menu atas di web.
+/// Navigasi bawah: Riset, Prospek, Asisten, Pantau, Akun. Sama dengan menu atas di web
+/// (Kampanye dibuka dari Prospek, Peringkat dari Riset, Pengaturan = Akun).
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
 
@@ -39,7 +41,7 @@ class _HomeShellState extends State<HomeShell> {
                     child: SafeArea(
                       bottom: false,
                       child: InkWell(
-                        onTap: () => setState(() => _tab = 3),
+                        onTap: () => setState(() => _tab = 4),
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(16, 8, 12, 8),
                           child: Row(children: [
@@ -56,7 +58,7 @@ class _HomeShellState extends State<HomeShell> {
           Expanded(
             child: IndexedStack(
               index: _tab,
-              children: const [MarketScreen(), ProspectsScreen(), WatchScreen(), SettingsScreen()],
+              children: const [MarketScreen(), ProspectsScreen(), ChatScreen(), WatchScreen(), SettingsScreen()],
             ),
           ),
         ],
@@ -67,6 +69,7 @@ class _HomeShellState extends State<HomeShell> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.map_outlined), selectedIcon: Icon(Icons.map), label: 'RISET'),
           NavigationDestination(icon: Icon(Icons.view_kanban_outlined), selectedIcon: Icon(Icons.view_kanban), label: 'PROSPEK'),
+          NavigationDestination(icon: Icon(Icons.forum_outlined), selectedIcon: Icon(Icons.forum), label: 'ASISTEN'),
           NavigationDestination(icon: Icon(Icons.radar_outlined), selectedIcon: Icon(Icons.radar), label: 'PANTAU'),
           NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'AKUN'),
         ],

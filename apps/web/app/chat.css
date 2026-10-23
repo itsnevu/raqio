@@ -1,22 +1,51 @@
-/* Halaman Asisten (port dari CHAT_PAGE di app.py) */
-.chatp { display: flex; flex-direction: column; height: calc(100vh - 69px); }
-body.embed .chatp { height: 100vh; }
-.chatp #msgs { flex: 1; overflow-y: auto; padding: 0 16px 24px; }
-.chatp .wrap { max-width: 820px; margin: 0 auto; padding: 0; }
-.chatp #list { padding-top: 24px; }
-.chatp .hero { max-width: 820px; margin: 0 auto; padding: 9vh 0 0; }
+/* Asisten: dipakai halaman / (.chatp.page) dan panel melayang dari Fab (.chatp.drawer). Aturan dasar ada di globals.css. */
+.chatp { display: flex; flex-direction: column; min-height: 0; }
+.chatp.page { height: calc(100vh - 69px); }
+.chatp.drawer { flex: 1; }
+
+/* bar atas: riwayat sesi dan chat baru */
+.chatp .chatbar { display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-bottom: 1px solid var(--line-2); }
+.chatp .chatbar .sp { flex: 1; }
+.chatp .hist { position: relative; }
+.chatp .hist summary { list-style: none; cursor: pointer; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; padding: 8px 0; }
+.chatp .hist summary::-webkit-details-marker { display: none; }
+.chatp .hist summary::after { content: " ▾"; }
+.chatp .hist summary b { font-weight: 400; color: var(--faint); margin-left: 4px; }
+.chatp .hist[open] summary, .chatp .hist summary:hover { color: var(--text); }
+.chatp .hist-menu { position: absolute; left: 0; top: 36px; width: min(360px, calc(100vw - 32px)); max-height: 60vh; overflow-y: auto; background: var(--panel); border: 1px solid var(--line); z-index: 40; }
+.chatp .hist-menu ul { list-style: none; margin: 0; padding: 0; }
+.chatp .hist-menu li { display: flex; align-items: stretch; border-bottom: 1px solid var(--line-2); }
+.chatp .hist-menu li:last-child { border-bottom: 0; }
+.chatp .hist-menu li.on { background: var(--sunk); }
+.chatp .hist-open { flex: 1; min-width: 0; text-align: left; background: none; border: 0; color: var(--text); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; font: inherit; cursor: pointer; }
+.chatp .hist-open:hover { background: var(--sunk); }
+.chatp .hist-t { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chatp .hist-d { font-size: 11px; color: var(--muted); }
+.chatp .hist-x { border: 0; border-left: 1px solid var(--line-2); background: none; color: var(--faint); width: 36px; font-size: 13px; cursor: pointer; }
+.chatp .hist-x:hover { color: var(--bad); }
+.chatp .hist-empty { padding: 14px 12px; color: var(--muted); font-size: 13px; }
+
+/* daftar pesan */
+.chatp .msgs { flex: 1; min-height: 0; overflow-y: auto; padding: 0 16px 24px; }
+.chatp .list { max-width: 820px; margin: 0 auto; padding-top: 24px; }
+.chatp.drawer .list { padding-top: 16px; }
+.chatp .hero { padding: 9vh 0 0; }
+.chatp .hero.compact { padding-top: 8px; }
+.chatp .hero.compact h1 { font-size: 30px; margin-bottom: 10px; }
+.chatp .hero.compact .lead { font-size: 14px; margin-bottom: 12px; }
 .chatp h1 span { color: var(--faint); }
 .chatp .lead { color: var(--muted); line-height: 1.55; margin: 0 0 26px; max-width: 600px; }
-.chatp .feats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 36px; }
-.chatp .feat { background: var(--panel); border: 1px solid var(--line); padding: 16px 18px; text-decoration: none; display: block; }
-.chatp .feat:hover { border-color: var(--faint); }
-.chatp .feat b { display: block; font-weight: 600; margin-bottom: 4px; }
+.chatp .feats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: 36px; border: 1px solid var(--line); }
+.chatp .feat { background: var(--panel); border: 0; border-right: 1px solid var(--line); padding: 22px 22px 18px; text-decoration: none; display: block; box-shadow: none; transition: background .15s; }
+.chatp .feat:last-child { border-right: 0; }
+.chatp .feat:hover { background: var(--sunk); }
+.chatp .feat b { display: block; font-weight: 400; font-size: 20px; letter-spacing: -.02em; line-height: 1.3; margin-bottom: 4px; }
 .chatp .feat span { color: var(--muted); font-size: 13px; line-height: 1.5; }
-.chatp .feat em { font-style: normal; color: var(--accent); font-size: 12px; display: block; margin-top: 10px; }
-@media (max-width: 720px) { .chatp .hero { padding-top: 5vh; } .chatp .feats { grid-template-columns: 1fr; } }
+.chatp .feat em { font-style: normal; color: var(--text); font-size: 12px; display: block; margin-top: 18px; text-transform: uppercase; letter-spacing: .05em; font-weight: 400; line-height: 1.6; }
+@media (max-width: 720px) { .chatp .hero { padding-top: 5vh; } .chatp .feats { grid-template-columns: 1fr; } .chatp .feat { border-right: 0; border-bottom: 1px solid var(--line); } .chatp .feat:last-child { border-bottom: 0; } }
 .chatp .msg { margin-bottom: 20px; line-height: 1.6; font-size: 15px; }
-.chatp .msg.me { background: var(--ink); color: var(--ink-text); padding: 10px 14px; margin-left: auto; width: fit-content; max-width: 85%; white-space: pre-wrap; }
-.chatp .msg.bot { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); padding: 14px 18px; }
+.chatp .msg.me { background: var(--text); color: var(--bg); padding: 10px 14px; margin-left: auto; width: fit-content; max-width: 85%; white-space: pre-wrap; }
+.chatp .msg.bot { overflow-x: auto; background: var(--panel); border: 1px solid var(--line); padding: 14px 18px; box-shadow: none; }
 .chatp .msg.bot p { margin: 0 0 10px; }
 .chatp .msg.bot p:last-child { margin-bottom: 0; }
 .chatp .msg.bot a { color: var(--accent); }
@@ -26,26 +55,45 @@ body.embed .chatp { height: 100vh; }
 .chatp .msg.bot ul, .chatp .msg.bot ol { margin: 0 0 10px; padding-left: 22px; }
 .chatp .msg.bot h1, .chatp .msg.bot h2, .chatp .msg.bot h3 { font-size: 15px; margin: 14px 0 6px; font-weight: 600; letter-spacing: 0; }
 .chatp .msg.bot code { font-family: ui-monospace, monospace; font-size: 12.5px; background: var(--sunk); padding: 2px 6px; }
-.chatp .steps { font-size: 12px; color: var(--muted); margin-bottom: 8px; font-family: ui-monospace, monospace; }
-.chatp .steps div::before { content: "› "; color: var(--text); }
+.chatp.drawer .msg { font-size: 14px; }
+
+/* langkah agent: tool sebagai label, baris lain progres kecil; dilipat setelah selesai */
+.chatp .steps { font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+.chatp .steps .step { display: flex; gap: 6px; align-items: baseline; padding: 2px 0; }
+.chatp .steps .step.tool { color: var(--text); }
+.chatp .steps .step.tool .ico { font-size: 11px; flex: none; }
+.chatp .steps .step.note { font-family: ui-monospace, monospace; font-size: 11.5px; color: var(--faint); }
+.chatp .steps .step.note::before { content: "› "; }
+.chatp details.steps summary { cursor: pointer; color: var(--faint); font-size: 12px; list-style: none; padding: 2px 0; }
+.chatp details.steps summary::-webkit-details-marker { display: none; }
+.chatp details.steps summary::before { content: "▸ "; }
+.chatp details.steps[open] summary::before { content: "▾ "; }
 .chatp .err { color: var(--bad); }
+.chatp .err a { color: var(--text); }
 .chatp .typing::after { content: "▍"; animation: blink 1s steps(1) infinite; color: var(--accent); }
 @keyframes blink { 50% { opacity: 0; } }
-.chatp .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
-.chatp .chip { border: 1px solid var(--line); background: transparent; color: var(--muted); padding: 6px 12px; font-size: 13px; cursor: pointer; }
-.chatp .chip:hover { color: var(--text); border-color: var(--faint); }
-.chatp form { padding: 12px 16px 18px; background: var(--bg); }
-.chatp form .wrap { display: flex; gap: 8px; background: var(--panel); border: 1px solid var(--line); padding: 6px; }
-.chatp form .wrap:focus-within { border-color: var(--faint); }
-.chatp textarea { flex: 1; resize: none; height: 44px; max-height: 160px; padding: 11px 12px; font: inherit; font-size: 15px; border: 0; outline: none; background: transparent; color: var(--text); }
-.chatp form .hint { max-width: 820px; margin: 8px auto 0; color: var(--faint); font-size: 12px; text-align: center; }
-body.embed .chatp .feats, body.embed .chatp form .hint { display: none; }
-body.embed .chatp .hero { padding-top: 24px; }
-body.embed .chatp .hero h1 { font-size: 36px !important; }
-body.embed .chatp .lead { font-size: 15px !important; }
-.chatp #send.stop { background: transparent !important; color: var(--text) !important; border: 1px solid var(--line) !important; }
 .chatp .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
-.chatp .acts .btn { height: 34px; font-size: 11px !important; }
+.chatp .acts .btn { height: 34px; font-size: 11px; }
 .chatp .note { margin-top: 28px; background: var(--panel); border: 1px solid var(--line); padding: 16px 18px; color: var(--muted); line-height: 1.7; }
+.chatp .hero.compact .note { margin-top: 12px; padding: 12px 14px; font-size: 13px; }
 .chatp .note b { color: var(--text); font-weight: 600; }
 .chatp .note code { font-family: ui-monospace, monospace; font-size: 12.5px; background: var(--sunk); padding: 2px 6px; }
+
+/* input, chip saran, kuota */
+.chatp .composer { padding: 10px 16px 16px; background: var(--bg); border-top: 1px solid var(--line-2); }
+.chatp .chips { display: flex; flex-wrap: wrap; gap: 8px; max-width: 820px; margin: 0 auto 10px; }
+.chatp .chip { border: 1px solid var(--line); background: transparent; color: var(--muted); padding: 6px 12px; font: inherit; font-size: 13px; cursor: pointer; text-align: left; }
+.chatp .chip:hover:not(:disabled) { color: var(--text); border-color: var(--faint); }
+.chatp .chip:disabled { opacity: .5; cursor: default; }
+.chatp .notice { max-width: 820px; margin: 0 auto 8px; color: var(--bad); font-size: 13px; }
+.chatp .composer .box { max-width: 820px; margin: 0 auto; display: flex; gap: 8px; background: var(--panel); border: 1px solid var(--line); padding: 6px; box-shadow: none; }
+.chatp .composer .box:focus-within { border-color: var(--faint); }
+.chatp textarea { flex: 1; min-width: 0; resize: none; height: 44px; max-height: 160px; padding: 11px 12px; font: inherit; font-size: 15px; border: 0; background: transparent; color: var(--text); }
+.chatp textarea:disabled { opacity: .5; }
+.chatp .send.stop, .chatp .send.stop:hover { background: transparent; color: var(--text); border: 1px solid var(--line); }
+.chatp .composer .hint { max-width: 820px; margin: 8px auto 0; color: var(--faint); font-size: 12px; text-align: center; text-transform: uppercase; letter-spacing: .05em; line-height: 1.6; }
+.chatp .composer .quota { max-width: 820px; margin: 2px auto 0; color: var(--faint); font-size: 12px; text-align: center; line-height: 1.6; }
+.chatp .composer .quota a { color: var(--text); }
+.chatp.drawer .composer { padding: 10px 12px 12px; }
+.chatp.drawer .composer .hint { display: none; }
+.chatp.drawer .chip { font-size: 12px; padding: 5px 10px; }

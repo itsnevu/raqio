@@ -1,5 +1,9 @@
 # Arsitektur Target Raqio
 
+> Status 22 Oktober 2026: Tahap 0 sampai 4 selesai. Python hanya worker (`services/scraper/worker.py`), semua
+> endpoint di Go, antrean di Postgres, SSE untuk log, mode tamu, cache lintas org, alert pantauan, outbox webhook,
+> RBAC, API key, audit log, asisten chat sebagai job. Rincian audit dan status: `docs/AUDIT.md`.
+
 Dokumen ini menetapkan arsitektur yang dituju supaya Raqio bisa dipakai multi-klien (enterprise),
 digarap banyak orang, dan di-scale tanpa menulis ulang. Bagian akhir berisi tahapan migrasi dari
 kondisi sekarang.

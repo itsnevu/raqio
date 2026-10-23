@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../api/client.dart';
 import '../app.dart';
 import '../biz.dart';
 import '../models.dart';
 import '../theme.dart';
+import '../widgets/biz_avatar.dart';
 
 /// Panel detail bisnis (bottom sheet): kontak, WhatsApp dengan draf, cek kontak, status follow up.
 Future<void> showPlaceSheet(
@@ -115,9 +117,17 @@ class _PlaceSheetState extends State<_PlaceSheet> {
       controller: widget.scroll,
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 30),
       children: [
-        Text(p.name, style: t.titleLarge),
-        const SizedBox(height: 2),
-        Text([if (p.category.isNotEmpty) p.category, if (widget.area.isNotEmpty) widget.area].join(' · '), style: t.bodySmall),
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          BizAvatar(api: ApiScope.of(context), name: p.name, website: p.website, logoKey: p.logoKey, size: 48),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(p.name, style: t.titleLarge),
+              const SizedBox(height: 2),
+              Text([if (p.category.isNotEmpty) p.category, if (widget.area.isNotEmpty) widget.area].join(' · '), style: t.bodySmall),
+            ]),
+          ),
+        ]),
         const SizedBox(height: 12),
         Panel(
           padding: EdgeInsets.zero,
@@ -190,8 +200,101 @@ class _PlaceSheetState extends State<_PlaceSheet> {
           },
           child: const Text('SALIN DRAF'),
         ),
+        if (p.instagram.isNotEmpty) ...[
+          const Divider(height: 28),
+          _IgSection(handle: p.instagram),
+        ],
       ],
     );
+  }
+}
+
+/// Bagian Instagram panel bisnis: profil hasil analisis worker, atau tombol mulai analisis.
+/// Port components/shell/IgSection.tsx.
+class _IgSection extends StatefulWidget {
+  const _IgSection({required this.handle});
+  final String handle;
+
+  @override
+  State<_IgSection> createState() => _IgSectionState();
+}
+
+class _IgSectionState extends State<_IgSection> {
+  IgInfo? _info;
+  String _err = '';
+  bool _scrapeBusy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _err = '');
+    try {
+      final j = await ApiScope.of(context).igProfile(widget.handle);
+      if (mounted) setState(() => _info = j);
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _err = e.message);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    final j = _info;
+    final kids = <Widget>[const Label('Instagram'), const SizedBox(height: 8)];
+    if (_err.isNotEmpty) {
+      kids.addAll([
+        Text(_err, style: const TextStyle(color: RaqioColors.bad, fontSize: 13)),
+        const SizedBox(height: 8),
+        OutlinedButton(onPressed: _load, child: const Text('COBA LAGI')),
+      ]);
+    } else if (j == null) {
+      kids.add(Text('Memuat…', style: t.bodySmall));
+    } else if (!j.found) {
+      kids.add(Text(
+        j.pending || _scrapeBusy
+            ? '@${widget.handle} sedang dianalisis, buka lagi 1 sampai 2 menit lagi.'
+            : '@${widget.handle} belum pernah dianalisis.',
+        style: t.bodySmall,
+      ));
+      if (!j.pending && !_scrapeBusy) {
+        kids.addAll([
+          const SizedBox(height: 8),
+          OutlinedButton(
+            onPressed: () async {
+              final ok = await guardOk(context, () => ApiScope.of(context).igRun(widget.handle));
+              if (ok && mounted) setState(() => _scrapeBusy = true);
+            },
+            child: const Text('ANALISIS AKUN INI'),
+          ),
+        ]);
+      }
+    } else {
+      final er = j.engagementRate;
+      kids.addAll([
+        Panel(
+          padding: EdgeInsets.zero,
+          child: Row(children: [
+            _Big(fmtNum(j.followers), 'followers${j.followersDelta != 0 ? " (${j.followersDelta > 0 ? "+" : ""}${fmtNum(j.followersDelta)})" : ""}'),
+            _Big(er != null ? '${dec(er)}%' : '-', 'engagement'),
+            _Big(j.postsPerWeek != null ? dec(j.postsPerWeek) : '-', 'post/minggu', last: true),
+          ]),
+        ),
+        if (j.biography.isNotEmpty) ...[const SizedBox(height: 10), Text(j.biography, style: t.bodySmall)],
+        const SizedBox(height: 6),
+        Text(
+          [
+            if (er != null) er >= 3 ? 'Interaksi tinggi, audiensnya aktif.' : er >= 1 ? 'Interaksi wajar.' : 'Interaksi rendah, kontennya kurang ditanggapi.',
+            if (j.bestDay.isNotEmpty) 'Hari terbaik posting: ${j.bestDay}.',
+          ].join(' '),
+          style: t.bodySmall,
+        ),
+      ]);
+    }
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: kids);
   }
 }
 

@@ -4,6 +4,7 @@ import '../api/client.dart';
 import '../app.dart';
 import '../theme.dart';
 import '../widgets/logo.dart';
+import 'forgot_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -118,12 +119,18 @@ class _LoginScreenState extends State<LoginScreen> {
                         Text(_err, style: const TextStyle(color: RaqioColors.bad, fontSize: 13)),
                       ],
                       const SizedBox(height: 14),
-                      Row(
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 4,
                         children: [
                           Text('Belum punya akun?', style: t.bodySmall),
                           TextButton(
                             onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const RegisterScreen())),
                             child: const Text('Daftar'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ForgotScreen())),
+                            child: const Text('Lupa password?'),
                           ),
                         ],
                       ),

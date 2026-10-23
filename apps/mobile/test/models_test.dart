@@ -97,11 +97,70 @@ void main() {
       'usage': {'market_run': 3},
       'limits': {'runs': 60, 'details': 600, 'watches': 15, 'members': 3},
     });
-    expect(o.members, ['a@x.id']);
+    expect(o.members.map((m) => m.email), ['a@x.id']);
+    expect(o.members.first.role, 'owner');
     expect(o.usage['market_run'], 3);
     expect(o.limits.runs, 60);
+    expect(o.limits.chats, isNull);
     final me = Me.fromJson({'email': 'a@x.id', 'role': 'owner', 'plan': 'free', 'verified': true, 'limits': {}});
     expect(me.verified, isTrue);
     expect(me.limits.runs, 0);
+  });
+
+  test('RunResult: hasil instan vs job', () {
+    final cached = RunResult.fromJson({'ok': true, 'cached': true, 'report_id': 9, 'age_hours': 5});
+    expect(cached.cached, isTrue);
+    expect(cached.reportId, 9);
+    final fresh = RunResult.fromJson({'ok': true, 'job': 12});
+    expect(fresh.cached, isFalse);
+    expect(fresh.job, 12);
+  });
+
+  test('JobRow: label antrean dan filter riset aktif', () {
+    final run = JobRow.fromJson({'id': 1, 'kind': 'market_run', 'status': 'queued', 'params': {'industry': 'kopi', 'area': 'Kemang'}});
+    expect(run.label, 'kopi · Kemang');
+    expect(run.activeRun, isTrue);
+    final cmp = JobRow.fromJson({'id': 2, 'kind': 'market_compare', 'status': 'running', 'params': {'industry': 'kopi', 'areas': ['A', 'B']}});
+    expect(cmp.label, 'kopi · A; B');
+    expect(cmp.activeRun, isTrue);
+    expect(JobRow.fromJson({'id': 3, 'kind': 'ig_profile', 'status': 'running'}).activeRun, isFalse);
+    expect(JobRow.fromJson({'id': 4, 'kind': 'market_run', 'status': 'done'}).activeRun, isFalse);
+  });
+
+  test('JobLog: penanda dan progres mode Bandingkan', () {
+    final j = JobLog.fromJson({'running': true, 'log': '[compare] wilayah 2/3: Senopati\n18:00 [3/5] cari IG\n'});
+    expect(j.compareDone, isFalse);
+    expect(j.compareProgress, (i: 2, n: 3, area: 'Senopati'));
+    expect(JobLog.fromJson({'running': false, 'log': 'COMPARE_DONE\n'}).compareDone, isTrue);
+  });
+
+  test('Campaign: total dan persen progres', () {
+    final c = Campaign.fromJson({
+      'id': 1,
+      'name': 'Oktober',
+      'channel': 'whatsapp',
+      'mode': 'manual',
+      'status': 'running',
+      'created_at': '2026-10-01T00:00:00Z',
+      'counts': {'pending': 2, 'sent': 5, 'replied': 1, 'skipped': 1, 'failed': 1},
+    });
+    expect(c.total, 10);
+    expect(c.progressPct, 80);
+    expect(canAuto('whatsapp'), isTrue);
+    expect(canAuto('instagram'), isFalse);
+  });
+
+  test('WatchAlert dan Compare', () {
+    final a = WatchAlert.fromJson({'id': 1, 'report_id': 2, 'severity': 6, 'summary': 's', 'created_at': 'x', 'read_at': null});
+    expect(a.unread, isTrue);
+    final c = Compare.fromJson({
+      'industry': 'kopi',
+      'areas': [
+        {'area': 'A', 'report_id': 1, 'opportunity': 70, 'businesses': 10, 'website_pct': 40, 'prospects': 3}
+      ],
+      'insights': ['i'],
+    });
+    expect(c.areas.single.opportunity, 70);
+    expect(c.insights, ['i']);
   });
 }

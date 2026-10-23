@@ -1,9 +1,37 @@
+# Opsi global. Kalau Caddy ada di belakang CDN (Cloudflare dan sejenisnya), aktifkan trusted_proxies
+# supaya IP klien diambil dari X-Forwarded-For hanya ketika koneksi datang dari CDN, lalu isi
+# TRUSTED_PROXIES di deploy/.env dengan CIDR yang sama untuk Go API.
+# {
+# 	servers {
+# 		trusted_proxies static 173.245.48.0/20 103.21.244.0/22 2400:cb00::/32
+# 	}
+# }
+
 {$DOMAIN} {
-	encode gzip
+	encode zstd gzip
+
 	header {
-		Strict-Transport-Security "max-age=31536000"
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 		X-Content-Type-Options nosniff
 		X-Frame-Options SAMEORIGIN
+		Referrer-Policy same-origin
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()"
+		# dipasang setelah respons upstream supaya tidak ditimpa header dari Next
+		defer
 	}
+
+	# /metrics hanya dari jaringan internal (loopback, 10/8, 172.16/12, 192.168/16). Dari internet: 404.
+	# Prometheus di docker network sebaiknya scrape api:8080/metrics langsung dengan METRICS_TOKEN.
+	@metrics_luar {
+		path /metrics
+		not remote_ip private_ranges
+	}
+	respond @metrics_luar 404
+
+	# Dokumentasi API (aktif hanya kalau DOCS=1 di api) dan /metrics internal dilayani Go langsung,
+	# karena Next tidak lagi meneruskannya. Caddy ikut network "app" supaya bisa mencapai api.
+	@api_langsung path /docs /docs/* /openapi.yaml /metrics
+	reverse_proxy @api_langsung api:8080
+
 	reverse_proxy web:3000
 }

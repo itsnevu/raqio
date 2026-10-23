@@ -31,6 +31,7 @@ from datetime import datetime, timezone
 import base64
 import html as htmllib
 
+import datastore  # connect_sqlite: WAL + busy_timeout untuk ig.db
 import netutil as creq  # curl_cffi + DNS-over-HTTPS (get/post kompatibel)
 from competitor_website_monitor import scan as scan_website
 from socialblade_growth import growth as socialblade
@@ -39,7 +40,9 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s", datefm
 log = logging.getLogger("pipeline")
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DB = os.path.join(HERE, "ig.db")
+# ig.db di folder data (RAQIO_DATA_DIR = volume di Docker), sama dengan agent.py/market.py/ig_scraper.py; kalau tidak,
+# hasil pipeline di container tertulis ke /app dan tidak pernah terbaca agent (list_competitors)
+DB = os.path.join(os.environ.get("RAQIO_DATA_DIR", HERE), "ig.db")
 UA = {"User-Agent": "local-competitor-scanner/0.1 (personal research)"}
 
 CATEGORIES = {
@@ -81,7 +84,8 @@ OVERPASS_SERVERS = [
     "https://overpass.kumi.systems/api/interpreter",
     "https://overpass.private.coffee/api/interpreter",
 ]
-IG_URL_RE =re.compile(r"instagram\.com/([A-Za-z0-9_.]+)")
+IG_URL_RE = re.compile(r"instagram\.com/([A-Za-z0-9_.]+)")
+TAG_SAFE = re.compile(r"[^A-Za-z0-9_:\-]")  # key/value filter OSM: tanpa kutip/kurung supaya query Overpass tidak disisipi
 IG_SKIP = {"p", "reel", "reels", "explore", "accounts", "stories", "tv", "about", "legal"}
 
 
@@ -112,8 +116,10 @@ def osm_filters(category):
         rx = "|".join(w for w in re.split(r"\s*\|\s*", kw) if w)
         return [f'"{k}"]["name"~"{rx}",i' for k in SEARCHABLE_KEYS]
     if "=" in category:  # custom, mis. shop=clothes
-        k, v = category.split("=", 1)
-        return [f'"{k.strip()}"="{v.strip()}"']
+        k, v = (TAG_SAFE.sub("", x.strip()) for x in category.split("=", 1))
+        if not k or not v:
+            sys.exit(f"Filter kategori tidak valid: {category}")
+        return [f'"{k}"="{v}"']
     sys.exit(f"Kategori tidak dikenal: {category}. Pilihan: {', '.join(CATEGORIES)}, "
              f"key=value, atau keyword:kata kunci")
 
@@ -266,7 +272,7 @@ def merge_ig_db(biz):
     """Isi followers/ER dari hasil ig_scraper (tabel profiles) kalau Social Blade kosong."""
     if not os.path.exists(DB):
         return
-    conn = sqlite3.connect(DB)
+    conn = datastore.connect_sqlite(DB)
     try:
         for b in biz:
             if not b["instagram"] or b["followers"]:
@@ -324,7 +330,7 @@ def load_fresh(biz, hours):
         return {}
     keep = ("instagram", "instagram_source", "emails", "prices", "followers", "engagement_rate",
             "avg_likes", "media_count", "grade")
-    conn = sqlite3.connect(DB)
+    conn = datastore.connect_sqlite(DB)
     out = {}
     try:
         ids = [b["osm_id"] for b in biz]
@@ -353,7 +359,7 @@ def load_fresh(biz, hours):
 
 def save(biz, trend, location, out_dir="hasil"):
     now = datetime.now(timezone.utc).isoformat()
-    conn = sqlite3.connect(DB)
+    conn = datastore.connect_sqlite(DB)
     conn.execute("""CREATE TABLE IF NOT EXISTS businesses (
         osm_id TEXT PRIMARY KEY, location TEXT, data TEXT,
         last_scanned TEXT, history TEXT)""")

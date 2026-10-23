@@ -1,7 +1,7 @@
-// Panduan interaktif per halaman memakai driver.js. Tampil otomatis sekali per halaman per browser,
-// bisa diputar ulang lewat tombol "Panduan" di navigasi (event window "raqio:tour").
-import { driver, type DriveStep } from "driver.js";
-import "driver.js/dist/driver.css";
+// Panduan interaktif per halaman memakai driver.js. Tidak pernah jalan otomatis: pengunjung baru ditawari
+// lewat bilah kecil dan memilih sendiri; bisa diputar ulang lewat tombol "Panduan" di navigasi (event "raqio:tour").
+// driver.js dimuat lewat dynamic import saat tur dimulai, bukan di bundle awal semua halaman.
+import type { DriveStep, Driver } from "driver.js";
 
 export type TourStep = DriveStep & { element?: string };
 
@@ -19,6 +19,8 @@ const markSeen = (name: string) => {
     localStorage.setItem(KEY(name), "1");
   } catch {}
 };
+/** Tandai tur halaman sudah ditawarkan/dilihat (dipakai tombol "Nanti saja" supaya tidak menawarkan lagi). */
+export const markTourSeen = markSeen;
 export const resetTours = () => {
   try {
     Object.keys(localStorage)
@@ -27,13 +29,14 @@ export const resetTours = () => {
   } catch {}
 };
 
-let active: ReturnType<typeof driver> | null = null;
+let active: Driver | null = null;
 
 /** Mulai tur. Langkah yang elemennya belum ada di halaman dilewati, jadi tur tetap jalan sebelum ada laporan. */
-export function startTour(name: string, steps: TourStep[]) {
-  if (active?.isActive()) active.destroy();
+export async function startTour(name: string, steps: TourStep[]) {
   const usable = steps.filter((s) => !s.element || document.querySelector(s.element));
   if (!usable.length) return false;
+  const [{ driver }] = await Promise.all([import("driver.js"), import("driver.js/dist/driver.css")]);
+  if (active?.isActive()) active.destroy();
   active = driver({
     showProgress: true,
     animate: true,

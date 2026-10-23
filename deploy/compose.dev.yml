@@ -1,17 +1,19 @@
 # Infrastruktur development: hanya Postgres + Redis.
-# App (web, api, worker) tetap dijalankan lokal lewat `make dev-*`.
+# App (web, api, worker) tetap dijalankan lokal lewat `make dev-*` atau dev.ps1.
+# Port hanya di-bind ke 127.0.0.1 (tidak terbuka ke jaringan lokal; password dev sengaja lemah).
+# Container dev lain (raqio-api-dev) tetap bisa mencapainya lewat host.docker.internal:5433.
 #
 #   docker compose -f deploy/compose.dev.yml up -d
 #
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:16.15-alpine
     environment:
       POSTGRES_USER: raqio
       POSTGRES_PASSWORD: raqio
       POSTGRES_DB: raqio
     ports:
-      - "${PG_PORT:-5433}:5432"
+      - "127.0.0.1:${PG_PORT:-5433}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -23,7 +25,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "${REDIS_PORT:-6379}:6379"
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s

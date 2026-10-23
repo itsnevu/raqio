@@ -26,6 +26,7 @@ class _ReportScreenState extends State<ReportScreen> {
   String _q = '';
   String _filter = 'all';
   late bool _rival;
+  bool _watched = false;
 
   @override
   void initState() {
@@ -40,9 +41,34 @@ class _ReportScreenState extends State<ReportScreen> {
       final r = widget.preloaded ?? await _api.report(widget.reportId);
       _rival = widget.goals['${r.industry.toLowerCase()}|${r.area.toLowerCase()}'] == 'rival';
       if (mounted) setState(() => _r = r);
+      // status pantau pasangan ini; gagal pun tidak apa-apa
+      try {
+        final ws = await _api.watches();
+        if (mounted) {
+          setState(() => _watched =
+              ws.any((w) => w.industry.toLowerCase() == r.industry.toLowerCase() && w.area.toLowerCase() == r.area.toLowerCase()));
+        }
+      } catch (_) {}
     } on ApiException catch (e) {
       if (mounted) setState(() => _err = e.message);
     }
+  }
+
+  Future<void> _toggleWatch() async {
+    final r = _r;
+    if (r == null) return;
+    final on = !_watched;
+    final ok = await guardOk(context, () => _api.setWatch(r.industry, r.area, on: on, lastRun: r.created));
+    if (!ok || !mounted) return;
+    setState(() => _watched = on);
+    toast(context, on ? 'Dipantau, riset ulang otomatis sesuai jadwal paket' : 'Pantauan dimatikan');
+  }
+
+  Future<void> _rerun() async {
+    final r = _r;
+    if (r == null) return;
+    final res = await guard(context, () => _api.runMarket(r.industry, r.area, fresh: true));
+    if (res != null && mounted) toast(context, 'Riset ulang dimulai, lihat tab Riset.');
   }
 
   void _openPlace(Place p) {
@@ -92,6 +118,14 @@ class _ReportScreenState extends State<ReportScreen> {
             Text('${r.industry} · ${r.area}'),
             Text(fmtDate(r.created, withTime: true), style: t.labelSmall),
           ]),
+          actions: [
+            IconButton(
+              icon: Icon(_watched ? Icons.radar : Icons.radar_outlined, size: 20, color: _watched ? RaqioColors.good : null),
+              tooltip: _watched ? 'Dipantau (ketuk untuk matikan)' : 'Pantau mingguan',
+              onPressed: _toggleWatch,
+            ),
+            IconButton(icon: const Icon(Icons.refresh, size: 20), tooltip: 'Riset ulang (data baru)', onPressed: _rerun),
+          ],
           bottom: TabBar(
             indicatorColor: RaqioColors.text,
             labelColor: RaqioColors.text,
@@ -207,6 +241,24 @@ class _Summary extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
+        if (r.ratingBuckets.isNotEmpty || r.sizeBuckets.isNotEmpty) ...[
+          Panel(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              if (r.ratingBuckets.isNotEmpty) ...[
+                const Label('Sebaran rating'),
+                const SizedBox(height: 8),
+                _Buckets(buckets: r.ratingBuckets),
+              ],
+              if (r.ratingBuckets.isNotEmpty && r.sizeBuckets.isNotEmpty) const SizedBox(height: 14),
+              if (r.sizeBuckets.isNotEmpty) ...[
+                const Label('Sebaran jumlah ulasan'),
+                const SizedBox(height: 8),
+                _Buckets(buckets: r.sizeBuckets),
+              ],
+            ]),
+          ),
+          const SizedBox(height: 8),
+        ],
         if (r.aiStrategy != null && r.aiStrategy!.isNotEmpty) ...[
           Panel(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -241,6 +293,37 @@ class _Summary extends StatelessWidget {
           ),
         const SizedBox(height: 60),
       ],
+    );
+  }
+}
+
+/// Batang horizontal sederhana untuk rating_buckets / size_buckets (pengganti grafik web).
+class _Buckets extends StatelessWidget {
+  const _Buckets({required this.buckets});
+  final List<(String, int)> buckets;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    final max = buckets.fold<int>(1, (a, b) => b.$2 > a ? b.$2 : a);
+    return Column(
+      children: buckets
+          .map((b) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(children: [
+                  SizedBox(width: 58, child: Text(b.$1, style: t.bodySmall)),
+                  Expanded(
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: (b.$2 / max).clamp(0.02, 1),
+                      child: Container(height: 10, color: RaqioColors.sunk, foregroundDecoration: const BoxDecoration(border: Border.fromBorderSide(BorderSide(color: RaqioColors.line)))),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(width: 30, child: Text('${b.$2}', style: t.bodySmall, textAlign: TextAlign.right)),
+                ]),
+              ))
+          .toList(),
     );
   }
 }

@@ -5,11 +5,14 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"crypto/subtle"
 	"encoding/hex"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -33,8 +36,11 @@ type limiter struct {
 	now   func() time.Time
 }
 
-func newLimiter(perMinute, burst int) *limiter {
-	l := &limiter{rate: float64(perMinute) / 60, burst: float64(burst), m: map[string]*bucket{}, now: time.Now}
+func newLimiter(perMinute, burst int) *limiter { return newLimiterRate(float64(perMinute)/60, burst) }
+
+// newLimiterRate: laju dalam token per detik (bisa pecahan, mis. 5.0/3600 = 5 per jam).
+func newLimiterRate(perSecond float64, burst int) *limiter {
+	l := &limiter{rate: perSecond, burst: float64(burst), m: map[string]*bucket{}, now: time.Now}
 	go func() {
 		for range time.Tick(5 * time.Minute) {
 			l.sweep()
@@ -46,9 +52,11 @@ func newLimiter(perMinute, burst int) *limiter {
 func (l *limiter) sweep() {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	cut := l.now().Add(-10 * time.Minute)
+	// hanya buang entri yang sudah terisi penuh lagi: menghapus lebih awal sama dengan mengisi ulang gratis
+	// (penting untuk limiter lambat seperti tamu, 5 per jam)
+	t := l.now()
 	for k, b := range l.m {
-		if b.last.Before(cut) {
+		if b.tokens+t.Sub(b.last).Seconds()*l.rate >= l.burst {
 			delete(l.m, k)
 		}
 	}
@@ -130,12 +138,16 @@ func requestID(next http.Handler) http.Handler {
 
 func reqID(r *http.Request) string { id, _ := r.Context().Value(ctxKeyReqID{}).(string); return id }
 
-// recoverPanic: handler yang panic dibalas 500 rapi dan dicatat, bukan memutus koneksi tanpa jejak.
-func recoverPanic(next http.Handler) http.Handler {
+// recoverPanic: handler yang panic dibalas 500 rapi, dicatat, dan dialarmkan ke pengelola (ops_alert.go),
+// bukan memutus koneksi tanpa jejak.
+func (a *App) recoverPanic(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		defer func() {
 			if rec := recover(); rec != nil {
-				slog.Error("panic", "err", fmt.Sprint(rec), "path", r.URL.Path, "rid", reqID(r), "stack", string(debug.Stack()))
+				stack := string(debug.Stack())
+				slog.Error("panic", "err", fmt.Sprint(rec), "path", r.URL.Path, "rid", reqID(r), "stack", stack)
+				a.opsAlert("panic", "Panic di "+r.Method+" "+r.URL.Path,
+					fmt.Sprintf("rid %s\n%s\n%s", reqID(r), trunc(fmt.Sprint(rec), 200), trunc(stack, 400)))
 				errJSON(w, 500, "Terjadi kesalahan di server.")
 			}
 		}()
@@ -164,8 +176,9 @@ var (
 	metricStart       = time.Now()
 )
 
-// countRequests mencatat jumlah request per kelas status dan yang sedang berjalan.
-func countRequests(next http.Handler) http.Handler {
+// countRequests mencatat jumlah request per kelas status dan yang sedang berjalan. Respons 5xx juga dihitung
+// per jendela 5 menit: mencapai OPS_5XX_THRESHOLD memicu alarm ops.
+func (a *App) countRequests(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		metricReqInflight.Add(1)
 		defer metricReqInflight.Add(-1)
@@ -173,12 +186,35 @@ func countRequests(next http.Handler) http.Handler {
 		next.ServeHTTP(sw, r)
 		if c := sw.code / 100; c >= 1 && c <= 5 {
 			metricReqTotal[c].Add(1)
+			if c == 5 && a.ops != nil && a.ops.note5xx() {
+				a.opsAlert("http_5xx", fmt.Sprintf("%d respons 5xx dalam 5 menit", a.ops.threshold5xx()),
+					"terakhir: "+r.Method+" "+r.URL.Path+" "+strconv.Itoa(sw.code)+" rid "+reqID(r))
+			}
 		}
 	})
 }
 
+// metricsAllowed: /metrics dibuka kalau METRICS_TOKEN kosong atau Authorization: Bearer cocok. Tanpa token di
+// produksi, hanya dari IP privat/loopback (scraper Prometheus di jaringan yang sama).
+func metricsAllowed(r *http.Request) bool {
+	tok := env("METRICS_TOKEN", "")
+	if tok != "" {
+		got := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+		return got != r.Header.Get("Authorization") && subtle.ConstantTimeCompare([]byte(strings.TrimSpace(got)), []byte(tok)) == 1
+	}
+	if !isProduction() {
+		return true
+	}
+	ip := net.ParseIP(clientIP(r))
+	return ip != nil && (ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast())
+}
+
 // metrics: format teks Prometheus. Jumlah job per status diambil langsung dari DB (murah, tabel kecil).
 func (a *App) metrics(w http.ResponseWriter, r *http.Request) {
+	if !metricsAllowed(r) {
+		errJSON(w, 403, "metrics hanya untuk pemantau internal")
+		return
+	}
 	var b strings.Builder
 	b.WriteString("# HELP raqio_http_requests_total Jumlah request HTTP per kelas status.\n# TYPE raqio_http_requests_total counter\n")
 	for c := 1; c <= 5; c++ {
@@ -204,8 +240,74 @@ func (a *App) metrics(w http.ResponseWriter, r *http.Request) {
 	if a.db.QueryRow(r.Context(), `SELECT coalesce(extract(epoch FROM now() - min(created_at)), 0) FROM jobs WHERE status='queued'`).Scan(&oldest) == nil {
 		fmt.Fprintf(&b, "# HELP raqio_jobs_oldest_queued_seconds Umur job tertua yang masih antri.\n# TYPE raqio_jobs_oldest_queued_seconds gauge\nraqio_jobs_oldest_queued_seconds %.0f\n", oldest)
 	}
+	a.metricsJobs24h(r.Context(), &b)
+	a.metricsOutboxAlerts(r.Context(), &b)
 	w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
 	w.Write([]byte(b.String()))
+}
+
+// metricsJobs24h: satu query agregat per kind atas job 24 jam terakhir: durasi job done (p50, p90), jumlah gagal,
+// dan jumlah job chat yang dibuat.
+func (a *App) metricsJobs24h(ctx context.Context, b *strings.Builder) {
+	rows, err := a.db.Query(ctx, `SELECT kind,
+			percentile_cont(0.5) WITHIN GROUP (ORDER BY extract(epoch FROM finished_at - started_at))
+				FILTER (WHERE status='done' AND started_at IS NOT NULL AND finished_at > now() - interval '24 hours'),
+			percentile_cont(0.9) WITHIN GROUP (ORDER BY extract(epoch FROM finished_at - started_at))
+				FILTER (WHERE status='done' AND started_at IS NOT NULL AND finished_at > now() - interval '24 hours'),
+			count(*) FILTER (WHERE status='failed' AND finished_at > now() - interval '24 hours'),
+			count(*) FILTER (WHERE created_at > now() - interval '24 hours')
+		FROM jobs WHERE finished_at > now() - interval '24 hours' OR created_at > now() - interval '24 hours'
+		GROUP BY kind ORDER BY kind`)
+	if err != nil {
+		logDB("metrics", "jobs 24h", err)
+		return
+	}
+	defer rows.Close()
+	type row struct {
+		kind            string
+		p50, p90        *float64
+		failed, created int64
+	}
+	var list []row
+	for rows.Next() {
+		var x row
+		if rows.Scan(&x.kind, &x.p50, &x.p90, &x.failed, &x.created) == nil {
+			list = append(list, x)
+		}
+	}
+	b.WriteString("# HELP raqio_job_duration_seconds Durasi job selesai 24 jam terakhir per jenis (kuantil).\n# TYPE raqio_job_duration_seconds gauge\n")
+	for _, x := range list {
+		if x.p50 != nil && x.p90 != nil {
+			fmt.Fprintf(b, "raqio_job_duration_seconds{kind=%q,quantile=\"0.5\"} %.1f\nraqio_job_duration_seconds{kind=%q,quantile=\"0.9\"} %.1f\n", x.kind, *x.p50, x.kind, *x.p90)
+		}
+	}
+	b.WriteString("# HELP raqio_jobs_failed_total Job gagal final 24 jam terakhir per jenis.\n# TYPE raqio_jobs_failed_total gauge\n")
+	var chat int64
+	for _, x := range list {
+		fmt.Fprintf(b, "raqio_jobs_failed_total{kind=%q} %d\n", x.kind, x.failed)
+		if x.kind == "chat" {
+			chat = x.created
+		}
+	}
+	fmt.Fprintf(b, "# HELP raqio_chat_jobs_24h Job asisten (chat) yang dibuat 24 jam terakhir.\n# TYPE raqio_chat_jobs_24h gauge\nraqio_chat_jobs_24h %d\n", chat)
+}
+
+// metricsOutboxAlerts: satu query untuk outbox webhook (menunggu, menyerah, terkirim 24 jam) dan alert pantauan 24 jam.
+func (a *App) metricsOutboxAlerts(ctx context.Context, b *strings.Builder) {
+	var pending, failed, delivered, alerts int64
+	err := a.db.QueryRow(ctx, `SELECT
+			(SELECT count(*) FROM webhook_outbox WHERE delivered_at IS NULL AND attempts < $1),
+			(SELECT count(*) FROM webhook_outbox WHERE delivered_at IS NULL AND attempts >= $1),
+			(SELECT count(*) FROM webhook_outbox WHERE delivered_at > now() - interval '24 hours'),
+			(SELECT count(*) FROM watch_alerts WHERE created_at > now() - interval '24 hours')`, outboxMaxAttempts).
+		Scan(&pending, &failed, &delivered, &alerts)
+	if err != nil {
+		logDB("metrics", "outbox+alerts", err)
+		return
+	}
+	fmt.Fprintf(b, "# HELP raqio_webhook_outbox Webhook di outbox: pending (masih dicoba), failed (menyerah), delivered_24h.\n# TYPE raqio_webhook_outbox gauge\n"+
+		"raqio_webhook_outbox{state=\"pending\"} %d\nraqio_webhook_outbox{state=\"failed\"} %d\nraqio_webhook_outbox{state=\"delivered_24h\"} %d\n", pending, failed, delivered)
+	fmt.Fprintf(b, "# HELP raqio_alerts_24h Alert pantauan yang dibuat 24 jam terakhir.\n# TYPE raqio_alerts_24h gauge\nraqio_alerts_24h %d\n", alerts)
 }
 
 // ---------- health ----------
@@ -215,11 +317,18 @@ func healthz(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, 200, map[string]string{"status": "ok", "service": "raqio-api"})
 }
 
+// readyzFails: kegagalan ping DB berturut-turut; yang ketiga memicu alarm ops, sukses mengembalikan ke nol.
+var readyzFails atomic.Int32
+
 // readyz: siap menerima trafik, DB bisa dicapai.
 func (a *App) readyz(w http.ResponseWriter, r *http.Request) {
 	if err := a.db.Ping(r.Context()); err != nil {
+		if n := readyzFails.Add(1); n == 3 {
+			a.opsAlert("readyz", "DB tidak bisa dicapai 3 kali berturut-turut", redactErr(err))
+		}
 		writeJSON(w, 503, map[string]string{"status": "db down"})
 		return
 	}
+	readyzFails.Store(0)
 	writeJSON(w, 200, map[string]string{"status": "ready"})
 }

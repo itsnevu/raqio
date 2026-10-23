@@ -1,0 +1,49 @@
+.topp h1 { margin-bottom: 6px; }
+.topp .back { font-size: 13px; color: var(--muted); }
+.topp .search-l input { width: 100%; max-width: 520px; padding: 10px 12px; margin: 10px 0 18px; background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+.topp .pairs { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.topp .pair { display: flex; flex-direction: column; gap: 2px; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); text-decoration: none; color: inherit; }
+.topp .pair:hover { border-color: var(--good); }
+.topp .pair small { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.topp .rank { list-style: none; padding: 0; margin: 18px 0; display: flex; flex-direction: column; gap: 8px; }
+.topp .rank li { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); }
+.topp .rank li.open { border-color: var(--good); }
+.topp .rank li.flag { opacity: .7; }
+.topp .rrow { display: grid; grid-template-columns: 48px 44px 1fr 90px 100px; gap: 12px; align-items: center; width: 100%; padding: 12px 14px; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.topp .pos { font-size: 18px; font-weight: 800; color: var(--good); }
+.topp .nm { display: flex; flex-direction: column; min-width: 0; }
+.topp .nm b { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topp .nm small { color: var(--muted); font-size: 12px; }
+.topp .num { display: flex; flex-direction: column; align-items: flex-end; }
+.topp .num b { font-size: 16px; }
+.topp .num small { color: var(--muted); font-size: 11px; }
+.topp .detail { padding: 0 14px 14px 118px; }
+.topp .comps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 8px; }
+.topp .comps div { border: 1px solid var(--line-2); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; }
+.topp .comps small { color: var(--muted); font-size: 11px; }
+.topp .comps b { font-size: 20px; color: var(--good); }
+.topp .comps span { font-size: 12px; color: var(--muted); }
+.topp .acts { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.topp .embed { font-size: 13px; }
+.topp .embed textarea { width: 100%; margin-top: 6px; font-family: ui-monospace, monospace; font-size: 11px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 6px; }
+.topp .muted { color: var(--muted); }
+.topp .foot { font-size: 12.5px; margin-top: 20px; }
+@media (max-width: 720px) { .topp .rrow { grid-template-columns: 40px 36px 1fr 70px; } .topp .rrow .num:last-child { display: none; } .topp .detail { padding-left: 14px; } .topp .comps { grid-template-columns: 1fr; } }
+.topp .dlogo { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; font-size: 12px; color: var(--muted); }
+.topp .deriv { margin: 10px 0 4px; padding: 12px 14px; border: 1px dashed var(--line-2); border-radius: 10px; font-size: 13px; }
+.topp .deriv h4 { margin: 0 0 8px; font-size: 13px; }
+.topp .deriv ol { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; }
+.topp .deriv code { display: block; margin-top: 3px; padding: 6px 8px; border-radius: 6px; background: var(--bg); font-size: 12px; overflow-x: auto; white-space: nowrap; }
+.topp .deriv .muted { margin: 8px 0 0; font-size: 12px; }
+.topp .badges { display: flex; gap: 16px; flex-wrap: wrap; margin: 8px 0; }
+.topp .badges figure { margin: 0; display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--muted); }
+.topp .badges figure.lt img { background: #fff; border-radius: 12px; }
+.topp .embed small { display: block; margin-top: 6px; font-size: 11.5px; }
+
+/* baris kredibilitas di bawah lead + form "laporkan data keliru" */
+.topp .cred { font-size: 13px; margin: -8px 0 18px; }
+.topp .cred a { color: var(--text); }
+.topp .report { margin-top: 10px; }
+.topp .report textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 13px; padding: 10px 12px;
+  background: var(--sunk); border: 1px solid var(--line); color: var(--text); resize: vertical; }
+.topp .racts { display: flex; align-items: center; gap: 10px; margin-top: 8px; }

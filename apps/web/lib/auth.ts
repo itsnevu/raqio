@@ -17,6 +17,7 @@ export async function verifyToken(token: string | undefined) {
   const parts = token.split(".");
   if (parts.length !== 3) return false;
   const [sid, exp, sig] = parts;
+  if (!sid || !exp || !sig) return false;
   if (!/^\d+$/.test(exp) || +exp < Date.now()) return false;
   const want = await hmac(sid + "." + exp);
   if (want.length !== sig.length) return false;

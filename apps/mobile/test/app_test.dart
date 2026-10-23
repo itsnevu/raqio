@@ -93,6 +93,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(api.loggedIn, isTrue);
     expect(find.text('Peta pasar industri apa pun.'), findsOneWidget);
+    // daftar riset ada di bawah form; gulir dulu sampai terlihat
+    await tester.scrollUntilVisible(find.text('coffee shop · kemang jakarta'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('coffee shop · kemang jakarta'), findsOneWidget);
     final reportsReq = server.seen.firstWhere((r) => r.url.path == '/market/reports');
     expect(reportsReq.headers['Cookie'], 'raqio_session=tok123');

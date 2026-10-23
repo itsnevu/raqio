@@ -21,4 +21,15 @@
 .watchp .chg li em { font-style: normal; color: var(--muted); font-variant-numeric: tabular-nums; }
 .watchp .chg li em.up { color: var(--good); } .watchp .chg li em.down { color: var(--bad); }
 .watchp .wait { padding: 0 20px 18px; color: var(--muted); font-size: 13px; }
-.watchp .watch.on { border-color: var(--good) !important; color: var(--good) !important; }
+.watchp .watch.on { border-color: var(--good); color: var(--good); }
+
+/* alert pantauan */
+.alerts { border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin: 0 0 18px; background: var(--panel); }
+.alerts-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.alerts-h h3 { margin: 0; font-size: 14px; display: flex; gap: 8px; align-items: center; }
+.alert { display: grid; grid-template-columns: 22px 1fr auto; gap: 8px; align-items: center; padding: 7px 6px; cursor: pointer; font-size: 13px; width: 100%; text-align: left; background: none; border: 0; color: var(--text); font: inherit; }
+.alert:hover { background: var(--sunk); }
+.alert.unread .alert-txt { font-weight: 600; }
+.alert-sev { color: var(--muted); font-weight: 700; text-align: center; }
+.alert.hot .alert-sev { color: var(--good, #FFB020); }
+.alert-when { color: var(--muted); font-size: 12px; white-space: nowrap; }

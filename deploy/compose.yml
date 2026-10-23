@@ -1,108 +1,294 @@
 # Produksi satu VPS. Hanya Caddy (80/443) yang terbuka ke luar.
-#   cp deploy/.env.example deploy/.env  (isi rahasia)
+#   cp deploy/.env.example deploy/.env  (isi rahasia; AUTH_SECRET dan PG_PASSWORD wajib, lihat .env.example)
 #   docker compose -f deploy/compose.yml --env-file deploy/.env up -d --build
+#
+# Jaringan (isolasi antar service, bukan dari internet; worker dan api tetap butuh keluar):
+#   edge   : caddy <-> web
+#   app    : web   <-> api
+#   data   : api, worker, backup <-> postgres
+#
+# Hardening semua service: restart unless-stopped, no-new-privileges, cap_drop ALL, batas memori.
+# api dan web berjalan read-only (tmpfs untuk /tmp dan cache Next). postgres jalan sebagai user postgres.
+
+x-hardening: &hardening
+  restart: unless-stopped
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: ["ALL"]
+
 services:
   caddy:
-    image: caddy:2-alpine
-    ports: ["80:80", "443:443"]
+    <<: *hardening
+    image: caddy:2.11.7-alpine
+    cap_add: ["NET_BIND_SERVICE"]
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
+      - caddy_config:/config
     environment:
       DOMAIN: ${DOMAIN:-localhost}
-    depends_on: [web, api]
+    networks: [edge, app]
+    depends_on:
+      web: { condition: service_healthy }
+    deploy:
+      resources:
+        limits: { memory: 256m }
 
   web:
+    <<: *hardening
     build:
       context: ../apps/web
       args: { API_URL: http://api:8080 }
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/.next/cache
     environment:
       API_URL: http://api:8080
-      AUTH_SECRET: ${AUTH_SECRET}
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET kosong, isi deploy/.env dengan hasil `openssl rand -hex 32`}
+      AUTO_GUEST: "0"
+    networks: [edge, app]
     depends_on: [api]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    deploy:
+      resources:
+        limits: { memory: 512m }
 
+  # Image distroless: tidak ada shell, wget, atau curl, jadi tanpa healthcheck di sini.
+  # Kesehatan dipantau lewat web (healthcheck di atas memanggil api) dan /readyz lewat Caddy.
   api:
+    <<: *hardening
     build: ../apps/api
+    read_only: true
+    tmpfs: ["/tmp"]
     environment:
-      DATABASE_URL: postgres://raqio:${PG_PASSWORD}@postgres:5432/raqio?sslmode=disable
-      AUTH_SECRET: ${AUTH_SECRET}
-      SCRAPER_URL: http://legacy:8000
+      APP_ENV: production
+      DATABASE_URL: postgres://raqio:${PG_PASSWORD:?PG_PASSWORD kosong, isi deploy/.env}@postgres:5432/raqio?sslmode=disable
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET kosong, isi deploy/.env dengan hasil `openssl rand -hex 32`}
       COOKIE_SECURE: "1"
-      ALLOW_REGISTER: ${ALLOW_REGISTER:-1}
       APP_URL: https://${DOMAIN}
+      # IP klien diambil dari X-Forwarded-For hanya bila datang dari proxy tepercaya. Kosong = jaringan privat
+      # (cukup untuk Caddy di compose). Di belakang CDN isi dengan CIDR CDN, pisah koma.
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-}
+      # /metrics butuh header Authorization: Bearer <METRICS_TOKEN>. Kosong = /metrics ditolak.
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
+      DOCS: ${DOCS:-0}
+      ALLOW_REGISTER: ${ALLOW_REGISTER:-1}
+      # asisten chat (job kind chat di worker); 0 = endpoint /chat membalas 503
+      CHAT_ENABLED: ${CHAT_ENABLED:-1}
+      # alarm operasional (panic, lonjakan 5xx, job gagal beruntun, webhook menyerah, DB putus)
+      OPS_TELEGRAM_CHAT: ${OPS_TELEGRAM_CHAT:-}
+      OPS_WEBHOOK_URL: ${OPS_WEBHOOK_URL:-}
+      OPS_WEBHOOK_SECRET: ${OPS_WEBHOOK_SECRET:-}
+      OPS_5XX_THRESHOLD: ${OPS_5XX_THRESHOLD:-20}
+      # jam (Asia/Jakarta) pengiriman ringkasan prospek jatuh tempo
+      DIGEST_HOUR: ${DIGEST_HOUR:-8}
+      GUEST_MAX_PER_HOUR: ${GUEST_MAX_PER_HOUR:-}
+      MARKET_CACHE_DAYS: ${MARKET_CACHE_DAYS:-7}
+      # sumber data selain scraping Maps (services/scraper/sources): overture,osm tanpa kunci; places_api/tomtom butuh kunci
+      MARKET_SOURCES: ${MARKET_SOURCES:-overture,osm}
+      OVERTURE_RELEASE: ${OVERTURE_RELEASE:-}
+      GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
+      TOMTOM_API_KEY: ${TOMTOM_API_KEY:-}
+      SUGGEST_MIN_ORGS: ${SUGGEST_MIN_ORGS:-3}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
       SMTP_FROM: ${SMTP_FROM:-Raqio <no-reply@${DOMAIN}>}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       XENDIT_SECRET_KEY: ${XENDIT_SECRET_KEY:-}
       XENDIT_CALLBACK_TOKEN: ${XENDIT_CALLBACK_TOKEN:-}
       RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-300}
       JOB_RATE_LIMIT_PER_MINUTE: ${JOB_RATE_LIMIT_PER_MINUTE:-10}
+    networks: [app, data]
     depends_on:
       postgres: { condition: service_healthy }
+    deploy:
+      resources:
+        limits: { memory: 512m }
 
+  # Chromium (Playwright) jalan sebagai user non-root image tanpa capability tambahan. /dev/shm diperbesar
+  # karena default 64 MB membuat Chromium crash. Jangan tambahkan SYS_ADMIN; kalau sandbox Chromium menolak
+  # start, pakai profil seccomp Playwright atau argumen --no-sandbox di launch (gmaps.py).
   worker:
+    <<: *hardening
     build: ../services/scraper
     command: python worker.py
+    init: true  # PID 1 = tini: menuai proses Chromium yatim setelah job dihentikan, bukan menumpuk zombie
+    shm_size: "512m"
     environment:
-      DATABASE_URL: postgres://raqio:${PG_PASSWORD}@postgres:5432/raqio
+      DATABASE_URL: postgres://raqio:${PG_PASSWORD:?PG_PASSWORD kosong, isi deploy/.env}@postgres:5432/raqio
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-}
+      APP_URL: https://${DOMAIN}
+      MARKET_CACHE_DAYS: ${MARKET_CACHE_DAYS:-7}
+      # kampanye otomatis: token berhenti berlangganan (sama dengan api) dan SMTP untuk email
+      AUTH_SECRET: ${AUTH_SECRET:?AUTH_SECRET kosong, isi deploy/.env dengan hasil `openssl rand -hex 32`}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-Raqio <no-reply@${DOMAIN}>}
       RAQIO_DATA_DIR: /app/cache
+      RAQIO_IN_CONTAINER: "1"
     volumes:
       - scraper_cache:/app/cache
+    networks: [data]
     deploy:
       replicas: ${WORKER_REPLICAS:-1}
+      resources:
+        limits: { memory: 2g }
     depends_on:
       postgres: { condition: service_healthy }
 
-  # fitur IG lama (chat agent, scrape IG manual). Tidak terbuka ke luar, hanya lewat api.
-  legacy:
-    build: ../services/scraper
-    command: python app.py
-    environment:
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-      RAQIO_DATA_DIR: /app/cache
-      BIND: 0.0.0.0
-    volumes:
-      - scraper_cache:/app/cache
-
-  # backup harian pg_dump ke volume `backups`, simpan BACKUP_KEEP_DAYS hari. Pulihkan: lihat docs/runbook.md
+  # Backup harian: pg_dump | gzip | age (terenkripsi bila BACKUP_AGE_RECIPIENT diisi) ke volume `backups`,
+  # simpan BACKUP_KEEP_DAYS hari, opsional salin ke S3 (BACKUP_S3_URL). Skrip: deploy/backup.sh.
+  # Image postgres resmi dipakai supaya versi pg_dump sama dengan server; age dan aws-cli dipasang
+  # lewat apk saat container start (butuh akses keluar ke dl-cdn.alpinelinux.org). Pulihkan: docs/runbook.md.
   backup:
-    image: postgres:16-alpine
+    <<: *hardening
+    image: postgres:16.15-alpine
+    entrypoint: ["/bin/sh", "/backup.sh"]
     environment:
-      PGPASSWORD: ${PG_PASSWORD}
+      PGHOST: postgres
+      PGUSER: raqio
+      PGDATABASE: raqio
+      PGPASSWORD: ${PG_PASSWORD:?PG_PASSWORD kosong, isi deploy/.env}
       KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      BACKUP_AGE_RECIPIENT: ${BACKUP_AGE_RECIPIENT:-}
+      BACKUP_S3_URL: ${BACKUP_S3_URL:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-}
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-}
     volumes:
+      - ./backup.sh:/backup.sh:ro
+      - ./restore-check.sh:/restore-check.sh:ro
       - backups:/backups
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        while true; do
-          f=/backups/raqio-$$(date +%Y%m%d-%H%M%S).sql.gz
-          if pg_dump -h postgres -U raqio raqio | gzip > "$$f"; then echo "backup ok $$f"; else echo "backup GAGAL"; rm -f "$$f"; fi
-          find /backups -name 'raqio-*.sql.gz' -mtime +$$KEEP_DAYS -delete
-          sleep 86400
-        done
+    networks: [data]
+    deploy:
+      resources:
+        limits: { memory: 256m }
     depends_on:
       postgres: { condition: service_healthy }
 
+  # Jalan sebagai user postgres (bukan root lalu gosu), jadi cap_drop ALL cukup. Password lewat docker secret
+  # (POSTGRES_PASSWORD_FILE); nilainya tetap dari PG_PASSWORD di .env karena api, worker, dan backup
+  # memakainya di DATABASE_URL.
   postgres:
-    image: postgres:16-alpine
+    <<: *hardening
+    image: postgres:16.15-alpine
+    user: postgres
+    shm_size: "256m"
+    secrets: [pg_password]
     environment:
       POSTGRES_USER: raqio
-      POSTGRES_PASSWORD: ${PG_PASSWORD}
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_password
       POSTGRES_DB: raqio
     volumes:
       - pgdata:/var/lib/postgresql/data
+    networks: [data]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U raqio -d raqio"]
       interval: 5s
       timeout: 3s
       retries: 10
+    deploy:
+      resources:
+        limits: { memory: 1g }
+
+  # ---- Monitoring (opsional): docker compose ... --profile monitoring up -d ----
+  # Prometheus men-scrape api:8080/metrics dengan METRICS_TOKEN. Grafana hanya di 127.0.0.1:3001 (akses lewat SSH tunnel),
+  # dashboard "Raqio operasional" diprovisi dari deploy/monitoring/grafana/dashboards.
+  prometheus:
+    <<: *hardening
+    profiles: ["monitoring"]
+    image: prom/prometheus:v3.5.0
+    user: "65534:65534"
+    entrypoint: ["/bin/sh", "/prometheus-entrypoint.sh"]
+    environment:
+      # compose menginterpolasi env semua service walau profile tidak aktif, jadi tidak boleh `:?` di sini;
+      # tanpa METRICS_TOKEN scrape akan 401 (lihat target di Prometheus).
+      METRICS_TOKEN: ${METRICS_TOKEN:-}
+      PROM_RETENTION: ${PROM_RETENTION:-30d}
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./monitoring/prometheus-entrypoint.sh:/prometheus-entrypoint.sh:ro
+      - prom_data:/prometheus
+    tmpfs: ["/etc/prometheus/tmp"]
+    networks: [app]
+    deploy:
+      resources:
+        limits: { memory: 512m }
+
+  alertmanager:
+    <<: *hardening
+    profiles: ["monitoring"]
+    image: prom/alertmanager:v0.28.1
+    user: "65534:65534"
+    entrypoint: ["/bin/sh", "/alertmanager-entrypoint.sh"]
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      OPS_TELEGRAM_CHAT: ${OPS_TELEGRAM_CHAT:-}
+    volumes:
+      - ./monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.tmpl.yml:ro
+      - ./monitoring/alertmanager-entrypoint.sh:/alertmanager-entrypoint.sh:ro
+      - alertmanager_data:/alertmanager
+    tmpfs: ["/etc/alertmanager/run"]
+    networks: [app]
+    deploy:
+      resources:
+        limits: { memory: 128m }
+
+  grafana:
+    <<: *hardening
+    profiles: ["monitoring"]
+    image: grafana/grafana:12.3.1
+    ports:
+      - "127.0.0.1:3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      # hanya terbuka di 127.0.0.1:3001; tetap ganti dari "admin" sebelum membuka SSH tunnel ke orang lain
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_SERVER_ROOT_URL: http://localhost:3001
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    networks: [app]
+    depends_on: [prometheus]
+    deploy:
+      resources:
+        limits: { memory: 512m }
+
+secrets:
+  pg_password:
+    environment: PG_PASSWORD
+
+networks:
+  edge:
+  app:
+  data:
 
 volumes:
   pgdata:
   backups:
   caddy_data:
+  caddy_config:
   scraper_cache:
+  prom_data:
+  grafana_data:
+  alertmanager_data:

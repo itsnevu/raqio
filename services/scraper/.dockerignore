@@ -1,0 +1,18 @@
+# rahasia dan data hasil scrape tidak boleh masuk image
+.env
+.env.local
+ig.db
+ig.db-wal
+ig.db-shm
+hasil/
+website_state.json
+competitors.json
+proxies.txt
+proxies_webshare.txt
+ig_state.json
+# cache tool dan tes
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+tests/

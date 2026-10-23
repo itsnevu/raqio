@@ -83,6 +83,8 @@ from ig_modes import resolve_mode, runtime_guard
 # CONFIG
 # ============================================================
 
+# folder data (ig.db, cookie anonim); di Docker diarahkan ke volume lewat RAQIO_DATA_DIR
+DATA_DIR = os.environ.get("RAQIO_DATA_DIR", os.path.dirname(os.path.abspath(__file__)))
 # proxy_file, request_jitter, max_requests_per_hour di-override oleh --mode di main()
 CFG = {
     "app_id": "936619743392459",
@@ -92,8 +94,8 @@ CFG = {
     "request_jitter": (2.5, 5.5),
     "max_requests_per_hour": 200,
     "robots_check": True,
-    "db_path": os.path.join(os.environ.get("RAQIO_DATA_DIR", os.path.dirname(os.path.abspath(__file__))), "ig.db"),
-    "state_file": "ig_state.json",
+    "db_path": os.path.join(DATA_DIR, "ig.db"),
+    "state_file": os.path.join(DATA_DIR, "ig_state.json"),  # cookie ikut volume data, bukan folder kode (hilang saat deploy)
     # profil TLS/HTTP2 curl_cffi; dipilih acak per sesi, ganti saat 403 (ala Impit)
     "impersonate_pool": ["chrome136", "chrome133a", "chrome131"],
     "telegram_token": os.getenv("TG_TOKEN", ""),
@@ -123,7 +125,7 @@ _GUARD_RECORD, _GUARD_MULT = runtime_guard()
 # 16. COMPLIANCE
 # ============================================================
 
-EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
+EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]{1,64}@[a-zA-Z0-9.-]{1,120}\.[a-zA-Z]{2,24}")  # kuantifier dibatasi (anti ReDoS)
 PHONE_RE = re.compile(r"(\+62|62|0)8[1-9][0-9]{6,10}")
 OPT_OUT_FILE = "opt_out.txt"
 
@@ -836,18 +838,18 @@ def classify(pr: ProfileReport):
 # ============================================================
 
 def enrich_website(url: str) -> list:
+    """Email dari website di bio. Lewat netutil.fetch_safe: tolak host internal, redirect manual, body <= 2 MB."""
     if not url or "instagram.com" in url: return []
+    import netutil
     try:
-        r = requests.get(url, timeout=10,
-                         headers={"User-Agent": random.choice(CFG["user_agents"])})
-        emails = set(EMAIL_RE.findall(r.text))
-        # cek halaman /contact dan /about
-        base = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
+        r = netutil.fetch_safe(url, timeout=10)
+        emails = set(EMAIL_RE.findall(r.text[:netutil.TEXT_LIMIT]))
+        # cek halaman /contact dan /about, relatif ke URL akhir yang sudah diperiksa
+        base = f"{urlparse(r.url).scheme}://{urlparse(r.url).netloc}"
         for path in ("/contact", "/about", "/kontak"):
             try:
-                rr = requests.get(base + path, timeout=8,
-                                  headers={"User-Agent": random.choice(CFG["user_agents"])})
-                emails |= set(EMAIL_RE.findall(rr.text))
+                rr = netutil.fetch_safe(base + path, timeout=8)
+                emails |= set(EMAIL_RE.findall(rr.text[:netutil.TEXT_LIMIT]))
             except Exception: pass
         return list(emails)[:10]
     except Exception:
@@ -881,7 +883,12 @@ def mine_intent(session: IGSession, posts: list, top_n=3) -> list:
 
 class Storage:
     def __init__(self, path=CFG["db_path"]):
-        self.conn = sqlite3.connect(path, check_same_thread=False)
+        self.conn = sqlite3.connect(path, check_same_thread=False, timeout=5)
+        try:
+            self.conn.execute("PRAGMA journal_mode=WAL")
+        except sqlite3.OperationalError:
+            pass
+        self.conn.execute("PRAGMA busy_timeout=5000")
         self.conn.execute("""
             CREATE TABLE IF NOT EXISTS profiles (
                 username TEXT PRIMARY KEY,

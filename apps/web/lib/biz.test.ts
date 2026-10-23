@@ -51,3 +51,22 @@ describe("teks", () => {
     expect(d).toContain("coffee shop di sekitar Kemang");
   });
 });
+
+describe("csv", () => {
+  it("prefix ' untuk sel yang bisa jadi formula, kutip ganda digandakan", async () => {
+    const { csvCell, csvText, withLead } = await import("./biz");
+    expect(csvCell("=HYPERLINK(\"x\")")).toBe("\"'=HYPERLINK(\"\"x\"\")\"");
+    expect(csvCell("+62812")).toBe("\"'+62812\"");
+    expect(csvCell("-5")).toBe("\"'-5\"");
+    expect(csvCell("@admin")).toBe("\"'@admin\"");
+    expect(csvCell("\tx")).toBe("\"'\tx\"");
+    expect(csvCell("Kopi Enak")).toBe("\"Kopi Enak\"");
+    expect(csvCell(["a", "b"])).toBe("\"a b\"");
+    expect(csvCell(null)).toBe("\"\"");
+    expect(csvText(["n"], [["=1"]])).toBe("﻿\"n\"\n\"'=1\"");
+    const p = biz({ lead: { status: "baru", note: "x" } });
+    const n = withLead(p, { status: "deal" });
+    expect(n.lead).toMatchObject({ status: "deal", note: "x" });
+    expect(p.lead?.status).toBe("baru");
+  });
+});

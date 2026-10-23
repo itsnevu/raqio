@@ -23,8 +23,16 @@ func (a *App) igProfile(w http.ResponseWriter, r *http.Request) {
 	var last time.Time
 	err := a.db.QueryRow(r.Context(), `SELECT data, history, last_scraped FROM ig_profiles WHERE username=$1`, u).Scan(&raw, &hist, &last)
 	if err != nil {
+		if err != errNoRows {
+			logDB("igProfile", "select ig_profiles", err)
+			errCode(w, 500, "db_error", "Gagal membaca data, coba lagi")
+			return
+		}
+		// memakai index parsial jobs_ig_username ((params->>'username') WHERE kind='ig_profile')
 		var pending bool
-		a.db.QueryRow(r.Context(), `SELECT EXISTS(SELECT 1 FROM jobs WHERE kind='ig_profile' AND params->>'username'=$1 AND status IN ('queued','running'))`, u).Scan(&pending)
+		if err := a.db.QueryRow(r.Context(), `SELECT EXISTS(SELECT 1 FROM jobs WHERE kind='ig_profile' AND params->>'username'=$1 AND status IN ('queued','running'))`, u).Scan(&pending); err != nil {
+			logDB("igProfile", "select jobs pending", err)
+		}
 		writeJSON(w, 200, map[string]any{"found": false, "username": u, "pending": pending})
 		return
 	}
@@ -84,17 +92,33 @@ func (a *App) igRun(w http.ResponseWriter, r *http.Request) {
 		errJSON(w, 400, "Maksimal 5 akun sekaligus.")
 		return
 	}
+	// kuota dan semua job dalam satu transaksi: kalau satu gagal, kuota tidak terpotong
 	ctx := r.Context()
-	if err := a.consume(ctx, s.OrgID, s.Plan, "market_detail", len(users)); err != nil {
-		errJSON(w, 402, err.Error())
+	tx, err := a.db.Begin(ctx)
+	if err != nil {
+		logDB("igRun", "begin", err)
+		errCode(w, 500, "db_error", "Gagal menyimpan, coba lagi")
+		return
+	}
+	defer tx.Rollback(ctx)
+	if err := consumeIn(ctx, tx, s.OrgID, s.Plan, "market_detail", len(users)); err != nil {
+		errCode(w, 402, "quota_exceeded", err.Error())
 		return
 	}
 	ids := []int64{}
 	for _, u := range users {
-		id, err := a.enqueue(ctx, s.OrgID, &s.UserID, "ig_profile", map[string]any{"username": u, "force": in.Force}, 5)
-		if err == nil {
-			ids = append(ids, id)
+		id, err := enqueueIn(ctx, tx, s.OrgID, &s.UserID, "ig_profile", map[string]any{"username": u, "force": in.Force}, 5)
+		if err != nil {
+			logDB("igRun", "insert jobs", err)
+			errCode(w, 500, "db_error", "Gagal menyimpan, coba lagi")
+			return
 		}
+		ids = append(ids, id)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		logDB("igRun", "commit", err)
+		errCode(w, 500, "db_error", "Gagal menyimpan, coba lagi")
+		return
 	}
 	writeJSON(w, 200, map[string]any{"ok": true, "jobs": ids})
 }

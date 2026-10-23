@@ -56,6 +56,35 @@ func placesOf(rep map[string]any) []Place {
 	return out
 }
 
+// contactFields: hasil "Cek kontak" berbayar dan data per org yang tidak boleh ikut saat laporan disalin lintas org.
+var contactFields = []string{"phone", "website", "instagram", "instagram_shared", "emails", "whatsapp", "_detailed", "lead", "src_fields"} // whatsapp = tautan wa.me berisi nomor
+
+// stripContactFields: buang field kontak dari semua daftar bisnis di laporan (all, prospects, leaders, dan daftar
+// lain yang berisi objek). Mengubah rep di tempat. Yang tersisa hanya data dasar Google Maps.
+func stripContactFields(rep map[string]any) {
+	for _, v := range rep {
+		list, ok := v.([]any)
+		if !ok {
+			continue
+		}
+		for _, x := range list {
+			if p, ok := x.(Place); ok {
+				for _, f := range contactFields {
+					delete(p, f)
+				}
+			}
+		}
+	}
+}
+
+// summaryOf: objek summary laporan (untuk kolom reports.summary); objek kosong kalau tidak ada.
+func summaryOf(rep map[string]any) map[string]any {
+	if sm, ok := rep["summary"].(map[string]any); ok {
+		return sm
+	}
+	return map[string]any{}
+}
+
 // reportChanges: port dari market.report_changes.
 func reportChanges(prev, cur map[string]any) map[string][]Place {
 	old := map[string]Place{}

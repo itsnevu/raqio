@@ -7,7 +7,7 @@ requires-python = ">=3.11"
 [tool.ruff]
 line-length = 120
 target-version = "py311"
-extend-exclude = ["templates", "hasil", ".venv"]
+extend-exclude = ["hasil", ".venv"]
 
 [tool.ruff.lint]
 # Mulai dari aturan dasar (error nyata), gaya ditambah bertahap.

@@ -1,10 +1,20 @@
 "use client";
+import BizAvatar from "@/components/BizAvatar";
+import ScoreHelp from "@/components/ScoreHelp";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import "./prospects.css";
-import { useShell } from "@/components/Shell";
-import { Biz, ST_LABEL, clean, dec, downloadCsv, draft, saveLead, today, waOf } from "@/lib/biz";
+import ExtLink from "@/components/ExtLink";
+import LoadError, { PageSkeleton } from "@/components/LoadError";
+import { useShell, useToast } from "@/components/Shell";
+import { useTour } from "@/components/Tour";
+import { apiGet, errMsg } from "@/lib/api";
+import { type Biz, LEAD_ST, ST_LABEL, clean, dec, downloadCsv, draft, leadKey, saveLead, waOf } from "@/lib/biz";
+import { invalidate, isDue, loadProspects, PROSPECTS_KEY, REFRESH_MSG } from "@/lib/cache";
+import { igUrl } from "@/lib/safe";
 import { getOffer, isDefaultOffer, loadSettings, setOffer } from "@/lib/settings";
+import { PROSPECTS_TOUR } from "@/lib/tours";
+import { useRefresh } from "@/lib/useRefresh";
 
 const COLS: [string, string, string][] = [
   ["baru", "Belum dihubungi", "Mulai dari skor tertinggi. Klik WhatsApp, lalu geser ke Dihubungi."],
@@ -15,52 +25,99 @@ const COLS: [string, string, string][] = [
 ];
 const NEXT: Record<string, string> = { baru: "dihubungi", dihubungi: "tertarik", tertarik: "deal" };
 const stOf = (p: Biz) => (p.lead && p.lead.status) || "baru";
-const isDue = (p: Biz) => !!(p.lead && p.lead.remind && p.lead.remind <= today() && !["deal", "tolak"].includes(p.lead.status || ""));
+const keyOf = (p: Biz, i: number) => leadKey(p) || `${p.name}#${i}`;
+
+type Loaded = { loading: boolean; error: string | null; data: Biz[] | null };
 
 export default function ProspectsPage() {
-  const { toast, openBusiness } = useShell();
-  const [items, setItems] = useState<Biz[] | null>(null);
+  const toast = useToast();
+  const { openBusiness } = useShell();
+  const [st, setSt] = useState<Loaded>({ loading: true, error: null, data: null });
   const [q, setQ] = useState("");
+  const [qInput, setQInput] = useState("");
   const [area, setArea] = useState("");
   const [due, setDue] = useState(false);
   const [offer, setOfferState] = useState("");
+  const [members, setMembers] = useState<{ user_id: string; email: string }[]>([]);
+  const [pj, setPj] = useState(""); // filter penanggung jawab: "" semua, "none" belum dipegang, selainnya user_id
   const [show, setShow] = useState<Record<string, number>>({});
   const [over, setOver] = useState<string | null>(null);
-  const [dragging, setDragging] = useState<number | null>(null);
-  const [, bump] = useState(0);
-  const rerender = useCallback(() => bump((n) => n + 1), []);
+  const [dragging, setDragging] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const j = await (await fetch("/prospects/data")).json();
-    setItems(j.items);
+    setSt((s) => ({ ...s, loading: true, error: null }));
+    try {
+      await loadSettings().catch(() => null);
+      setOfferState(isDefaultOffer() ? "" : getOffer());
+      // anggota org untuk pembagian penanggung jawab; gagal dimuat bukan masalah (fitur tim saja)
+      apiGet<{ members?: { user_id: string; email: string }[] }>("/org").then((o) => setMembers(o.members || [])).catch(() => {});
+      const items = await loadProspects();
+      setSt({ loading: false, error: null, data: items });
+    } catch (e) {
+      setSt({ loading: false, error: errMsg(e, "Prospek gagal dimuat."), data: null });
+    }
   }, []);
   useEffect(() => {
-    loadSettings().then(() => {
-      setOfferState(isDefaultOffer() ? "" : getOffer());
-      load();
-    });
+    void load();
   }, [load]);
+  // asisten selesai bekerja (mis. mengubah status prospek): muat ulang papan
+  useRefresh((mutated) => {
+    invalidate(PROSPECTS_KEY);
+    void load();
+    if (mutated) toast(REFRESH_MSG);
+  });
+  useEffect(() => {
+    const t = setTimeout(() => setQ(qInput.toLowerCase()), 200);
+    return () => clearTimeout(t);
+  }, [qInput]);
 
-  if (!items) return <div className="wrap pros" />;
+  const items = st.data;
+  useTour("prospects", PROSPECTS_TOUR, !!items);
 
-  const filtered = () =>
-    items.filter(
+  const replace = useCallback((next: Biz) => {
+    setSt((s) => (s.data ? { ...s, data: s.data.map((p) => (leadKey(p) === leadKey(next) ? next : p)) } : s));
+    invalidate(PROSPECTS_KEY);
+  }, []);
+
+  const move = useCallback(async (p: Biz, status: string) => {
+    if (stOf(p) === status) return;
+    try {
+      const next = await saveLead(p, { status });
+      replace(next);
+      toast(`${clean(p.name)} dipindah ke ${ST_LABEL[status]}`);
+    } catch (e) {
+      toast(errMsg(e, "Gagal memindahkan"));
+    }
+  }, [replace, toast]);
+
+  const assign = useCallback(async (p: Biz, userId: string) => {
+    try {
+      replace(await saveLead(p, { status: stOf(p), assignee: userId }));
+      toast(userId ? "Penanggung jawab diatur" : "Penanggung jawab dilepas");
+    } catch (e) {
+      toast(errMsg(e, "Gagal mengatur penanggung jawab"));
+    }
+  }, [replace, toast]);
+
+  const rows = useMemo(() => {
+    if (!items) return [];
+    return items.filter(
       (p) =>
         (!area || p.industry + " · " + p.area === area) &&
         (!due || isDue(p)) &&
+        (!pj || (pj === "none" ? !p.lead?.assignee : p.lead?.assignee === pj)) &&
         (!q || [p.name, p.area, p.industry, p.category, p.lead && p.lead.note].join(" ").toLowerCase().includes(q)),
     );
+  }, [items, area, due, q, pj]);
 
-  const move = async (i: number, status: string) => {
-    const p = items[i];
-    if (stOf(p) === status) return;
-    const err = await saveLead(p, { status });
-    if (err) toast(err);
-    else {
-      toast(`${clean(p.name)} dipindah ke ${ST_LABEL[status]}`);
-      rerender();
-    }
-  };
+  if (st.loading && !items) return <PageSkeleton className="pros" />;
+  if (st.error || !items)
+    return (
+      <div className="wrap pros">
+        <h1>Prospek</h1>
+        <LoadError error={st.error || "Data kosong."} onRetry={() => { invalidate(PROSPECTS_KEY); void load(); }} />
+      </div>
+    );
 
   const exportCsv = () => {
     const cols: [string, string][] = [
@@ -69,24 +126,27 @@ export default function ProspectsPage() {
     ];
     const val = (p: Biz, c: string) =>
       c === "status" ? ST_LABEL[stOf(p)] : c === "note" ? p.lead?.note : c === "remind" ? p.lead?.remind : c === "name" ? clean(p.name) : (p as Record<string, unknown>)[c];
-    downloadCsv("prospek.csv", cols.map((c) => c[1]), filtered().map((p) => cols.map(([c]) => val(p, c))));
+    downloadCsv("prospek.csv", cols.map((c) => c[1]), rows.map((p) => cols.map(([c]) => val(p, c))));
   };
 
-  const rows = filtered();
   const areas = [...new Set(items.map((p) => p.industry + " · " + p.area))];
   const cnt = (s: string) => items.filter((p) => stOf(p) === s).length;
   const nDue = items.filter(isDue).length;
+  const byKey = new Map(items.map((p, i) => [keyOf(p, i), p] as const));
 
   return (
     <div className="wrap pros">
       <div className="head">
         <div>
           <h1>Prospek</h1>
-          <p className="lead">Bisnis yang paling mungkin butuh jasamu, diambil dari semua riset. Geser kartu untuk ubah status, klik untuk detail.</p>
+          <p className="lead">Bisnis yang paling mungkin butuh jasamu, diambil dari semua riset. Geser kartu atau pakai menu Pindah ke untuk ubah status, klik untuk detail.</p>
         </div>
-        <button className="btn ghost" onClick={exportCsv}>
-          Ekspor CSV
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <Link href="/campaigns?from=prospects" className="btn">Buat kampanye</Link>
+          <button type="button" className="btn ghost" onClick={exportCsv}>
+            Ekspor CSV
+          </button>
+        </div>
       </div>
       {!items.length ? (
         <div className="empty-cta">
@@ -118,18 +178,27 @@ export default function ProspectsPage() {
             </div>
           </div>
           <div className="bar">
-            <input type="search" placeholder="Cari nama, wilayah, catatan" value={q} onChange={(e) => setQ(e.target.value.toLowerCase())} />
-            <select value={area} onChange={(e) => setArea(e.target.value)}>
+            <input type="search" aria-label="Cari prospek" placeholder="Cari nama, wilayah, catatan" value={qInput} onChange={(e) => setQInput(e.target.value)} />
+            <select value={area} aria-label="Batasi ke satu riset" onChange={(e) => setArea(e.target.value)}>
               <option value="">Semua riset</option>
               {areas.map((a) => (
                 <option key={a}>{a}</option>
               ))}
             </select>
+            {members.length > 1 && (
+              <select value={pj} aria-label="Batasi ke penanggung jawab" onChange={(e) => setPj(e.target.value)}>
+                <option value="">Semua penanggung jawab</option>
+                <option value="none">Belum dipegang</option>
+                {members.map((m) => (
+                  <option key={m.user_id} value={m.user_id}>{m.email.split("@")[0]}</option>
+                ))}
+              </select>
+            )}
             <label>
               <input type="checkbox" checked={due} onChange={(e) => setDue(e.target.checked)} /> Hanya yang jatuh tempo
             </label>
           </div>
-          <div className="offer">
+          <label className="offer">
             Jasa yang kamu tawarkan (dipakai di draf pesan):
             <input
               value={offer}
@@ -139,15 +208,17 @@ export default function ProspectsPage() {
                 setOffer(e.target.value);
               }}
             />
-          </div>
+          </label>
           <div className="board">
             {COLS.map(([k, l, hint]) => {
-              const list = rows.map((p) => [p, items.indexOf(p)] as [Biz, number]).filter(([p]) => stOf(p) === k);
+              const list = rows.filter((p) => stOf(p) === k);
               const lim = show[k] || 25;
               return (
-                <div
+                <section
                   key={k}
                   className={"col" + (over === k ? " over" : "")}
+                  data-col={k}
+                  aria-label={l}
                   onDragOver={(e) => {
                     e.preventDefault();
                     setOver(k);
@@ -156,7 +227,8 @@ export default function ProspectsPage() {
                   onDrop={(e) => {
                     e.preventDefault();
                     setOver(null);
-                    move(+e.dataTransfer.getData("text/plain"), k);
+                    const p = byKey.get(e.dataTransfer.getData("text/plain"));
+                    if (p) void move(p, k);
                   }}
                 >
                   <div className="col-h">
@@ -165,26 +237,31 @@ export default function ProspectsPage() {
                   </div>
                   <div className="col-b">
                     {list.length === 0 && <div className="col-hint">{hint || "Kosong"}</div>}
-                    {list.slice(0, lim).map(([p, i]) => (
-                      <Card
-                        key={i}
-                        p={p}
-                        i={i}
-                        dragging={dragging === i}
-                        onDragStart={() => setDragging(i)}
-                        onDragEnd={() => setDragging(null)}
-                        onOpen={() => openBusiness(p, { onChange: rerender })}
-                        onNext={() => move(i, NEXT[stOf(p)])}
-                        onWa={() => stOf(p) === "baru" && move(i, "dihubungi")}
-                      />
-                    ))}
+                    {list.slice(0, lim).map((p, i) => {
+                      const key = keyOf(p, i);
+                      return (
+                        <Card
+                          key={key}
+                          p={p}
+                          id={key}
+                          members={members}
+                          dragging={dragging === key}
+                          onDragStart={() => setDragging(key)}
+                          onDragEnd={() => setDragging(null)}
+                          onOpen={() => openBusiness(p, { onChange: replace })}
+                          onMove={(s) => move(p, s)}
+                          onAssign={(u) => assign(p, u)}
+                          onWa={() => stOf(p) === "baru" && move(p, "dihubungi")}
+                        />
+                      );
+                    })}
                     {list.length > lim && (
-                      <button className="more-btn" onClick={() => setShow({ ...show, [k]: 1e9 })}>
+                      <button type="button" className="more-btn" onClick={() => setShow({ ...show, [k]: 1e9 })}>
                         Tampilkan {list.length - lim} lagi
                       </button>
                     )}
                   </div>
-                </div>
+                </section>
               );
             })}
           </div>
@@ -195,32 +272,31 @@ export default function ProspectsPage() {
 }
 
 function Card({
-  p, i, dragging, onDragStart, onDragEnd, onOpen, onNext, onWa,
+  p, id, members, dragging, onDragStart, onDragEnd, onOpen, onMove, onAssign, onWa,
 }: {
-  p: Biz; i: number; dragging: boolean; onDragStart: () => void; onDragEnd: () => void; onOpen: () => void; onNext: () => void; onWa: () => void;
+  p: Biz; id: string; members: { user_id: string; email: string }[]; dragging: boolean; onDragStart: () => void; onDragEnd: () => void;
+  onOpen: () => void; onMove: (st: string) => void; onAssign: (userId: string) => void; onWa: () => void;
 }) {
   const wa = waOf(p),
     due = isDue(p),
     st = stOf(p);
+  const next = NEXT[st];
   return (
-    <div
+    <article
       className={"card" + (dragging ? " drag" : "")}
       draggable
       onDragStart={(e) => {
-        e.dataTransfer.setData("text/plain", String(i));
+        e.dataTransfer.setData("text/plain", id);
         onDragStart();
       }}
       onDragEnd={onDragEnd}
-      onClick={(e) => {
-        if ((e.target as HTMLElement).closest("a,button")) return;
-        onOpen();
-      }}
     >
       <div className="t">
-        <div className="n">{clean(p.name)}</div>
-        <span className={"sc" + ((p.lead_score ?? 0) >= 60 ? " hi" : "")} title="Skor prospek 0 sampai 100">
+        <button type="button" className="n nm-btn withlogo" onClick={onOpen}><BizAvatar name={clean(p.name)} website={p.website} logoKey={p.logo_key} size={34} />{clean(p.name)}</button>
+        <span className={"sc" + ((p.lead_score ?? 0) >= 60 ? " hi" : "")} title="Skor prospek 0 sampai 100" aria-label={`Skor prospek ${p.lead_score ?? "-"}`}>
           {p.lead_score}
         </span>
+        <ScoreHelp kind="prospek" />
       </div>
       <div className="m">
         {p.industry} · {p.area}
@@ -235,21 +311,36 @@ function Card({
       )}
       <div className="a">
         {wa && (
-          <a className="wa" target="_blank" href={wa + "?text=" + encodeURIComponent(draft(p, p.industry, p.area))} onClick={onWa}>
+          <ExtLink className="wa" href={wa + "?text=" + encodeURIComponent(draft(p, p.industry, p.area))} onClick={onWa}>
             WhatsApp
-          </a>
+          </ExtLink>
         )}
-        {p.instagram && (
-          <a target="_blank" href={"https://instagram.com/" + p.instagram}>
-            IG
-          </a>
+        {p.instagram && <ExtLink href={igUrl(p.instagram)}>IG</ExtLink>}
+        <label className="mv">
+          <span className="sr-only">Pindah ke</span>
+          <select value={st} aria-label={"Pindah " + clean(p.name) + " ke"} onChange={(e) => onMove(e.target.value)}>
+            {LEAD_ST.map((s) => (
+              <option key={s} value={s}>{s === st ? ST_LABEL[s] : "Pindah ke " + ST_LABEL[s]}</option>
+            ))}
+          </select>
+        </label>
+        {members.length > 1 && (
+          <label className="mv">
+            <span className="sr-only">Penanggung jawab</span>
+            <select value={p.lead?.assignee || ""} aria-label={"Penanggung jawab " + clean(p.name)} onChange={(e) => onAssign(e.target.value)}>
+              <option value="">PJ: —</option>
+              {members.map((m) => (
+                <option key={m.user_id} value={m.user_id}>PJ: {m.email.split("@")[0]}</option>
+              ))}
+            </select>
+          </label>
         )}
-        {NEXT[st] && (
-          <button className="next" title={"Pindah ke " + ST_LABEL[NEXT[st]]} onClick={onNext}>
-            {ST_LABEL[NEXT[st]]} →
+        {next && (
+          <button type="button" className="next" title={"Pindah ke " + ST_LABEL[next]} onClick={() => onMove(next)}>
+            {ST_LABEL[next]} →
           </button>
         )}
       </div>
-    </div>
+    </article>
   );
 }

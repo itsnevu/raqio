@@ -16,6 +16,8 @@ class WatchScreen extends StatefulWidget {
 
 class _WatchScreenState extends State<WatchScreen> {
   List<WatchItem>? _data;
+  List<WatchAlert> _alerts = [];
+  int _unread = 0;
 
   @override
   void initState() {
@@ -28,6 +30,21 @@ class _WatchScreenState extends State<WatchScreen> {
   Future<void> _load() async {
     final d = await guard(context, () => _api.watchData());
     if (mounted && d != null) setState(() => _data = d);
+    // alert perubahan penting; gagal pun daftar pantauan tetap tampil
+    try {
+      final a = await _api.alerts();
+      if (mounted) {
+        setState(() {
+          _alerts = a.alerts;
+          _unread = a.unread;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _markRead({int? id}) async {
+    final ok = await guardOk(context, () => _api.readAlerts(id: id));
+    if (ok) _load();
   }
 
   Future<void> _toggle(WatchItem x) async {
@@ -56,10 +73,65 @@ class _WatchScreenState extends State<WatchScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Text('Wilayah yang dipantau diriset ulang otomatis tiap minggu. Di sini terlihat pesaing baru, rating naik atau turun, dan bisnis yang sedang ramai.', style: t.bodySmall),
+                  Text(
+                      'Wilayah yang dipantau diriset ulang otomatis tiap minggu. Di sini terlihat pesaing baru, rating naik atau turun, dan bisnis yang sedang ramai. Perubahan penting dikirim ke email, Telegram, atau webhook (atur di tab Akun).',
+                      style: t.bodySmall),
                   const SizedBox(height: 14),
+                  if (_alerts.isNotEmpty) ...[
+                    Row(children: [
+                      const Label('Alert'),
+                      if (_unread > 0) ...[
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                          color: RaqioColors.good,
+                          child: Text('$_unread', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: RaqioColors.bg)),
+                        ),
+                      ],
+                      const Spacer(),
+                      if (_unread > 0) TextButton(onPressed: () => _markRead(), child: const Text('Tandai semua dibaca')),
+                    ]),
+                    const SizedBox(height: 6),
+                    ..._alerts.take(12).map((al) => Padding(
+                          padding: const EdgeInsets.only(bottom: 6),
+                          child: InkWell(
+                            onTap: () {
+                              if (al.unread) _markRead(id: al.id);
+                              Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReportScreen(reportId: al.reportId)));
+                            },
+                            child: Panel(
+                              padding: const EdgeInsets.all(10),
+                              color: al.unread ? RaqioColors.sunk : null,
+                              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Text(al.severity >= 6 ? '!!' : '!',
+                                    style: TextStyle(fontWeight: FontWeight.w700, color: al.severity >= 6 ? RaqioColors.bad : RaqioColors.warn)),
+                                const SizedBox(width: 8),
+                                Expanded(child: Text(al.summary, style: t.bodySmall?.copyWith(color: al.unread ? RaqioColors.text : RaqioColors.muted))),
+                                const SizedBox(width: 8),
+                                Text(fmtDate(al.createdAt), style: t.labelSmall),
+                              ]),
+                            ),
+                          ),
+                        )),
+                    const SizedBox(height: 10),
+                  ],
                   if (data.isEmpty) Panel(child: Text('Belum ada yang dipantau. Riset dulu, lalu nyalakan pantauan di sini.', style: t.bodySmall)),
-                  ...data.map((x) => Padding(padding: const EdgeInsets.only(bottom: 8), child: _Item(x: x, onToggle: () => _toggle(x), onRerun: () => _rerun(x)))),
+                  ...() {
+                    final on = data.where((x) => x.watch != null).toList();
+                    final off = data.where((x) => x.watch == null).toList();
+                    return <Widget>[
+                      if (on.isNotEmpty) ...[
+                        Label('Dipantau (${on.length})'),
+                        const SizedBox(height: 8),
+                        ...on.map((x) => Padding(padding: const EdgeInsets.only(bottom: 8), child: _Item(x: x, onToggle: () => _toggle(x), onRerun: () => _rerun(x)))),
+                      ],
+                      if (off.isNotEmpty) ...[
+                        Label('Riset lain (${off.length})'),
+                        const SizedBox(height: 8),
+                        ...off.map((x) => Padding(padding: const EdgeInsets.only(bottom: 8), child: _Item(x: x, onToggle: () => _toggle(x), onRerun: () => _rerun(x)))),
+                      ],
+                    ];
+                  }(),
                 ],
               ),
             ),

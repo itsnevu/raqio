@@ -29,3 +29,15 @@ apps/api/bin/
 # cache tool
 .pytest_cache/
 .ruff_cache/
+
+# log dev.ps1
+.dev-logs/
+
+# backup terenkripsi (age) dan dump lokal
+*.age
+backups/
+
+# e2e (Playwright)
+e2e/node_modules/
+e2e/report/
+e2e/test-results/

@@ -8,6 +8,9 @@ Daftar kompetitor di competitors.json:
 Usage:
     python competitor_website_monitor.py
     python competitor_website_monitor.py --add nama https://domain.com
+
+Semua fetch lewat netutil.fetch_safe: host diperiksa (tolak IP internal), redirect manual maksimal 3 kali,
+body maksimal 2 MB, dan regex hanya dijalankan pada 200 KB teks pertama.
 """
 import argparse
 import hashlib
@@ -17,15 +20,18 @@ import re
 import time
 
 from bs4 import BeautifulSoup
-import netutil  # curl_cffi + DNS-over-HTTPS (tahan blokir DNS ISP, SSL modern)
+import netutil
 
 COMPETITORS_FILE = "competitors.json"
 STATE_FILE = "website_state.json"
-IG_RE = re.compile(r'instagram\.com/([A-Za-z0-9_.]+)')
+IG_RE = re.compile(r'instagram\.com/([A-Za-z0-9_.]{1,30})')
 IG_SKIP = {"p", "reel", "reels", "explore", "accounts", "stories", "tv", "about", "legal"}
-EMAIL_RE = re.compile(r'[\w.+-]+@[\w-]+\.[A-Za-z]{2,}(?:\.[A-Za-z]{2,})?')
+# kuantifier dibatasi supaya tidak kuadratik pada teks panjang tanpa '@'
+EMAIL_RE = re.compile(r'[\w.+-]{1,64}@[\w-]{1,63}\.[A-Za-z]{2,24}(?:\.[A-Za-z]{2,24})?')
 EMAIL_SKIP = (".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg", "sentry", "example.",
               "domain.com", "email.com", "yourdomain", "@sentry")
+CONTACT_PATHS = ("/contact", "/kontak", "/contact-us", "/hubungi-kami")
+TEXT_LIMIT = netutil.TEXT_LIMIT
 
 
 def load_competitors():
@@ -35,25 +41,32 @@ def load_competitors():
     return {}
 
 
-def fetch(url):
-    return netutil.get(url, timeout=15, retries=2)
+def fetch(url, timeout=15):
+    """GET aman (anti SSRF, body <= 2 MB). Melempar netutil.UnsafeURL kalau URL ditolak."""
+    return netutil.fetch_safe(url, timeout=timeout)
 
 
-def scan(url):
+def find_emails(text):
+    return {e for e in EMAIL_RE.findall(text[:TEXT_LIMIT]) if not any(s in e.lower() for s in EMAIL_SKIP)}
+
+
+def scan(url, timeout=15, contact_pages=True):
+    """Pindai satu website: IG, email, judul, harga. Halaman kontak hanya dibuka kalau beranda belum memuat email, dan
+    berhenti di halaman pertama yang memuatnya (maksimal 1 + 4 permintaan, masing-masing <= timeout detik)."""
     try:
-        r = fetch(url)
-        html = r.text
+        r = fetch(url, timeout)
+        html = r.text[:TEXT_LIMIT]
         soup = BeautifulSoup(html, "html.parser")
-        emails = {e for e in EMAIL_RE.findall(html)
-                  if not any(s in e.lower() for s in EMAIL_SKIP)}
-        # cek halaman kontak juga
-        base = url.rstrip("/")
-        for path in ("/contact", "/kontak", "/contact-us", "/hubungi-kami"):
+        emails = find_emails(html)
+        # cek halaman kontak juga, relatif terhadap URL akhir (setelah redirect yang sudah diperiksa)
+        base = r.url.split("?", 1)[0].rstrip("/")
+        for path in (CONTACT_PATHS if contact_pages and not emails else ()):
             try:
-                rr = fetch(base + path)
+                rr = fetch(base + path, min(timeout, 8))
                 if rr.status_code == 200:
-                    emails |= {e for e in EMAIL_RE.findall(rr.text)
-                               if not any(s in e.lower() for s in EMAIL_SKIP)}
+                    emails |= find_emails(rr.text)
+                    if emails:
+                        break
             except Exception:
                 pass
         return {
@@ -63,13 +76,14 @@ def scan(url):
             "emails": sorted(emails),
             "title": (soup.title.string or "").strip() if soup.title else "",
             "h1": [h.get_text(strip=True) for h in soup.find_all("h1")][:3],
-            "prices": re.findall(r'Rp\s?[\d.,]+', html)[:10],
+            "prices": re.findall(r'Rp\s?[\d.,]{1,20}', html)[:10],
             "blog_links": sorted(set(re.findall(
-                r'href="(/blog/[^"]+|/artikel/[^"]+)"', html)))[:10],
+                r'href="(/blog/[^"]{1,200}|/artikel/[^"]{1,200})"', html)))[:10],
+            "truncated": bool(r.truncated),
             "scanned_at": time.strftime("%Y-%m-%d %H:%M"),
         }
     except Exception as e:
-        return {"error": str(e), "scanned_at": time.strftime("%Y-%m-%d %H:%M")}
+        return {"error": str(e)[:300], "scanned_at": time.strftime("%Y-%m-%d %H:%M")}
 
 
 def load_state():
