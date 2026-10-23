@@ -1,6 +1,6 @@
 # Image worker (python worker.py): job riset pasar, cek kontak, profil IG, dan chat agent. Service HTTP Python legacy sudah dihapus.
 # Tag image harus sama dengan pin playwright== di requirements.txt (Chromium di image cocok dengan driver pip).
-FROM mcr.microsoft.com/playwright/python:v1.64.0-noble
+FROM mcr.microsoft.com/playwright/python:v1.64.1-noble
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
