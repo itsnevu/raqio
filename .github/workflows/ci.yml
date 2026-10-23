@@ -89,7 +89,7 @@ jobs:
         working-directory: apps/api
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: apps/api/go.mod
           cache-dependency-path: apps/api/go.sum
@@ -122,7 +122,7 @@ jobs:
         working-directory: apps/api
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: apps/api/go.mod
           cache-dependency-path: apps/api/go.sum
@@ -171,7 +171,7 @@ jobs:
       DATABASE_URL: postgres://raqio:raqio@localhost:5432/raqio?sslmode=disable
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: apps/api/go.mod
           cache-dependency-path: apps/api/go.sum
@@ -258,7 +258,7 @@ jobs:
         language: [go, javascript-typescript]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         if: matrix.language == 'go'
         with:
           go-version-file: apps/api/go.mod
