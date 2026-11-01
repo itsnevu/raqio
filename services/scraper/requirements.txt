@@ -1,9 +1,9 @@
 # Versi dipin ke yang terpasang di venv saat audit (21 Okt 2026). Daftar penuh hasil pip freeze: requirements.lock.
 # playwright harus sama dengan tag image Playwright di Dockerfile (v1.64.0-noble).
 requests==2.34.2
-curl_cffi==0.16.3
+curl_cffi==0.17.0
 httpx==0.28.1
-playwright==1.64.0
+playwright==1.64.1
 browserforge[all]==1.2.4
 rapidfuzz==3.14.6
 apscheduler==3.11.3
