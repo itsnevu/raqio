@@ -18,7 +18,7 @@ x-hardening: &hardening
 services:
   caddy:
     <<: *hardening
-    image: caddy:2.11.7-alpine
+    image: caddy:2.11.8-alpine
     cap_add: ["NET_BIND_SERVICE"]
     ports:
       - "80:80"
@@ -212,7 +212,7 @@ services:
   prometheus:
     <<: *hardening
     profiles: ["monitoring"]
-    image: prom/prometheus:v3.5.0
+    image: prom/prometheus:v3.16.0
     user: "65534:65534"
     entrypoint: ["/bin/sh", "/prometheus-entrypoint.sh"]
     environment:
@@ -234,7 +234,7 @@ services:
   alertmanager:
     <<: *hardening
     profiles: ["monitoring"]
-    image: prom/alertmanager:v0.28.1
+    image: prom/alertmanager:v0.34.2
     user: "65534:65534"
     entrypoint: ["/bin/sh", "/alertmanager-entrypoint.sh"]
     environment:
