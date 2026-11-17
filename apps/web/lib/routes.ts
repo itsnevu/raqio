@@ -15,6 +15,11 @@ export const PUBLIC_PATHS: readonly string[] = [
   "/billing/plans",
   "/billing/webhook/xendit",
   "/logo.svg",
+  "/logo.png",
+  "/brand-transparent.svg",
+  "/icon-192.png",
+  "/apple-touch-icon.png",
+  "/opengraph-image",
   "/stats", // angka total data terkumpul, dipakai strip di halaman Riset (tamu juga melihat)
 ];
 

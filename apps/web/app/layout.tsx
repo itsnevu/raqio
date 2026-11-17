@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(BASE),
   title: "Raqio",
   description: "Peta pasar industri apa pun. Scraping langsung dari Google Maps dan website bisnis.",
-  icons: { icon: "/logo.svg" },
+  icons: { icon: "/logo.png", apple: "/apple-touch-icon.png" },
   // kartu share: gambar diambil dari app/opengraph-image.tsx (otomatis oleh Next)
   openGraph: { siteName: "Raqio", type: "website", locale: "id_ID" },
   twitter: { card: "summary_large_image" },

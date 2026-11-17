@@ -20,6 +20,8 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/branding/raqio-logo.png
   fonts:
     - family: Albert Sans
       fonts:

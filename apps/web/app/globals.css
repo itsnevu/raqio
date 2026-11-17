@@ -37,7 +37,7 @@ input:focus-visible, textarea:focus-visible, select:focus-visible { outline-offs
        position: sticky; top: 0; z-index: 20; }
 .brand { font-weight: 700; font-size: 13px; display: flex; align-items: center; gap: 10px; white-space: nowrap; text-transform: none; letter-spacing: 0; }
 .brand i { width: 10px; height: 10px; display: inline-block; background: var(--text); }
-.brand .mark { width: 22px; height: 22px; display: block; color: var(--text); }
+.brand .mark { width: 32px; height: 32px; display: block; object-fit: contain; }
 .brand .word { font-size: 25px; font-weight: 500; letter-spacing: -.04em; text-transform: none; line-height: 1; }
 .top nav { margin-left: auto; display: flex; gap: 18px; align-items: center; }
 .top nav a { text-decoration: none; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }

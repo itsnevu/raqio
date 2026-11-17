@@ -1,12 +1,10 @@
-// Logo Raqio: satu-satunya tempat SVG brand didefinisikan.
+// Aset logo yang sama dipakai di web dan aplikasi mobile.
+import Image from "next/image";
 import Link from "next/link";
 
 export function BrandMark() {
   return (
-    <svg className="mark" viewBox="0 0 32 32" aria-hidden="true">
-      <path d="M5 29V3H18A8 8 0 0 1 18 19H11" fill="none" stroke="currentColor" strokeWidth="4" />
-      <path d="M17 19L27 29" stroke="var(--good, #FFB020)" strokeWidth="4" />
-    </svg>
+    <Image className="mark" src="/brand-transparent.svg" alt="" width={32} height={32} unoptimized />
   );
 }
 
