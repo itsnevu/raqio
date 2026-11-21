@@ -11,13 +11,14 @@ GO_IMAGE = golang:1.25-alpine
 API_DIR  = $$(cd apps/api && (pwd -W 2>/dev/null || pwd))
 TEST_DATABASE_URL ?= postgres://raqio:raqio@127.0.0.1:5433/raqio?sslmode=disable
 
-.PHONY: restore-check e2e e2e-install monitoring-up monitoring-down loadtest help dev infra infra-down dev-web dev-api dev-worker test test-scraper test-api test-api-integration test-web lint build audit docker-build
+.PHONY: restore-check e2e e2e-install monitoring-up monitoring-down loadtest help dev infra infra-down dev-web dev-scraping dev-api dev-worker test test-scraper test-api test-api-integration test-web lint build audit docker-build
 
 help:
 	@echo "make dev                  : SEMUA dari satu terminal (pwsh dev.ps1)"
 	@echo "make infra                : Postgres + Redis (docker, bind 127.0.0.1)"
 	@echo "make infra-down           : matikan infra dev"
-	@echo "make dev-web              : Next.js di :3002"
+	@echo "make dev-web              : profil RAQIO di :3000"
+	@echo "make dev-scraping         : produk scraping di :3002"
 	@echo "make dev-api              : Go API di :8080"
 	@echo "make dev-worker           : worker Python (riset, ambil job dari Postgres)"
 	@echo "make test                 : semua tes (tes integrasi Go dilewati tanpa Postgres)"
@@ -41,6 +42,9 @@ infra-down:
 	$(COMPOSE) down
 
 dev-web:
+	cd apps/web && npm run dev
+
+dev-scraping:
 	cd apps/scraping && npm run dev
 
 dev-api:
@@ -68,10 +72,12 @@ lint:
 	cd services/scraper && $(abspath $(PY)) -m ruff check .
 	cd apps/api && gofmt -l . && go vet ./...
 	cd apps/scraping && npm run lint
+	cd apps/web && npm run lint
 
 build:
 	cd apps/api && go build -o bin/api .
 	cd apps/scraping && npm run build
+	cd apps/web && npm run build
 
 # Audit dependency, sama dengan yang dijalankan CI. govulncheck lewat container supaya tidak perlu Go lokal.
 # pip-audit: `pip install pip-audit` sekali di venv.

@@ -39,7 +39,7 @@ export default function TermsPage() {
       <ul>
         <li>Data bisnis berasal dari sumber publik (Google Maps dan website bisnis) pada tanggal pemindaian, lalu disaring dengan standar yang dipublikasikan di <Link href="/metodologi">/metodologi</Link>.</li>
         <li>Angka di laporan adalah estimasi batas bawah dari data publik — bukan audit resmi dan bisa berbeda dari keadaan terbaru. Keputusan bisnis atas dasar laporan sepenuhnya tanggung jawab pengguna.</li>
-        <li>Pemilik bisnis yang keberatan datanya tampil di peringkat publik dapat memakai tombol "Laporkan data keliru" atau mengklaim halamannya; koreksi diterapkan pada pemindaian berikutnya.</li>
+        <li>Pemilik bisnis yang keberatan datanya tampil di peringkat publik dapat memakai tombol &quot;Laporkan data keliru&quot; atau mengklaim halamannya; koreksi diterapkan pada pemindaian berikutnya.</li>
       </ul>
 
       <h2>5. Penggunaan yang dilarang</h2>

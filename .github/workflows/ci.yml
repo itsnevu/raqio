@@ -23,6 +23,7 @@ jobs:
       scraper: ${{ steps.filter.outputs.scraper }}
       api: ${{ steps.filter.outputs.api }}
       web: ${{ steps.filter.outputs.web }}
+      marketing: ${{ steps.filter.outputs.marketing }}
       mobile: ${{ steps.filter.outputs.mobile }}
       e2e: ${{ steps.filter.outputs.e2e }}
     steps:
@@ -40,6 +41,9 @@ jobs:
             web:
               - 'apps/scraping/**'
               - '.github/workflows/ci.yml'
+            marketing:
+              - 'apps/web/**'
+              - '.github/workflows/ci.yml'
             mobile:
               - 'apps/mobile/**'
               - '.github/workflows/ci.yml'
@@ -48,6 +52,24 @@ jobs:
               - 'apps/api/**'
               - 'apps/scraping/**'
               - '.github/workflows/ci.yml'
+
+  marketing:
+    needs: changes
+    if: needs.changes.outputs.marketing == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
 
   scraper:
     needs: changes

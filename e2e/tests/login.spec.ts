@@ -24,13 +24,13 @@ test.describe("login", () => {
     await expect(page).toHaveURL(/\/login/);
   });
 
-  test("parameter next tidak bisa membawa keluar origin (open redirect)", async ({ page }) => {
+  test("parameter next tidak bisa membawa keluar origin (open redirect)", async ({ page, baseURL }) => {
     await page.goto("/login?manual=1&next=/%5Cevil.example.com");
     await page.getByLabel(/email/i).fill(DEMO.email);
     await page.getByLabel(/password/i).fill(DEMO.password);
     await page.locator("form.box button.btn:not(.ghost)").click();
     await page.waitForLoadState("networkidle");
-    expect(new URL(page.url()).origin).toBe(new URL(process.env.E2E_BASE_URL || "http://localhost:3000").origin);
+    expect(new URL(page.url()).origin).toBe(new URL(baseURL!).origin);
     expect(page.url()).not.toMatch(/evil\.example\.com/);
   });
 

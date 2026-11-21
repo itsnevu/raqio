@@ -1,0 +1,9 @@
+{
+  "name": "raqio-marketing",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {"dev":"next dev -p 3000","build":"next build","start":"next start -p 3000","lint":"eslint .","typecheck":"tsc --noEmit"},
+  "dependencies":{"next":"15.5.28","react":"19.1.10","react-dom":"19.1.10","framer-motion":"^12.0.0"},
+  "devDependencies":{"@eslint/eslintrc":"^3.3.7","eslint":"^9.39.5","eslint-config-next":"15.5.28","typescript":"5.8.3","@types/node":"22.15.21","@types/react":"19.1.17","@types/react-dom":"19.1.11"},
+  "overrides":{"postcss":"^8.5.31","sharp":"^0.35.5","fast-glob":"^3.3.3","micromatch":"^4.0.8","braces":"^3.0.3"}
+}

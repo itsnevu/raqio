@@ -23,13 +23,22 @@ seperti versi lama (`/market/reports`, `/log`, dst), Go yang melayaninya.
 
 ## Jalankan (development)
 
-Cara tercepat, satu terminal untuk semuanya (Postgres, Redis, Go API di container, worker, frontend):
+Siapkan kedua frontend sekali dari root repo. Pertahankan konfigurasi scraping yang sudah ada.
 
 ```powershell
-.\dev.ps1            # Ctrl+C untuk berhenti; -StopDocker ikut mematikan container
+npm --prefix apps/web ci
+npm --prefix apps/scraping ci
+Copy-Item apps/web/.env.example apps/web/.env.local
+.\dev.ps1
 ```
 
-Lalu buka http://localhost:3002 dan klik "Coba tanpa daftar". Cara manual per terminal:
+- **Company profile** di http://localhost:3000. Dapat dijalankan terpisah dengan `npm --prefix apps/web run dev`, tanpa database.
+- **Competitor Scraping** di http://localhost:3002. Tautan produk membuka app tersebut, termasuk alur masuk dan mode tamu.
+- **WA-Suite** berada di repo terpisah; jalankan dari direktori WA-Suite dengan port 3001 sesuai konfigurasinya.
+
+Atur `NEXT_PUBLIC_SCRAPING_URL` dan `NEXT_PUBLIC_WASUITE_URL` di `apps/web/.env.local` sebelum build. Untuk email kontak, isi `NEXT_PUBLIC_RAQIO_CONTACT_EMAIL`; CTA email muncul bila alamat valid. Compose/Caddy yang ada tetap membangun dan melayani frontend produk dari `apps/scraping`. Untuk memublikasikan profil, build `apps/web` sebagai aplikasi terpisah.
+
+Ctrl+C menghentikan proses lokal. Opsi `-StopDocker` juga mematikan container. Cara manual untuk stack produk:
 
 Prasyarat: Node 22, Go 1.25, Python 3.12, Docker.
 
@@ -50,7 +59,7 @@ pip install -r requirements.txt "psycopg[binary]"; playwright install chromium
 $env:DATABASE_URL = "postgres://raqio:raqio@127.0.0.1:5433/raqio"
 python worker.py
 
-# 5. Frontend (terminal baru)
+# 4. Frontend produk (terminal baru)
 cd apps\scraping
 npm install
 copy .env.example .env.local      # AUTH_SECRET harus sama dengan apps/api

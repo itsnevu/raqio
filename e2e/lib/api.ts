@@ -1,6 +1,6 @@
 import { expect, request, type BrowserContext, type Page } from "@playwright/test";
 
-export const BASE = process.env.E2E_BASE_URL || "http://localhost:3000";
+export const BASE = process.env.E2E_BASE_URL || "http://localhost:3002";
 export const API = process.env.E2E_API_URL || "http://localhost:8080";
 export const DEMO = { email: process.env.E2E_USER || "demo@raqio.local", password: process.env.E2E_PASS || "demo12345" };
 
