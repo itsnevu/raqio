@@ -6,7 +6,7 @@ Monorepo multi-tenant (SaaS).
 ```
 raqio/
 ├── apps/
-│   ├── web/              Next.js 15: UI, login/daftar, middleware sesi        → :3000
+│   ├── web/              Next.js 15: UI, login/daftar, middleware sesi        → :3002
 │   ├── api/              Go: auth, org, kuota, antrian job, endpoint data     → :8080
 │   └── mobile/           Flutter (Android, iOS): akun dan data yang sama dengan web
 ├── services/
@@ -29,7 +29,7 @@ Cara tercepat, satu terminal untuk semuanya (Postgres, Redis, Go API di containe
 .\dev.ps1            # Ctrl+C untuk berhenti; -StopDocker ikut mematikan container
 ```
 
-Lalu buka http://localhost:3000 dan klik "Coba tanpa daftar". Cara manual per terminal:
+Lalu buka http://localhost:3002 dan klik "Coba tanpa daftar". Cara manual per terminal:
 
 Prasyarat: Node 22, Go 1.25, Python 3.12, Docker.
 
@@ -51,13 +51,13 @@ $env:DATABASE_URL = "postgres://raqio:raqio@127.0.0.1:5433/raqio"
 python worker.py
 
 # 5. Frontend (terminal baru)
-cd apps\web
+cd apps\scraping
 npm install
 copy .env.example .env.local      # AUTH_SECRET harus sama dengan apps/api
-npm run dev                       # http://localhost:3000
+npm run dev                       # http://localhost:3002
 ```
 
-Buka http://localhost:3000, daftar akun, lalu riset. `make help` memuat perintah singkatnya.
+Buka http://localhost:3002, daftar akun, lalu riset. `make help` memuat perintah singkatnya.
 
 Catatan: Go membaca env dari proses, bukan dari file `.env`. Di PowerShell: `Get-Content .env | % { $k,$v = $_ -split '=',2; [Environment]::SetEnvironmentVariable($k,$v) }` sebelum `go run .`.
 
@@ -131,7 +131,7 @@ bisa diakses dari luar loopback. Alamat API dibakar saat build lewat `--dart-def
 
 Layar: Masuk/Daftar, Riset (form, progres job, laporan), Laporan (ringkasan dengan kesimpulan yang sama persis
 dengan web, daftar pemain, prospek), panel detail bisnis (WhatsApp dengan draf, cek kontak, status follow up),
-Prospek, Pantau, Akun. Logika skor dan kesimpulan di `lib/biz.dart` adalah port langsung dari `apps/web/lib/biz.ts`
+Prospek, Pantau, Akun. Logika skor dan kesimpulan di `lib/biz.dart` adalah port langsung dari `apps/scraping/lib/biz.ts`
 dan punya tes paritas. Tes: `flutter analyze` dan `flutter test` (tanpa Android SDK).
 
 ## Sumber data selain Google Maps
@@ -177,7 +177,7 @@ jumlah ulasan dengan nama industri/wilayah dalam Title Case. Halaman Riset menam
 ## Panduan pengguna (tur)
 
 Tiap halaman punya tur interaktif (driver.js) yang muncul otomatis sekali per browser dan bisa diputar ulang
-lewat menu Lanjutan > Panduan. Isi langkah ada di `apps/web/lib/tours.ts`; langkah yang elemennya belum ada
+lewat menu Lanjutan > Panduan. Isi langkah ada di `apps/scraping/lib/tours.ts`; langkah yang elemennya belum ada
 (misalnya sebelum ada laporan) dilewati otomatis.
 
 ## Dokumentasi API
@@ -186,7 +186,7 @@ Spesifikasi OpenAPI ada di `apps/api/openapi.yaml`, dilayani di `/openapi.yaml`,
 (matikan dengan `DOCS=0`). Tipe TypeScript untuk frontend dibuat dari spesifikasi itu:
 
 ```powershell
-cd apps\web; npm run gen:api     # menulis lib/api.gen.d.ts, CI memastikan file ini selalu sinkron
+cd apps\scraping; npm run gen:api     # menulis lib/api.gen.d.ts, CI memastikan file ini selalu sinkron
 ```
 
 Metrik format Prometheus di `/metrics` (butuh `Authorization: Bearer <METRICS_TOKEN>`, dan di produksi Caddy hanya
@@ -197,7 +197,7 @@ mengizinkannya dari jaringan privat), kesiapan di `/readyz`.
 ```powershell
 cd apps\api;          go vet ./... ; go test ./...   # tes integrasi butuh Postgres (TEST_DATABASE_URL, default :5433), dilewati kalau tidak ada
 cd services\scraper;  ruff check . ; pytest tests -q
-cd apps\web;          npm run lint ; npx tsc --noEmit ; npm test ; npm run build
+cd apps\scraping;          npm run lint ; npx tsc --noEmit ; npm test ; npm run build
 ```
 
 Dari root repo: `make test-api-integration` (tes Go dengan Postgres dev) dan `make audit` (`npm audit --omit=dev`,

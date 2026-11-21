@@ -16,7 +16,7 @@ updates:
     labels: [dependencies, go]
 
   - package-ecosystem: npm
-    directory: /apps/web
+    directory: /apps/scraping
     schedule:
       interval: weekly
       day: monday
@@ -45,7 +45,7 @@ updates:
   - package-ecosystem: docker
     directories:
       - /apps/api
-      - /apps/web
+      - /apps/scraping
       - /services/scraper
     schedule:
       interval: weekly

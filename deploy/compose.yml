@@ -40,7 +40,7 @@ services:
   web:
     <<: *hardening
     build:
-      context: ../apps/web
+      context: ../apps/scraping
       args: { API_URL: http://api:8080 }
     read_only: true
     tmpfs:

@@ -17,7 +17,7 @@ help:
 	@echo "make dev                  : SEMUA dari satu terminal (pwsh dev.ps1)"
 	@echo "make infra                : Postgres + Redis (docker, bind 127.0.0.1)"
 	@echo "make infra-down           : matikan infra dev"
-	@echo "make dev-web              : Next.js di :3000"
+	@echo "make dev-web              : Next.js di :3002"
 	@echo "make dev-api              : Go API di :8080"
 	@echo "make dev-worker           : worker Python (riset, ambil job dari Postgres)"
 	@echo "make test                 : semua tes (tes integrasi Go dilewati tanpa Postgres)"
@@ -41,7 +41,7 @@ infra-down:
 	$(COMPOSE) down
 
 dev-web:
-	cd apps/web && npm run dev
+	cd apps/scraping && npm run dev
 
 dev-api:
 	cd apps/api && go run .
@@ -62,28 +62,28 @@ test-api-integration:
 	cd apps/api && mkdir -p bin/gotmp && TEST_DATABASE_URL="$(TEST_DATABASE_URL)" ALLOW_INSECURE_WEBHOOK=1 GOTMPDIR=$(abspath apps/api/bin/gotmp) go test -count=1 -race ./...
 
 test-web:
-	cd apps/web && npx tsc --noEmit
+	cd apps/scraping && npx tsc --noEmit
 
 lint:
 	cd services/scraper && $(abspath $(PY)) -m ruff check .
 	cd apps/api && gofmt -l . && go vet ./...
-	cd apps/web && npm run lint
+	cd apps/scraping && npm run lint
 
 build:
 	cd apps/api && go build -o bin/api .
-	cd apps/web && npm run build
+	cd apps/scraping && npm run build
 
 # Audit dependency, sama dengan yang dijalankan CI. govulncheck lewat container supaya tidak perlu Go lokal.
 # pip-audit: `pip install pip-audit` sekali di venv.
 audit:
-	cd apps/web && npm audit --omit=dev --audit-level=high
+	cd apps/scraping && npm audit --omit=dev --audit-level=high
 	cd services/scraper && $(abspath $(PY)) -m pip_audit --strict --progress-spinner off
 	MSYS_NO_PATHCONV=1 docker run --rm -v "$(API_DIR):/src" -v raqio-gocache:/go -w /src $(GO_IMAGE) \
 		sh -c 'go install golang.org/x/vuln/cmd/govulncheck@latest && govulncheck ./...'
 
 docker-build:
 	docker build -t raqio/api:dev apps/api
-	docker build -t raqio/web:dev apps/web
+	docker build -t raqio/web:dev apps/scraping
 	docker build -t raqio/worker:dev services/scraper
 
 e2e-install:
@@ -99,7 +99,7 @@ monitoring-down:
 	docker compose -f deploy/compose.yml --env-file deploy/.env --profile monitoring stop prometheus grafana
 
 loadtest:
-	docker run --rm -i --add-host=host.docker.internal:host-gateway -e BASE=http://host.docker.internal:3000 -e USER=demo@raqio.local -e PASS=demo12345 -e VUS=5 -e DURATION=30s grafana/k6 run - < deploy/loadtest/k6-api.js
+	docker run --rm -i --add-host=host.docker.internal:host-gateway -e BASE=http://host.docker.internal:3002 -e USER=demo@raqio.local -e PASS=demo12345 -e VUS=5 -e DURATION=30s grafana/k6 run - < deploy/loadtest/k6-api.js
 
 restore-check:
 	docker compose -f deploy/compose.yml --env-file deploy/.env run --rm backup sh /restore-check.sh

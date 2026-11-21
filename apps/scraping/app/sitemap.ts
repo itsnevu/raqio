@@ -3,7 +3,7 @@
 // daftar pasangan tidak mematikan sitemap — halaman statis tetap dikirim.
 import type { MetadataRoute } from "next";
 
-const BASE = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "http://localhost:3000").replace(/\/+$/, "");
+const BASE = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "http://localhost:3002").replace(/\/+$/, "");
 const API = process.env.API_URL || "http://127.0.0.1:8080";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

@@ -62,7 +62,7 @@ $py = if (Test-Path "$root\.venv\Scripts\python.exe") { "$root\.venv\Scripts\pyt
 if (-not $NoWorker) {
     $env:DATABASE_URL = "postgres://raqio:raqio@127.0.0.1:5433/raqio"
     $env:PYTHONUNBUFFERED = "1"
-    $env:APP_URL = "http://localhost:3000"
+    $env:APP_URL = "http://localhost:3002"
     $env:MARKET_CACHE_DAYS = "7"
     $env:AUTH_SECRET = $secret   # token berhenti berlangganan kampanye harus sama dengan API
     $p = Start-Process -FilePath $py -ArgumentList "worker.py" -WorkingDirectory "$root\services\scraper" -NoNewWindow -PassThru `
@@ -71,15 +71,24 @@ if (-not $NoWorker) {
     Say worker "pid $($p.Id)"
 }
 if (-not $NoWeb) {
-    $busy = Get-NetTCPConnection -LocalPort 3000 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
-    if ($busy) { throw "port 3000 sudah dipakai (pid $($busy.OwningProcess)). Matikan dulu: taskkill /PID $($busy.OwningProcess) /T /F" }
-    $p = Start-Process -FilePath "cmd.exe" -ArgumentList "/c npm run dev" -WorkingDirectory "$root\apps\web" -NoNewWindow -PassThru `
-        -RedirectStandardOutput "$root\.dev-logs\web.out" -RedirectStandardError "$root\.dev-logs\web.err"
-    $procs += $p; $logs["web"] = "$root\.dev-logs\web.out"; $logs["web!"] = "$root\.dev-logs\web.err"
-    Say web "pid $($p.Id), http://localhost:3000"
+    foreach ($appName in @('web','scraping')) {
+        $appPort = if ($appName -eq 'web') { 3000 } else { 3002 }
+        $busy = Get-NetTCPConnection -LocalPort $appPort -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($busy) { throw "Port $appPort sudah dipakai (pid $($busy.OwningProcess))." }
+    }
+    foreach ($appName in @('web','scraping')) {
+        $appDir = Join-Path $root "apps/$appName"
+        $appPort = if ($appName -eq 'web') { 3000 } else { 3002 }
+        $p = Start-Process -FilePath "cmd.exe" -ArgumentList "/c npm run dev" -WorkingDirectory $appDir -WindowStyle Hidden -PassThru `
+            -RedirectStandardOutput "$root/.dev-logs/$appName.out" -RedirectStandardError "$root/.dev-logs/$appName.err"
+        $procs += $p
+        $logs[$appName] = "$root/.dev-logs/$appName.out"
+        $logs["$appName!"] = "$root/.dev-logs/$appName.err"
+        Say $appName "pid $($p.Id), http://localhost:$appPort"
+    }
 }
 
-Say dev "semua jalan. Buka http://localhost:3000 (klik 'Coba tanpa daftar'). Ctrl+C untuk berhenti." Green
+Say dev "Profil http://localhost:3000, produk scraping http://localhost:3002. Ctrl+C untuk berhenti." Green
 
 # tail gabungan: baca bagian baru tiap file, cetak dengan prefix
 $pos = @{}

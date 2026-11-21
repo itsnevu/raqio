@@ -38,7 +38,7 @@ jobs:
               - 'apps/api/**'
               - '.github/workflows/ci.yml'
             web:
-              - 'apps/web/**'
+              - 'apps/scraping/**'
               - '.github/workflows/ci.yml'
             mobile:
               - 'apps/mobile/**'
@@ -46,7 +46,7 @@ jobs:
             e2e:
               - 'e2e/**'
               - 'apps/api/**'
-              - 'apps/web/**'
+              - 'apps/scraping/**'
               - '.github/workflows/ci.yml'
 
   scraper:
@@ -134,14 +134,14 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: apps/web
+        working-directory: apps/scraping
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: apps/web/package-lock.json
+          cache-dependency-path: apps/scraping/package-lock.json
       - run: npm ci
       - run: npm run gen:api && git diff --exit-code -- lib/api.gen.d.ts
       - run: npm run lint
@@ -180,14 +180,14 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: |
-            apps/web/package-lock.json
+            apps/scraping/package-lock.json
             e2e/package-lock.json
       - name: Jalankan API
         working-directory: apps/api
         env:
           PORT: "8080"
           APP_ENV: dev
-          APP_URL: http://127.0.0.1:3000
+          APP_URL: http://127.0.0.1:3002
           ALLOW_INSECURE_WEBHOOK: "1"
           DOCS: "1"
           CHAT_ENABLED: "1"
@@ -197,7 +197,7 @@ jobs:
           for i in $(seq 1 30); do curl -sf http://127.0.0.1:8080/readyz && break; sleep 2; done
           curl -sf http://127.0.0.1:8080/readyz
       - name: Build dan jalankan web (standalone)
-        working-directory: apps/web
+        working-directory: apps/scraping
         env:
           API_URL: http://127.0.0.1:8080
           AUTO_GUEST: "0"
@@ -207,8 +207,8 @@ jobs:
           npm run build
           cp -r public .next/standalone/ && mkdir -p .next/standalone/.next && cp -r .next/static .next/standalone/.next/
           PORT=3000 HOSTNAME=127.0.0.1 nohup node .next/standalone/server.js > /tmp/web.log 2>&1 &
-          for i in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:3000/login && break; sleep 2; done
-          curl -sf -o /dev/null http://127.0.0.1:3000/login
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://127.0.0.1:3002/login && break; sleep 2; done
+          curl -sf -o /dev/null http://127.0.0.1:3002/login
       - name: Akun demo (terverifikasi, paket pro)
         run: |
           curl -sf -X POST http://127.0.0.1:8080/auth/register -H 'Content-Type: application/json'             -d '{"email":"demo@raqio.local","password":"demo12345","name":"Demo","org":"Demo Org"}'
@@ -216,7 +216,7 @@ jobs:
       - name: Tes e2e
         working-directory: e2e
         env:
-          E2E_BASE_URL: http://127.0.0.1:3000
+          E2E_BASE_URL: http://127.0.0.1:3002
           E2E_API_URL: http://127.0.0.1:8080
           CI: "true"
         run: |
@@ -291,7 +291,7 @@ jobs:
           - name: api
             context: apps/api
           - name: web
-            context: apps/web
+            context: apps/scraping
           - name: worker
             context: services/scraper
     env:

@@ -7,7 +7,7 @@ import { ShellProvider } from "@/components/Shell";
 
 const sans = Albert_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-sans", display: "swap" });
 
-const BASE = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "http://localhost:3000").replace(/\/+$/, "");
+const BASE = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "http://localhost:3002").replace(/\/+$/, "");
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE),

@@ -5,9 +5,9 @@ Skrip `k6-api.js` menguji jalur baca API lewat Next (login sekali per VU, lalu c
 dijalankan terhadap dev maupun staging.
 
 ```bash
-# dari root repo, terhadap stack dev (Next di :3000)
+# dari root repo, terhadap stack dev (Next di :3002)
 docker run --rm -i --add-host=host.docker.internal:host-gateway \
-  -e BASE=http://host.docker.internal:3000 -e USER=demo@raqio.local -e PASS=demo12345 \
+  -e BASE=http://host.docker.internal:3002 -e USER=demo@raqio.local -e PASS=demo12345 \
   -e VUS=5 -e DURATION=30s grafana/k6 run - < deploy/loadtest/k6-api.js
 ```
 
