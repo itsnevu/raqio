@@ -1,4 +1,4 @@
-﻿# Rencana redesign RAQIO
+# Rencana redesign RAQIO
 
 ## Temuan
 - Port 3000 memuat landing dan UI produk Next.js 15. Middleware memvalidasi sesi dengan cookie dan Next meneruskan endpoint data ke API Go di 8080. PostgreSQL menyimpan sesi, organisasi, job dan laporan. Worker Python mengambil job dari PostgreSQL. Konfigurasi scraper, API dan frontend memiliki batas environment sendiri.
@@ -10,3 +10,9 @@
 1. Pindahkan frontend produk, auth, proteksi route dan proxy dari apps/web ke apps/scraping, port dev 3002. API Go dan worker Python tetap di lokasi layanan yang sudah terpisah. Perbarui wiring lokal, CI, Compose, dan e2e yang mengacu ke frontend produk. Tidak ada migrasi database.
 2. Buat apps/web sebagai Next.js marketing saja, port 3000, dengan halaman utama dan dua detail produk. CTA aplikasi melalui environment. Copy Indonesia terpusat untuk perluasan bahasa.
 3. Tambahkan foto orisinal, poster dan loop terkompresi. Verifikasi build, lint, dimensi browser, navigasi, aksesibilitas dan Lighthouse dari build produksi lokal.
+
+## Revisi editorial
+
+Chrome pada 1440 dan 390 mengonfirmasi Newsreader pada Home, Personal, Business, Cards, Company dan Waitlist ALIF. Heading Home terukur 72px dan 38.4px. Perbandingan sebelum revisi memakai Instrument Serif 119.5px dan 59.2px. Dipilih Newsreader, Instrument Sans dan IBM Plex Mono, dengan plafon hero 77px. Hero memakai ilustrasi Bundaran HI, bidang gelap untuk pernyataan masalah, panel tab, dan kartu produk berselang. Dokumentasi referensi disimpan lokal di docs/redesign/v2-before.
+
+Workspace pnpm + Turbo meliputi apps/web, apps/scraping, packages/ui dan packages/config. Backend Go dan worker Python tetap di direktori layanan yang sudah memiliki CI dan deployment sendiri.

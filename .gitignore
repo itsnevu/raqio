@@ -46,3 +46,5 @@ e2e/test-results/
 /web-run.out.log
 /web-run.err.log
 .next-marketing/
+
+.turbo/

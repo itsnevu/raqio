@@ -1,0 +1,35 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        ".next/**",
+        ".next-marketing/**",
+        "!.next/cache/**",
+        "!.next-marketing/cache/**"
+      ],
+      "env": [
+        "NEXT_PUBLIC_*",
+        "API_URL",
+        "APP_URL"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env*"
+      ]
+    },
+    "lint": {},
+    "typecheck": {}
+  },
+  "globalDependencies": [
+    "packages/ui/**",
+    "packages/config/**"
+  ]
+}

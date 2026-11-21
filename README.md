@@ -23,20 +23,21 @@ seperti versi lama (`/market/reports`, `/log`, dst), Go yang melayaninya.
 
 ## Jalankan (development)
 
-Siapkan kedua frontend sekali dari root repo. Pertahankan konfigurasi scraping yang sudah ada.
+Instal Node dan pnpm sesuai versi di package.json. Siapkan kedua frontend dari root repo.
 
 ```powershell
-npm --prefix apps/web ci
-npm --prefix apps/scraping ci
+pnpm install --frozen-lockfile
 Copy-Item apps/web/.env.example apps/web/.env.local
 .\dev.ps1
 ```
 
-- **Company profile** di http://localhost:3000. Dapat dijalankan terpisah dengan `npm --prefix apps/web run dev`, tanpa database.
-- **Competitor Scraping** di http://localhost:3002. Tautan produk membuka app tersebut, termasuk alur masuk dan mode tamu.
-- **WA-Suite** berada di repo terpisah; jalankan dari direktori WA-Suite dengan port 3001 sesuai konfigurasinya.
+- **Company profile** di http://localhost:3000. Jalankan sendiri dengan `pnpm --filter raqio-marketing dev` tanpa database.
+- **Competitor Scraping** di http://localhost:3002. Frontend produk memakai API Go dan worker Python di jalur layanan masing-masing.
+- **WA-Suite** berjalan dari repo sendiri di port 3001 sesuai konfigurasinya.
 
-Atur `NEXT_PUBLIC_SCRAPING_URL` dan `NEXT_PUBLIC_WASUITE_URL` di `apps/web/.env.local` sebelum build. Untuk email kontak, isi `NEXT_PUBLIC_RAQIO_CONTACT_EMAIL`; CTA email muncul bila alamat valid. Compose/Caddy yang ada tetap membangun dan melayani frontend produk dari `apps/scraping`. Untuk memublikasikan profil, build `apps/web` sebagai aplikasi terpisah.
+Jalankan `pnpm dev` untuk kedua frontend bila layanan backend sudah tersedia. Gunakan `pnpm build`, `pnpm lint`, dan `pnpm typecheck` untuk task workspace. Build npm per aplikasi masih didukung oleh deployment lama.
+
+Atur `NEXT_PUBLIC_SCRAPING_APP_URL`, `NEXT_PUBLIC_WASUITE_APP_URL`, dan `NEXT_PUBLIC_RAQIO_CONTACT_EMAIL` sebelum build marketing. Dua nama URL lama masih dibaca untuk kompatibilitas. Form kontak membuka draf email. Compose/Caddy tetap melayani frontend produk dari `apps/scraping`.
 
 Ctrl+C menghentikan proses lokal. Opsi `-StopDocker` juga mematikan container. Cara manual untuk stack produk:
 
