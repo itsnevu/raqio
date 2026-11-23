@@ -1,0 +1,27 @@
+﻿.access-page {
+  background:radial-gradient(ellipse at 80% 0,#ffb02018,transparent 52%),#141414;
+}
+.access-inner {padding-block:clamp(3rem,9vw,7rem);}
+.access-inner > p {color:#c9c9c9;margin-top:1rem;}
+.access-options {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:1rem;
+  margin-top:clamp(1.75rem,4vw,3rem);
+  max-width:52rem;
+}
+.access-option {
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  padding:clamp(1.25rem,3vw,2rem);
+  background:linear-gradient(155deg,#292929,#1c1c1c);
+  border:1px solid #ffffff24;
+  border-radius:var(--card-radius);
+}
+.access-option svg {color:var(--amber);margin-bottom:1rem;}
+.access-option h2 {font-size:clamp(1.45rem,2.6vw,2rem);}
+.access-option p {color:#c9c9c9;margin:.65rem 0 1.5rem;}
+.access-option-actions {display:flex; flex-wrap:wrap; align-items:center; gap:1rem; margin-top:auto;}
+.access-inner .access-help {margin-top:2rem;}
+@media(max-width:600px){.access-options{grid-template-columns:1fr;}}

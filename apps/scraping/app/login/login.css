@@ -2,7 +2,7 @@
 .loginp .box { width: 100%; max-width: 420px; border: 1px solid var(--line); background: var(--panel); padding: 32px 28px; }
 .loginp h1 { font-size: 34px; margin: 0 0 6px; }
 .loginp .lead { font-size: 15px; margin-bottom: 22px; }
-.loginp label { display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-top: 14px; }
+.loginp label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-top: 14px; }
 .loginp input { display: block; width: 100%; margin-top: 6px; font: inherit; font-size: 15px; color: var(--text); background: var(--bg); border: 1px solid var(--line); padding: 11px 12px; }
 .loginp input:focus { border-color: var(--faint); }
 .loginp .btn { width: 100%; margin-top: 22px; }
@@ -14,3 +14,139 @@
 .loginp label.chk { display: flex; gap: 8px; align-items: flex-start; text-transform: none; letter-spacing: 0; font-size: 13px; line-height: 1.5; margin-top: 16px; }
 .loginp label.chk input { width: auto; margin: 3px 0 0; }
 .loginp label.chk a { color: var(--text); }
+
+/* Authentication pages share the RAQIO graphite and amber palette. */
+.loginp {
+  min-height:calc(100svh - 69px);
+  padding:clamp(24px,6vw,64px) 16px;
+  background:radial-gradient(ellipse at top,#ffb02016,transparent 55%),var(--bg);
+}
+.loginp .box {
+  max-width:460px;
+  padding:clamp(22px,5vw,40px);
+  border-radius:var(--radius-card);
+  box-shadow:0 18px 70px #0006;
+}
+.loginp h1 {font-size:clamp(30px,6vw,40px); margin-bottom:10px;}
+.loginp input:not([type="checkbox"]) {min-height:46px; border-radius:var(--radius-control);}
+.loginp .btn {min-height:46px; border-radius:var(--radius-control);}
+.loginp button.btn:not(.ghost) {background:#ffb020; color:#17120a;}
+.loginp button.btn:not(.ghost):hover:not(:disabled) {background:#ffc04a;}
+.loginp .box .err:empty {display:none;}
+.loginp .foot {font-size:13px;}
+.loginp .password-row {position:relative;}
+.loginp .password-row input {padding-right:8rem;}
+.loginp .password-row button {
+  position:absolute;
+  right:4px;
+  top:4px;
+  bottom:4px;
+  padding:0 10px;
+  background:transparent;
+  border:0;
+  color:var(--text);
+  font-size:13px;
+}
+
+.loginp .field-hint { display:block; margin-top:6px; color:var(--muted); font-size:12px; }
+
+.loginp div.chk {display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;gap:10px;margin-top:16px;}
+.loginp div.chk input {width:auto;margin:4px 0 0;accent-color:#ffb020;}
+.loginp div.chk p {margin:0;color:var(--muted);font-size:13px;line-height:1.55;}
+.loginp div.chk label {display:inline;margin:0;font:inherit;cursor:pointer;}
+.loginp div.chk a {color:var(--text);text-underline-offset:2px;}
+
+.access-shell { color:var(--text); }
+.access-split {
+  display:grid;
+  grid-template-columns:minmax(0,.85fr) minmax(0,1fr);
+  width:min(100%,960px);
+  padding:8px;
+  border:1px solid var(--line);
+  border-radius:24px;
+  background:var(--panel);
+  box-shadow:0 24px 80px #0005;
+}
+.access-brand {
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  padding:clamp(24px,4vw,44px);
+  border-radius:17px;
+  color:#fff4e3;
+  background:
+    radial-gradient(ellipse at 80% 12%,#644320 0%,#2e251e 48%,#191614 88%);
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+}
+.access-contours {
+  position:absolute;
+  inset:0;
+  z-index:-1;
+  width:100%;
+  height:100%;
+  fill:none;
+  stroke:#ffd498;
+  stroke-width:1;
+  opacity:.38;
+  mask-image:linear-gradient(180deg,#000 4%,#000 38%,transparent 86%);
+}
+.access-brand .brand { color:#fff; }
+.access-brand p { font:clamp(1.2rem,2vw,1.65rem)/1.24 Georgia,serif; margin:10px 0 0; }
+.access-form { min-width:0; padding:clamp(18px,4vw,44px); }
+.access-shell .box { max-width:none; background:none; padding:0; border:0; box-shadow:none; }
+.access-back svg { flex:none; }
+.access-back { display:inline-flex; gap:8px; min-height:44px; align-items:center; color:var(--muted); margin-bottom:18px; }
+.access-field-heading { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
+.access-field-heading a,.access-shell .foot .linkish { color:var(--good); font-size:13px; }
+.access-dialog { width:min(calc(100% - 32px),440px); padding:24px; color:var(--text); background:var(--panel); border:1px solid var(--line); border-radius:18px; }
+.access-dialog::backdrop { background:#0009; }
+.access-dialog-head { display:flex; justify-content:space-between; align-items:center; gap:16px; }
+.access-dialog-head h2 { margin:0; font-size:20px; }
+.access-dialog-head button { min-width:44px; min-height:44px; text-decoration:none; }
+.access-dialog p { color:var(--muted); }
+.access-dialog a.btn { background:#ffb020; color:#17120a; }
+@media(max-width:680px) {
+  .access-split { grid-template-columns:1fr; }
+  .access-brand { padding:20px; }
+
+  .access-back { margin-bottom:8px; }
+}
+
+/* Compact auth screens. Let unusually short viewports and error messages expand naturally. */
+body:has(.access-shell) { min-height:100svh; display:flex; flex-direction:column; }
+.loginp.access-shell { flex:1; min-height:0; padding:16px; }
+.access-stack { display:grid; grid-template-rows:1fr auto; align-items:center; align-self:stretch; width:min(100%,840px); }
+.access-legal { text-align:center; margin:clamp(16px,4vh,36px) 0 8px; color:var(--muted); font-size:12px; line-height:1.4; }
+.access-legal p { margin:0; }
+.access-legal a {color:inherit;text-underline-offset:3px;}
+.access-form { padding:clamp(16px,3vw,30px); }
+.access-back { min-height:36px; margin-bottom:10px; }
+.access-shell h1 { font-size:clamp(26px,4vw,32px); margin-bottom:6px; }
+.access-shell .lead { margin-bottom:12px; }
+.access-shell label { margin-top:9px; }
+.access-shell input:not([type="checkbox"]) { min-height:44px; margin-top:4px; padding-block:8px; }
+.access-shell .btn { min-height:44px; margin-top:12px; }
+.access-shell .foot,.access-shell div.chk { margin-top:10px; }
+@media(max-width:680px) {
+  .loginp.access-shell { padding:10px 12px; }
+  .access-brand { display:none; }
+  .access-form { padding:14px; }
+}
+@media (max-height:800px) {
+  .loginp.access-shell { padding-block:6px; }
+  .register-identity {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,8rem),1fr));gap:10px;}
+  .register-identity input {min-width:0;}
+  .access-back {margin-bottom:4px;min-height:32px;}
+  .access-shell .field-hint {margin-top:4px;}
+  .access-legal {margin:6px 0 0;}
+  .access-form {padding-block:5px;}
+  .access-shell .lead {margin-bottom:4px;}
+  .access-shell .box label:not([for="register-agreement"]) {margin-top:7px;}
+}
+
+@media (max-width:680px) and (max-height:700px) {
+  .access-split { padding:4px; }
+  .access-form { padding-block:2px; }
+}

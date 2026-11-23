@@ -2,7 +2,7 @@
 .pros .head { display: flex; align-items: flex-end; gap: 20px; flex-wrap: wrap; margin-bottom: 22px; }
 .pros .head > div:first-child { flex: 1; min-width: 260px; }
 .pros .lead { margin-bottom: 0; }
-.pros .strip { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); background: var(--panel); margin-bottom: 14px; }
+.pros .strip { border-radius:var(--radius-card); overflow:hidden; display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); background: var(--panel); margin-bottom: 14px; }
 .pros .strip div { padding: 14px 18px; border-right: 1px solid var(--line); }
 .pros .strip div:last-child { border-right: 0; }
 .pros .strip small { display: block; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
@@ -15,7 +15,7 @@
 .pros .bar label { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
 .pros .offer { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; margin-bottom: 18px; flex-wrap: wrap; }
 .pros .offer input { flex: 1; min-width: 220px; font: inherit; font-size: 14px; color: var(--text); background: var(--panel); border: 1px solid var(--line); padding: 8px 12px; }
-.pros .board { display: grid; grid-template-columns: repeat(5, minmax(250px, 1fr)); gap: 0; border: 1px solid var(--line); overflow-x: auto; }
+.pros .board { border-radius:var(--radius-card); display: grid; grid-template-columns: repeat(5, minmax(250px, 1fr)); gap: 0; border: 1px solid var(--line); overflow-x: auto; }
 .pros .col { border-right: 1px solid var(--line); min-height: 60vh; display: flex; flex-direction: column; background: var(--bg); }
 .pros .col:last-child { border-right: 0; }
 .pros .col.over { background: var(--sunk); }
@@ -24,7 +24,7 @@
 .pros .col-h b { font-weight: 400; color: var(--text); }
 .pros .col-b { padding: 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
 .pros .col-hint { color: var(--faint); font-size: 12px; padding: 4px 4px 0; line-height: 1.5; }
-.pros .card { background: var(--panel); border: 1px solid var(--line); padding: 12px 12px 10px; cursor: grab; }
+.pros .card { border-radius:var(--radius-control); background: var(--panel); border: 1px solid var(--line); padding: 12px 12px 10px; cursor: grab; }
 .pros .card:hover { border-color: var(--faint); }
 .pros .card.drag { opacity: .4; }
 .pros .card .t { display: flex; gap: 8px; align-items: flex-start; }

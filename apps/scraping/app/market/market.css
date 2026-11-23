@@ -63,8 +63,8 @@ details.raw > summary::-webkit-details-marker { display: none; }
 
 /* tujuan riset */
 .goal { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 10px; border: 0; padding: 0; min-width: 0; }
-.goal label { display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); padding: 10px 14px; cursor: pointer; flex: 1; min-width: 240px; }
-.goal label.on { border-color: var(--accent); background: var(--accent-soft); }
+.goal label { border-radius:var(--radius-control); display: flex; gap: 10px; align-items: flex-start; border: 1px solid var(--line); padding: 10px 14px; cursor: pointer; flex: 1; min-width: 240px; }
+.goal label.on { border-color: var(--good); background: var(--accent-soft); }
 .goal input { margin-top: 3px; }
 .goal b { display: block; font-size: 14px; }
 .goal span { color: var(--muted); font-size: 12px; line-height: 1.45; }
@@ -74,7 +74,7 @@ details.raw > summary::-webkit-details-marker { display: none; }
 /* insight cards */
 .cols { display: grid; grid-template-columns: 1.3fr 1fr; gap: 12px; margin-top: 12px; }
 @media (max-width: 900px) { .cols { grid-template-columns: 1fr; } }
-.card { background: var(--panel); border: 1px solid var(--line); padding: 18px 20px; box-shadow: none; }
+.card { border-radius:var(--radius-card); background: var(--panel); border: 1px solid var(--line); padding: 18px 20px; box-shadow: none; }
 .card h3 { margin: 0 0 10px; font-size: 12px; font-weight: 400; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; line-height: 1.6; }
 .card ul { margin: 0; padding-left: 16px; line-height: 1.6; }
 .card li { margin-bottom: 4px; }
@@ -195,7 +195,7 @@ button.hb:hover .b { filter: brightness(1.15); }
 .suggest-l { font-size: 12px; color: var(--muted); margin-right: 4px; }
 
 /* pilih wilayah lewat peta */
-.search .mapbtn { border: 1px solid var(--line); background: transparent; color: var(--muted); padding: 0 14px; font: inherit; font-size: 13px; white-space: nowrap; cursor: pointer; }
+.search .mapbtn { border-radius:var(--radius-control); border: 1px solid var(--line); background: transparent; color: var(--muted); padding: 0 14px; font: inherit; font-size: 13px; white-space: nowrap; cursor: pointer; }
 .search .mapbtn:hover, .search .mapbtn[aria-pressed="true"] { color: var(--text); border-color: var(--faint); }
 @media (max-width: 720px) { .search .mapbtn { padding: 10px 14px; } }
 .mappick { margin-top: 8px; border: 1px solid var(--line); background: var(--panel); }

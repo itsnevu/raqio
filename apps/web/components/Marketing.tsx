@@ -6,11 +6,11 @@ export function Header() {
   return <Navbar><nav aria-label="Navigasi utama"><details className="product-menu"><summary>Produk <span aria-hidden="true" className="chevron"/></summary>
     <div><Link className="mobile-about" href="/tentang">Tentang RAQIO</Link><Link href="/produk">Bandingkan produk</Link>{(Object.keys(products) as ProductKey[]).map(key=><Link key={key} href={productPath(key)}>{products[key].name}</Link>)}</div>
     </details><Link className="nav-about" href="/tentang">Tentang</Link><Link className="nav-about" href="/#faq">FAQ</Link></nav>
-    <Link href="/kontak" className="button nav-contact">Hubungi Kami</Link></Navbar>;
+    <Link href="/masuk" className="button nav-contact">Masuk</Link></Navbar>;
 }
 export function Footer() {
   return <SharedFooter><div><h2>Produk</h2><Link href={productPath("competitor-scraping")}>Competitor Scraping</Link><Link href={productPath("wa-suite")}>WA-Suite</Link><Link href="/produk">Bandingkan</Link></div>
-    <div><h2>RAQIO</h2><Link href="/tentang">Tentang</Link><Link href="/kontak">Kontak</Link><Link href="/privasi">Privasi</Link><Link href="/syarat">Syarat</Link></div></SharedFooter>;
+    <div><h2>RAQIO</h2><Link href="/tentang">Tentang</Link><Link href="/kontak">Kontak</Link><Link href="/masuk">Masuk</Link><Link href="/privasi">Privasi</Link><Link href="/syarat">Syarat</Link></div></SharedFooter>;
 }
 export function AppLink({product}:{product:ProductKey}) {
   return <Button href={products[product].url ?? "/kontak"}>{products[product].url ? "Coba sekarang" : "Tanya tentang produk"} <span aria-hidden="true">&#8594;</span></Button>;
@@ -34,7 +34,7 @@ export function ProductTile({product}:{product:ProductKey}) {
   const info=products[product];
   return <article className="product-tile">
     <div className={"product-art product-stage "+(product==="wa-suite"?"stage-chat":"stage-market")}><ProductDemo product={product}/></div>
-    <div className="product-copy"><p className="eyebrow">{info.name}</p><h3>{product==="wa-suite" ? "Untuk tim yang melayani pelanggan lewat WhatsApp." : "Untuk tim yang ingin memahami pasar."}</h3><p>{info.description}</p>
+    <div className="product-copy"><h3>{info.name}</h3><p><strong>{product==="wa-suite" ? "Untuk tim yang melayani pelanggan lewat WhatsApp." : "Untuk tim yang ingin memahami pasar."}</strong> {info.description}</p>
       <Link className="text-link" href={productPath(product)}>Selengkapnya <span aria-hidden="true">&#8594;</span></Link>
     </div>
   </article>;

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import "../login/login.css";
+import AccessLayout from "../login/AccessLayout";
 import { apiGet, apiPost, errMsg, type Plan } from "@/lib/api";
 import { resetMe } from "@/lib/me";
 import { clearOrgStorage } from "@/lib/storage";
@@ -24,6 +25,7 @@ function Register() {
   const [name, setName] = useState("");
   const [org, setOrg] = useState("");
   const [pass, setPass] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [agree, setAgree] = useState(false);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
@@ -85,12 +87,13 @@ function Register() {
     : "Paket gratis dengan kuota riset dan cek kontak bulanan.";
 
   return (
-    <div className="loginp">
+    <AccessLayout>
       <form className="box" onSubmit={submit}>
-        <h1>{claim ? "Simpan akun tamu" : invitedOrg ? "Gabung tim" : "Daftar"}</h1>
+        <h1>{claim ? "Simpan akun tamu" : invitedOrg ? "Gabung tim" : "Buat akun"}</h1>
         {claim && <div className="lead">Riset dan prospek dari sesi tamu ikut tersimpan. Paket jadi gratis, bisa upgrade kapan saja.</div>}
         {inviteBad && <div className="err" role="alert">Tautan undangan tidak valid atau kedaluwarsa. Kamu tetap bisa mendaftar biasa.</div>}
         <p className="lead">{invitedOrg ? `Kamu diundang ke tim "${invitedOrg}". Buat akun untuk bergabung.` : freeText}</p>
+        <div className="register-identity">
         <label>
           Nama
           <input value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" required />
@@ -101,25 +104,25 @@ function Register() {
             <input value={org} onChange={(e) => setOrg(e.target.value)} placeholder="mis. Studio Kreatif Kita" autoComplete="organization" />
           </label>
         )}
+        </div>
         <label>
           Email
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required readOnly={!!invitedOrg} />
         </label>
-        <label>
-          Password
-          <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} autoComplete="new-password" minLength={8} required />
-        </label>
-        <label className="chk">
-          <input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} /> Saya setuju dengan{" "}
-          <Link href="/terms" target="_blank" rel="noopener noreferrer">
-            syarat layanan
-          </Link>{" "}
-          dan{" "}
-          <Link href="/privacy" target="_blank" rel="noopener noreferrer">
-            kebijakan privasi
-          </Link>
-          , termasuk tidak memakai data ini untuk spam.
-        </label>
+        <label htmlFor="register-password">Password</label>
+        <div className="password-row">
+          <input id="register-password" type={showPassword ? "text" : "password"} value={pass} onChange={(e) => setPass(e.target.value)} autoComplete="new-password" minLength={8} aria-describedby="register-password-hint" required />
+          <button type="button" onClick={() => setShowPassword(visible => !visible)} aria-controls="register-password">{showPassword ? "Sembunyikan" : "Tampilkan"}</button>
+        </div>
+        <small className="field-hint" id="register-password-hint">Minimal 8 karakter.</small>
+        <div className="chk">
+          <input id="register-agreement" type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} aria-labelledby="register-agreement-text" />
+          <p id="register-agreement-text">
+            <label htmlFor="register-agreement">Saya setuju dengan</label>{" "}
+            <Link href="/terms" target="_blank" rel="noopener noreferrer">syarat layanan</Link>{" "}
+            dan <Link href="/privacy" target="_blank" rel="noopener noreferrer">kebijakan privasi</Link>, termasuk tidak memakai data ini untuk spam.
+          </p>
+        </div>
         <button className="btn" disabled={busy}>
           {busy ? "Membuat akun…" : invitedOrg ? "Gabung" : "Buat akun"}
         </button>
@@ -129,6 +132,6 @@ function Register() {
           Sudah punya akun? <Link href={"/login" + (invite ? "?next=" + encodeURIComponent("/settings?invite=" + invite) : "")}>Masuk</Link>
         </div>
       </form>
-    </div>
+    </AccessLayout>
   );
 }

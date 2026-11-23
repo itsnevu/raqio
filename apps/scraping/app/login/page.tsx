@@ -1,8 +1,9 @@
 "use client";
 import Link from "next/link";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import "./login.css";
+import AccessLayout from "./AccessLayout";
 import { apiPost, errMsg } from "@/lib/api";
 import { resetMe } from "@/lib/me";
 import { safeNext } from "@/lib/safe";
@@ -25,8 +26,10 @@ const MSG: Record<string, string> = {
 function Login() {
   const router = useRouter();
   const params = useSearchParams();
+  const signup=useRef<HTMLDialogElement>(null);
   const [email, setEmail] = useState("");
   const [pass, setPass] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   // ?msg=verified (lama) atau ?verified=1 (tautan verifikasi email) sama-sama menampilkan pesan sukses
@@ -78,7 +81,7 @@ function Login() {
       </div>
     );
   return (
-    <div className="loginp">
+    <AccessLayout>
       <form className="box" onSubmit={submit}>
         <h1>Masuk</h1>
         <p className="lead">Riset pasar, prospek, dan pantauan untuk tim kamu.</p>
@@ -87,10 +90,11 @@ function Login() {
           Email
           <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required />
         </label>
-        <label>
-          Password
-          <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} autoComplete="current-password" required />
-        </label>
+        <div className="access-field-heading"><label htmlFor="login-password">Password</label><Link href="/forgot">Lupa password?</Link></div>
+        <div className="password-row">
+          <input id="login-password" type={showPassword ? "text" : "password"} value={pass} onChange={(e) => setPass(e.target.value)} autoComplete="current-password" required />
+          <button type="button" onClick={() => setShowPassword(visible => !visible)} aria-controls="login-password">{showPassword ? "Sembunyikan" : "Tampilkan"}</button>
+        </div>
         <button className="btn" disabled={busy}>
           {busy ? "Memeriksa…" : "Masuk"}
         </button>
@@ -99,9 +103,17 @@ function Login() {
           Coba tanpa daftar
         </button>
         <div className="foot">
-          Belum punya akun? <Link href="/register">Daftar</Link> · <Link href="/forgot">Lupa password</Link>
+          Belum punya akun? <button type="button" className="linkish" onClick={()=>signup.current?.showModal()}>Daftar</button>
         </div>
       </form>
-    </div>
+      <dialog ref={signup} className="access-dialog" aria-labelledby="signup-title">
+        <div className="access-dialog-head">
+          <h2 id="signup-title">Mulai dengan RAQIO</h2>
+          <button type="button" className="linkish" aria-label="Tutup" onClick={()=>signup.current?.close()}>✕</button>
+        </div>
+        <p>Buat workspace baru untuk tim Anda, atau buka tautan undangan dari admin untuk bergabung.</p>
+        <Link href="/register" className="btn">Buat akun</Link>
+      </dialog>
+    </AccessLayout>
   );
 }

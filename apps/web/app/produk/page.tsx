@@ -8,7 +8,7 @@ const comparison=[
   {key:"wa-suite",audience:"Tim layanan pelanggan, penjualan, dan bisnis dengan beberapa nomor.",work:"Kelola inbox WhatsApp Business, penugasan agen, dan template balasan.",output:"Antrean percakapan dan status tindak lanjut."},
 ] satisfies {key:ProductKey;audience:string;work:string;output:string}[];
 export const metadata={title:"Bandingkan produk"};
-export default function Compare(){return <SitePage title="Bandingkan produk RAQIO." intro="Satu untuk memahami pasar. Satu untuk menangani percakapan pelanggan.">
+export default function Compare(){return <SitePage image="/media/raqio-mountain-valley.webp" title="Bandingkan produk RAQIO." intro="Satu untuk memahami pasar. Satu untuk menangani percakapan pelanggan.">
   <section className="shell section compare-grid" aria-label="Perbandingan produk">{comparison.map(item=><article className="compare-card" key={item.key}><h2>{products[item.key].name}</h2>
     <dl><dt>Untuk siapa</dt><dd>{item.audience}</dd><dt>Cara kerja</dt><dd>{item.work}</dd><dt>Hasil</dt><dd>{item.output}</dd><dt>Akses</dt><dd><Link href={productPath(item.key)}>Lihat detail produk</Link></dd></dl><AppLink product={item.key}/></article>)}</section>
 </SitePage>;}

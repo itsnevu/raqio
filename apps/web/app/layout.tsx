@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
-import { Instrument_Sans, Newsreader, IBM_Plex_Mono } from "next/font/google";
+import { Instrument_Sans, Newsreader } from "next/font/google";
 import type { CSSProperties } from "react";
 import { tokens } from "../../../packages/ui/tokens";
 import "./site.css";
+import ScrollEffects from "../components/ScrollEffects";
 
-const display = Newsreader({subsets:["latin"],weight:"400",style:["normal","italic"],variable:"--display-face",display:"swap"});
-const body = Instrument_Sans({subsets:["latin"],variable:"--body-face",display:"swap"});
-const mono=IBM_Plex_Mono({subsets:["latin"],weight:"400",variable:"--mono-face",display:"swap",preload:false});
+// Editorial serif for headings, clean sans for body/UI.
+const serif = Newsreader({subsets:["latin"],variable:"--font-serif",display:"swap",weight:["400","500","600"]});
+const sans = Instrument_Sans({subsets:["latin"],variable:"--raqio-font",display:"swap"});
 export const metadata: Metadata = {
   title: {default:"RAQIO | Data pasar dan percakapan pelanggan",template:"%s | RAQIO"},
   description:"Kenali pasar lokal dengan Competitor Scraping dan kelola percakapan pelanggan dengan WA-Suite.",
@@ -19,5 +20,5 @@ export default function Layout({children}:{children:React.ReactNode}) {
     "--body-size":tokens.fontSize.body,"--gutter":tokens.spacing.gutter,"--section-space":tokens.spacing.section,
     "--card-radius":tokens.radius.card,"--pill":tokens.radius.control,"--card-shadow":tokens.shadow.card,
     "--display-fallback":tokens.fontFamily.display,"--body-fallback":tokens.fontFamily.body} as CSSProperties;
-  return <html lang="id" className={display.variable+" "+body.variable+" "+mono.variable}><body style={styles}>{children}</body></html>;
+  return <html lang="id" className={`${serif.variable} ${sans.variable}`}><body style={styles}>{children}<ScrollEffects/></body></html>;
 }
