@@ -1,9 +1,12 @@
 import Link from "next/link";
 import Brand from "@/components/Brand";
+import {safeHttpUrl} from "@/lib/safe";
 import type {ReactNode} from "react";
 
-export default function AccessLayout({children}:{children:ReactNode}){
-  return <main className="loginp access-shell">
+export default function AccessLayout({children,marketBackdrop=false}:{children:ReactNode;marketBackdrop?:boolean}){
+  const marketing= safeHttpUrl(process.env.NEXT_PUBLIC_MARKETING_URL ??
+    (process.env.NODE_ENV==="development"?"http://localhost:3000":undefined));
+  return <main className={marketBackdrop?"loginp access-shell access-shell--market":"loginp access-shell"}>
     <div className="access-stack">
       <div className="access-split">
         <aside className="access-brand">
@@ -17,12 +20,12 @@ export default function AccessLayout({children}:{children:ReactNode}){
           <p>Riset pasar dan kelola prospek.</p>
         </aside>
         <div className="access-form">
-          <Link className="access-back" href="/">
+          {marketing&&<a className="access-back" href={marketing}>
             <svg aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
               <path d="M19 12H5m7 7-7-7 7-7"/>
             </svg>
             Kembali ke beranda
-          </Link>
+          </a>}
           {children}
         </div>
       </div>

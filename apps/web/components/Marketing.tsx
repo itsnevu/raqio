@@ -1,16 +1,16 @@
 import Link from "next/link";
 import {Button,Navbar,Footer as SharedFooter,MockCard} from "../../../packages/ui/components";
-import {contactEmail,copy,products,productPath,type ProductKey} from "../content";
+import {contactEmail,copy,loginPath,products,productPath,type ProductKey} from "../content";
 
 export function Header() {
   return <Navbar><nav aria-label="Navigasi utama"><details className="product-menu"><summary>Produk <span aria-hidden="true" className="chevron"/></summary>
     <div><Link className="mobile-about" href="/tentang">Tentang RAQIO</Link><Link href="/produk">Bandingkan produk</Link>{(Object.keys(products) as ProductKey[]).map(key=><Link key={key} href={productPath(key)}>{products[key].name}</Link>)}</div>
     </details><Link className="nav-about" href="/tentang">Tentang</Link><Link className="nav-about" href="/#faq">FAQ</Link></nav>
-    <Link href="/masuk" className="button nav-contact">Masuk</Link></Navbar>;
+    <a href={loginPath} className="button nav-contact">Masuk</a></Navbar>;
 }
 export function Footer() {
   return <SharedFooter><div><h2>Produk</h2><Link href={productPath("competitor-scraping")}>Competitor Scraping</Link><Link href={productPath("wa-suite")}>WA-Suite</Link><Link href="/produk">Bandingkan</Link></div>
-    <div><h2>RAQIO</h2><Link href="/tentang">Tentang</Link><Link href="/kontak">Kontak</Link><Link href="/masuk">Masuk</Link><Link href="/privasi">Privasi</Link><Link href="/syarat">Syarat</Link></div></SharedFooter>;
+    <div><h2>RAQIO</h2><Link href="/tentang">Tentang</Link><Link href="/kontak">Kontak</Link><a href={loginPath}>Masuk</a><Link href="/privasi">Privasi</Link><Link href="/syarat">Syarat</Link></div></SharedFooter>;
 }
 export function AppLink({product}:{product:ProductKey}) {
   return <Button href={products[product].url ?? "/kontak"}>{products[product].url ? "Coba sekarang" : "Tanya tentang produk"} <span aria-hidden="true">&#8594;</span></Button>;

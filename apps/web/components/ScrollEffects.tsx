@@ -18,12 +18,11 @@ const REVEAL=[
   ".stepper li",
   ".person-grid article",
   ".audience-card",
-  ".about-photo",
   ".contact-card",
   ".contact-next li",
   ".compare-card",
   ".contact-inner form",
-  ".footer > *",
+  ".footer-grid",
 ].join(",");
 
 // Parallax targets and their speed (fraction of scroll distance; negative = moves against scroll).
@@ -33,7 +32,6 @@ const PARALLAX:[string,number][]=[
   [".region-photo img",0.12],
   [".product-stage .demo",-0.06],
   [".photo-hero-art",0.3],
-  [".about-photo img",0.1],
 ];
 
 export default function ScrollEffects(){

@@ -1,4 +1,19 @@
-/* Halaman Riset pasar. Aturan dasar (hero, tombol, chip) ada di globals.css. */
+.market-workspace > h1 { margin-bottom: 18px; }
+.market-controls { padding: clamp(12px, 2vw, 20px); border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--panel); }
+.market-controls .goal label.on { border-color: var(--good); background: var(--accent-soft); }
+.market-controls .goal { margin-bottom: 14px; }
+.market-controls .search { gap: 8px; padding: 0; border: 0; border-radius: 0; }
+.market-controls .search > input { min-height: 44px; border: 1px solid var(--line); border-radius: var(--radius-control); background: var(--panel); }
+.market-controls .search .sep { display: none; }
+.market-controls .search .btn { min-height: 44px; background: var(--ink); color: var(--ink-text); font-size: 13px; text-transform: none; letter-spacing: 0; }
+.market-controls .search .btn:hover:not(:disabled) { background: var(--workspace-accent-hover, #ffc65b); }
+.market-controls .search .mapbtn { min-height: 44px; }
+.market-workspace :is(.verdict,.reason,.tcard,.wiz) { border-radius: var(--radius-card); }
+.market-workspace #report > .empty { padding: 28px 16px; border: 1px solid var(--line); border-radius: var(--radius-card); background: var(--panel); }
+@media (max-width: 720px) {
+  .market-workspace > h1 { margin-bottom: 12px; }
+  .market-controls .goal label { min-width: min(100%, 220px); }
+}
 
 /* report header */
 .rh { display: flex; align-items: flex-end; gap: 16px; margin: 40px 0 16px; flex-wrap: wrap; }

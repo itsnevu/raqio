@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useRef} from "react";
 
-const lines=["Pasar berubah.","Pemain baru bermunculan.","Prospek tercecer.","Pesan menumpuk.","Tim kewalahan."];
+const lines=["Pasar berubah.","Pemain baru bermunculan.","Prospek terlewat.","Pesan menumpuk.","Tim kewalahan."];
 const logo="/brand-transparent.svg";
 const clamp=(n:number)=>Math.max(0,Math.min(1,n));
 const ease=(n:number)=>n*n*(3-2*n);
@@ -144,7 +144,7 @@ export default function StatementMorph(){
   },[]);
   return <section ref={section} className="statement statement-morph">
     <div ref={stage} className="statement-stage">
-      <div className="shell section statement-inner"><h2>Bisnis <mark>tumbuh</mark>, tapi informasinya tercecer.</h2>
+      <div className="shell section statement-inner"><h2>Bisnis <mark>tumbuh</mark>, tapi datanya masih terpisah.</h2>
         <ul ref={list}>{lines.map(line=><li key={line}><span>{line}</span></li>)}</ul>
       </div>
       <canvas ref={canvas} className="statement-particles" aria-hidden="true"/>

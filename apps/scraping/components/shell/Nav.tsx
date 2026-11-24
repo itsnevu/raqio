@@ -14,13 +14,13 @@ import { clearOrgStorage, lsGetGlobal } from "@/lib/storage";
 import type { Me } from "@/lib/api";
 import VerifyBanner from "./VerifyBanner";
 
-const NAV: [string, string][] = [
-  ["/market", "Riset"],
-  ["/prospects", "Prospek"],
-  ["/watch", "Pantau"],
-  ["/campaigns", "Kampanye"],
-  ["/top", "Peringkat"],
-  ["/chat", "Asisten"],
+const NAV: [string, string, string][] = [
+  ["/market", "Riset", "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm5 12 4 4"],
+  ["/prospects", "Prospek", "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0"],
+  ["/watch", "Pantau", "M3 12s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6Zm12 0a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"],
+  ["/campaigns", "Kampanye", "M4 10v5h4l9 4V6l-9 4H4Zm4 5 2 5"],
+  ["/top", "Peringkat", "M4 20h16M7 16v-4m5 4V5m5 11V9"],
+  ["/chat", "Asisten", "M5 5h14v11H9l-4 4V5Zm4 5h6"],
 ];
 const MORE: [string, string, string][] = [["/settings", "Pengaturan", "Tim, kuota, dan akun"]];
 
@@ -66,11 +66,15 @@ export default function Nav() {
 
   return (
     <>
-      <header className="top">
+      <header className="top scraping-sidebar">
         <Brand href="/market" />
         <nav aria-label="Navigasi utama">
-          {NAV.map(([h, l]) => (
-            <Link key={h} href={h} className={(here === h ? "on" : "") + (h === "/chat" ? " hide-m" : "")} aria-current={here === h ? "page" : undefined}>
+          <div className="scraping-nav-list">
+          {NAV.map(([h, l, icon]) => {
+            const active = here === h || here.startsWith(h + "/");
+            return (
+            <Link key={h} href={h} className={active ? "on" : undefined} aria-current={active ? "page" : undefined}>
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d={icon}/></svg>
               {l}
               {h === "/prospects" && due > 0 && (
                 <span className="badge-n" aria-label={due + " follow up jatuh tempo"} title={due + " follow up jatuh tempo"}>
@@ -78,9 +82,11 @@ export default function Nav() {
                 </span>
               )}
             </Link>
-          ))}
+            );
+          })}
+          </div>
           <details className="more" ref={moreRef}>
-            <summary>Lanjutan</summary>
+            <summary><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0"/></svg>Akun</summary>
             <div className="menu">
               {MORE.map(([h, l, d]) => (
                 <a key={h} href={h}>

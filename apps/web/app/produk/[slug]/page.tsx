@@ -70,7 +70,6 @@ export default async function Product({params}:{params:Promise<{slug:string}>}) 
       <p className="detail-note">{chat?"Penautan nomor memerlukan akun WhatsApp Business dan akses ke perangkat pemilik nomor.":"Competitor Scraping menggunakan sumber data publik. Ketersediaan data bergantung pada industri dan wilayah."}</p>
     </section>
     <section className="shell also"><Link className="text-link" href={productPath(other)}>Kenali juga {products[other].name}</Link></section>
-    <p className="shell detail-note">Model 3D: <a href="https://sketchfab.com/3d-models/macbook-pro-m3-16-inch-2024-8e34fc2b303144f78490007d91ff57c4">MacBook oleh jackbaeten</a> dan <a href="https://sketchfab.com/3d-models/iphone-17-pro-max-87fc1df741384124a8ce0226d2b2058d">iPhone oleh MajdyModels</a> · <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a> · Disesuaikan untuk menampilkan simulasi RAQIO.</p>
     <Contact/>
   </main><Footer/></>;
 }

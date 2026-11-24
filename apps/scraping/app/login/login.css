@@ -19,7 +19,7 @@
 .loginp {
   min-height:calc(100svh - 69px);
   padding:clamp(24px,6vw,64px) 16px;
-  background:radial-gradient(ellipse at top,#ffb02016,transparent 55%),var(--bg);
+  background:var(--bg);
 }
 .loginp .box {
   max-width:460px;
@@ -117,6 +117,12 @@
 /* Compact auth screens. Let unusually short viewports and error messages expand naturally. */
 body:has(.access-shell) { min-height:100svh; display:flex; flex-direction:column; }
 .loginp.access-shell { flex:1; min-height:0; padding:16px; }
+.access-shell--market { position:relative; isolation:isolate; }
+.access-shell--market::before {
+  content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; opacity:.3;
+  background:url("/login-data-grid.webp") right center / cover no-repeat;
+}
+@media(max-width:600px){.access-shell--market::before{opacity:.18;background-position:right bottom}}
 .access-stack { display:grid; grid-template-rows:1fr auto; align-items:center; align-self:stretch; width:min(100%,840px); }
 .access-legal { text-align:center; margin:clamp(16px,4vh,36px) 0 8px; color:var(--muted); font-size:12px; line-height:1.4; }
 .access-legal p { margin:0; }

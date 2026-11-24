@@ -11,7 +11,7 @@ export function Navbar({children}:{children:ReactNode}) {
   return <header className="header"><a className="skip" href="#konten">Lewati ke konten</a><div className="nav shell"><Brand/>{children}</div></header>;
 }
 export function Footer({children}:{children:ReactNode}) {
-  return <footer className="footer"><div className="shell footer-grid"><div><Brand/><p>Riset pasar dan percakapan pelanggan.</p></div>{children}</div><div className="shell footer-bottom"><span>RAQIO</span><span>Indonesia</span></div></footer>;
+  return <footer className="footer"><div className="shell footer-grid"><div><Brand/><p>Riset pasar dan percakapan pelanggan.</p></div>{children}</div><div className="shell footer-bottom"><span>© 2026 RAQIO</span><span>Indonesia</span></div></footer>;
 }
 export function MockCard({children,className=""}:{children:ReactNode;className?:string}) {
   return <div className={"demo "+className}>{children}</div>;

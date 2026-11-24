@@ -50,5 +50,10 @@ export const products = {
 } as const;
 export type ProductKey = keyof typeof products;
 export const productPath = (key:ProductKey) => "/produk/"+key;
+const scrapingOrigin=products["competitor-scraping"].url ??
+  (process.env.NODE_ENV==="development"?"http://localhost:3002":undefined);
+export const loginPath=scrapingOrigin
+  ? new URL("/login?next=%2Fpilih-produk",scrapingOrigin).href
+  : "/kontak";
 export const contactEmail = /^[\w.!#$%&'*+/=?^`{|}~-]+@[a-z0-9.-]+\.[a-z]{2,}$/i.test(process.env.NEXT_PUBLIC_RAQIO_CONTACT_EMAIL ?? "") ?
   process.env.NEXT_PUBLIC_RAQIO_CONTACT_EMAIL : undefined;

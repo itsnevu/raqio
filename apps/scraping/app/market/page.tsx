@@ -3,7 +3,6 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useRef, useState, useMemo } from "react";
 import "./market.css";
-import StatsStrip from "@/components/market/StatsStrip";
 import LoadError from "@/components/LoadError";
 import { useShell, useToast } from "@/components/Shell";
 import { useTour } from "@/components/Tour";
@@ -227,12 +226,12 @@ function Market() {
   const onReport = useCallback((f: (r: Report) => Report) => setReport((s) => (s.data ? { ...s, data: f(s.data) } : s)), []);
 
   return (
-    <div className="wrap">
-      <h1>Peta pasar industri apa pun.</h1>
-      <p className="lead">Scraping langsung dari Google Maps dan website bisnis. Data dibersihkan, tanpa duplikat.</p>
-      <StatsStrip />
+    <main className="wrap market-workspace">
+      <h1>Riset pasar</h1>
+      <section className="market-controls" aria-label="Pengaturan riset">
       <RunForm mode={mode} goal={goal} industry={industry} area={area} running={running} suggest={suggest} areaOptions={areaOptions}
         onMode={setMode} onGoal={setGoal} onIndustry={setIndustry} onArea={setArea} onRun={run} />
+      </section>
       <StatusLine status={running ? { kind: "running" } : status.kind === "running" ? { kind: "idle" } : status} log={stream.log} started={stream.started}
         queue={waiting.map((w) => w.label)} onStop={stop}
         onRescan={() => run({ industry: R?.industry || industry, area: R?.area || area, fresh: true, mode: "one" })} />
@@ -260,6 +259,6 @@ function Market() {
           <div className="empty">Belum ada riset. Isi industri dan wilayah di atas.</div>
         ) : null}
       </div>
-    </div>
+    </main>
   );
 }

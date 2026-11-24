@@ -28,7 +28,7 @@ export async function middleware(req: NextRequest) {
   url.pathname = "/login";
   url.search = pathname === "/" ? "" : "?next=" + encodeURIComponent(pathname + req.nextUrl.search);
   // AUTO_GUEST=1 (dev): pengunjung tanpa sesi langsung masuk sebagai tamu, tanpa klik. Login tetap bisa lewat /login?manual=1
-  if (process.env.AUTO_GUEST === "1") url.searchParams.set("auto", "1");
+  if (process.env.AUTO_GUEST === "1" && pathname !== "/pilih-produk") url.searchParams.set("auto", "1");
   return NextResponse.redirect(url);
 }
 

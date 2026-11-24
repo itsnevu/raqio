@@ -81,7 +81,7 @@ function Login() {
       </div>
     );
   return (
-    <AccessLayout>
+    <AccessLayout marketBackdrop>
       <form className="box" onSubmit={submit}>
         <h1>Masuk</h1>
         <p className="lead">Riset pasar, prospek, dan pantauan untuk tim kamu.</p>

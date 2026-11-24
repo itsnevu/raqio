@@ -256,3 +256,62 @@ select option:checked, select option:hover { background: var(--sunk); color: var
 .bz-logo { display: flex; align-items: center; gap: 14px; }
 .bz-logo .muted-note { display: flex; flex-direction: column; gap: 2px; }
 .bz-logo .muted-note small { color: var(--faint); font-size: 11px; }
+
+/* Tema ruang kerja mengikuti WA-Suite. Halaman publik memakai tema dasarnya. */
+:root:has(.scraping-sidebar) {
+  color-scheme: dark;
+  --bg: #0e0e0e; --panel: #1a1a1a; --sunk: #232323;
+  --line: rgba(255,255,255,.12); --line-2: rgba(255,255,255,.06);
+  --text: #f2f2f2; --muted: #9a9a9a; --faint: #929292;
+  --ink: #e9a13b; --ink-text: #201505; --accent: #e9a13b; --good: #e9a13b;
+  --accent-soft: rgba(233,161,59,.12); --workspace-accent-hover: #ffc65b;
+  --wa: #9bd6ad; --warn: #e9a13b; --bad: #ff9c94; --c1: #e9a13b; --c2: #a8c3ae;
+  --radius-card: 8px; --radius-control: 6px;
+}
+body:has(> .scraping-sidebar) { font-family: "Segoe UI", system-ui, sans-serif; font-size: 13px; }
+body:has(> .scraping-sidebar) .wrap { max-width: 1440px; padding: 24px 24px 64px; }
+body:has(> .scraping-sidebar) .wrap > h1 { font-size: 26px; font-weight: 300; letter-spacing: -.02em; line-height: 1.2; }
+body:has(> .scraping-sidebar) :is(input,select,textarea,button) { font-family: inherit; }
+body:has(> .scraping-sidebar) :is(th,td) { font-variant-numeric: tabular-nums; }
+body:has(> .scraping-sidebar) th { font-size: 11px; font-weight: 400; letter-spacing: .04em; color: var(--muted); }
+body:has(> .scraping-sidebar) tbody tr:hover { background: var(--sunk); }
+body:has(> .scraping-sidebar) .btn { text-transform: none; letter-spacing: 0; font-weight: 600; }
+body:has(> .scraping-sidebar) .btn:not(.ghost):hover:not(:disabled) { background: var(--workspace-accent-hover); }
+.scraping-sidebar .brand .word { font-weight: 300; letter-spacing: -.02em; }
+.scraping-sidebar :is(.scraping-nav-list,.more summary) svg {
+  width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor;
+  stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
+}
+.scraping-sidebar .scraping-nav-list { display: flex; gap: 4px; }
+.scraping-sidebar nav .scraping-nav-list a,.scraping-sidebar nav .more summary {
+  display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 8px 12px;
+  border-radius: 8px; text-transform: none; letter-spacing: 0; font-size: 13px; white-space: nowrap;
+}
+.scraping-sidebar nav .scraping-nav-list a:hover,.scraping-sidebar nav .more summary:hover { background: var(--sunk); color: var(--text); }
+.scraping-sidebar nav .scraping-nav-list a.on { box-shadow: inset 2px 0 var(--accent); background: var(--accent-soft); color: var(--accent); }
+.scraping-sidebar nav .badge-n { margin-left: auto; border-radius: 999px; }
+.scraping-sidebar nav .more { flex: none; }
+.scraping-sidebar nav .more .menu { border-radius: var(--radius-card); }
+@media (min-width: 821px) {
+  body:has(> .scraping-sidebar) { padding-inline-start: 190px; }
+  .top.scraping-sidebar {
+    position: fixed; inset: 0 auto 0 0; width: 190px; flex-direction: column; align-items: stretch;
+    gap: 18px; padding: 24px 12px 16px; background: #171717; border: 0; border-inline-end: 1px solid var(--line-2);
+  }
+  .scraping-sidebar .brand { padding-inline: 12px; }
+  .scraping-sidebar nav { flex: 1; min-height: 0; margin: 0; flex-direction: column; align-items: stretch; gap: 8px; }
+  .scraping-sidebar .scraping-nav-list {
+    flex-direction: column; flex: 1; min-height: 0; overflow: auto;
+    padding-inline-end: 8px; padding-block-end: 8px; scrollbar-width: thin;
+  }
+  .scraping-sidebar nav .more { border-top: 1px solid var(--line-2); padding-top: 8px; }
+  .scraping-sidebar nav .more .menu { top: auto; bottom: calc(100% + 4px); left: 0; right: auto; }
+}
+@media (max-width: 820px) {
+  .top.scraping-sidebar { flex-wrap: wrap; gap: 6px; padding: 10px 14px; }
+  .scraping-sidebar nav { width: 100%; min-width: 0; margin: 0; gap: 8px; }
+  .scraping-sidebar .scraping-nav-list { flex: 1; min-width: 0; overflow: auto; scrollbar-width: thin; }
+  .scraping-sidebar nav .scraping-nav-list a,.scraping-sidebar nav .more summary { padding-inline: 8px; min-height: 44px; }
+  .scraping-sidebar nav .more .menu { top: calc(100% + 4px); }
+  body:has(> .scraping-sidebar) .wrap { padding: 16px 16px 60px; }
+}

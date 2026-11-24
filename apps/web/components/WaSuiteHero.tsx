@@ -10,7 +10,7 @@ const TIMELINE=[1500,900,950,850,450,850,3000];
 
 export default function WaSuiteHero({description,appUrl}:{description:string;appUrl?:string}){
   const step=useStory(TIMELINE);
-  return <section className="wa-hero" data-step={step}>
+  return <section className="wa-hero wa-suite-product-hero" data-step={step}>
     <ProductDevices desktop={<WaSuiteMock step={step}/>} mobile={<WaSuiteMock step={step} mobile/>}/>
     <div className="shell wa-hero-copy">
       <h1>Satu inbox untuk semua percakapan pelanggan.</h1>

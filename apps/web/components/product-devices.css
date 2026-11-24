@@ -1,6 +1,6 @@
 /* Device frames belong to marketing. The app canvas uses native CSS pixels. */
 .product-devices .wa-laptop {
-  top: 47%; left: 38%; width: min(53%, calc((100svh - 12rem) * 1.32));
+  top: 47%;
 }
 .product-devices .wa-phone {
   top: 65%;
@@ -47,7 +47,28 @@
 .scraping-product-hero .wa-hero-copy h1 { max-width: 13ch; }
 
 @media (min-width:1001px) {
-  .wa-hero:has(.product-devices) { min-height: max(calc(100svh - 72px),46rem); }
+  .wa-hero:has(.product-devices) {
+    min-height: max(calc(100svh - 72px),46rem);
+    align-items: center;
+  }
+  .product-devices + .wa-hero-copy { padding-block: 2rem; }
+  .product-devices {
+    --laptop-left: 42%;
+    --laptop-width: min(43%, calc((100svh - 12rem) * 1.1));
+  }
+  .product-devices .wa-laptop {
+    left: var(--laptop-left);
+    width: var(--laptop-width);
+  }
+  .product-devices .wa-phone {
+    top: 61%;
+    left: calc(var(--laptop-left) + var(--laptop-width) - 4rem);
+    width: clamp(7rem, min(11.5vw, 22vh), 13rem);
+  }
+  .wa-suite-product-hero .product-devices .wa-phone {
+    top: 66%;
+    left: calc(var(--laptop-left) + var(--laptop-width) * .86);
+  }
   .product-devices + .wa-hero-copy {
     --copy-width: calc(36vw - max(var(--gutter), 50vw - 43rem) - 1rem);
   }
@@ -89,7 +110,6 @@
 .product-devices .wa-phone[data-chassis="ready"] .product-device-screen { border-radius: 10% / 4.6%; }
 @media (min-width:1001px) {
   .product-devices .wa-laptop,.product-devices .wa-phone { translate:0 -50%; }
-  .product-devices .wa-phone { left:auto; right:7%; }
 }
 @media (max-width:540px) {
   .product-devices .wa-laptop[data-chassis="ready"] .product-device-screen { clip-path:inset(6px 6px 8px round 6px 6px 0 0); }

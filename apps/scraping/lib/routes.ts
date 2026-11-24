@@ -4,7 +4,7 @@ export const PUBLIC_PAGES = ["/login", "/register", "/forgot", "/reset", "/priva
 
 export const PUBLIC_PATHS: readonly string[] = [
   ...PUBLIC_PAGES,
-  "/", // landing page; halaman Asisten pindah ke /chat
+  "/", // pengalihan ke ruang riset yang dilindungi sesi
   "/auth/login",
   "/auth/guest",
   "/auth/register",
@@ -19,6 +19,7 @@ export const PUBLIC_PATHS: readonly string[] = [
   "/brand-transparent.svg",
   "/icon-192.png",
   "/apple-touch-icon.png",
+  "/login-data-grid.webp",
   "/opengraph-image",
   "/stats", // angka total data terkumpul, dipakai strip di halaman Riset (tamu juga melihat)
 ];
@@ -28,6 +29,6 @@ export const PUBLIC_PREFIXES = ["/p/", "/audit/", "/u/", "/logo/", "/top", "/ran
 export const isPublicPath = (pathname: string) => PUBLIC_PATHS.includes(pathname) || PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
 export const isAuthPage = (pathname: string) => (PUBLIC_PAGES as readonly string[]).includes(pathname);
 
-/** Halaman tanpa navigasi dan tombol asisten: laporan siap cetak (butuh sesi) dan landing (publik, header sendiri). */
-export const BARE_PAGES = ["/market/print", "/"] as const;
+/** Halaman tanpa navigasi dan tombol asisten. */
+export const BARE_PAGES = ["/market/print", "/pilih-produk", "/"] as const;
 export const isBarePage = (pathname: string) => (BARE_PAGES as readonly string[]).includes(pathname) || pathname.startsWith("/p/");

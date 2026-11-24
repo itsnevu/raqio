@@ -44,11 +44,11 @@ export default function RunForm({ mode, goal, industry, area, running, suggest, 
         <legend className="sr-only">Tujuan riset</legend>
         <label className={goal === "client" ? "on" : ""}>
           <input type="radio" name="goal" value="client" checked={goal === "client"} onChange={() => onGoal("client")} />
-          <div><b>Cari calon klien</b><span>Isi industri bisnis yang mau kamu tawari. Contoh: kamu agency, isi &quot;coffee shop&quot; atau &quot;klinik gigi&quot;.</span></div>
+          <div><b>Cari calon klien</b><span>Masukkan industri yang ingin kamu jangkau.</span></div>
         </label>
         <label className={goal === "rival" ? "on" : ""}>
           <input type="radio" name="goal" value="rival" checked={goal === "rival"} onChange={() => onGoal("rival")} />
-          <div><b>Pelajari pesaing</b><span>Isi industri bisnismu sendiri. Contoh: kamu agency, isi &quot;digital agency&quot;. Hasilnya pesaing, bukan klien.</span></div>
+          <div><b>Pelajari pesaing</b><span>Masukkan industri bisnismu.</span></div>
         </label>
       </fieldset>
       {selfWarn && (
