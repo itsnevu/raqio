@@ -1,11 +1,12 @@
 # dev.ps1: jalankan seluruh stack Raqio dari satu terminal.
 #   .\dev.ps1            semua: Postgres+Redis (docker), Go API (docker), worker Python, Next.js
 #   .\dev.ps1 -NoWeb     tanpa frontend
+#   .\dev.ps1 -NoProfileSite  tanpa profil perusahaan
 #   .\dev.ps1 -NoWorker  tanpa worker
 # Worker membaca OPENROUTER_API_KEY dari services\scraper\.env (asisten chat).
 # Ctrl+C mematikan worker dan frontend. Container docker dibiarkan hidup (murah, cepat untuk start berikutnya);
 # matikan dengan: docker stop raqio-api-dev deploy-postgres-1 deploy-redis-1
-param([switch]$NoWeb, [switch]$NoWorker, [switch]$StopDocker)
+param([switch]$NoWeb, [switch]$NoWorker, [switch]$StopDocker, [switch]$NoProfileSite)
 
 # PowerShell 5.1: stderr perintah native jangan dianggap error fatal; cek $LASTEXITCODE manual
 $ErrorActionPreference = "Continue"
@@ -71,12 +72,13 @@ if (-not $NoWorker) {
     Say worker "pid $($p.Id)"
 }
 if (-not $NoWeb) {
-    foreach ($appName in @('web','scraping')) {
+    $frontends = if ($NoProfileSite) { @('scraping') } else { @('web','scraping') }
+    foreach ($appName in $frontends) {
         $appPort = if ($appName -eq 'web') { 3000 } else { 3002 }
         $busy = Get-NetTCPConnection -LocalPort $appPort -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
         if ($busy) { throw "Port $appPort sudah dipakai (pid $($busy.OwningProcess))." }
     }
-    foreach ($appName in @('web','scraping')) {
+    foreach ($appName in $frontends) {
         $appDir = Join-Path $root "apps/$appName"
         $appPort = if ($appName -eq 'web') { 3000 } else { 3002 }
         $p = Start-Process -FilePath "cmd.exe" -ArgumentList "/c npm run dev" -WorkingDirectory $appDir -WindowStyle Hidden -PassThru `
@@ -88,7 +90,7 @@ if (-not $NoWeb) {
     }
 }
 
-Say dev "Profil http://localhost:3000, produk scraping http://localhost:3002. Ctrl+C untuk berhenti." Green
+Say dev "Ctrl+C untuk menghentikan proses lokal." Green
 
 # tail gabungan: baca bagian baru tiap file, cetak dengan prefix
 $pos = @{}
