@@ -224,9 +224,10 @@ button.hb:hover .b { filter: brightness(1.15); }
 :root:not([data-theme="light"]) .mappick .leaflet-control-attribution a { color: var(--muted); }
 :root:not([data-theme="light"]) .mappick .leaflet-control-zoom a { background: var(--panel); color: var(--text); border-color: var(--line); }
 
-/* kata kunci dan angka penting di kesimpulan, alasan, temuan: kuning Raqio supaya inti kalimat langsung terbaca */
-mark.k { background: transparent; color: var(--good); font-weight: 600; padding: 0; }
-.verdict h3 mark.k { font-weight: 700; }
+/* kuning hanya di judul kesimpulan; di kalimat lain angka cukup lebih terang dan kata kunci mengikuti teks */
+mark.k { background: transparent; color: inherit; font-weight: 600; padding: 0; }
+mark.k.n { color: var(--text); }
+.verdict h3 mark.k { color: var(--good); font-weight: 700; }
 .verdict p.why mark.k, .reason p mark.k, .key3 p mark.k, .card li mark.k { font-weight: 600; }
 
 /* chip wilayah (mode Bandingkan): tiap wilayah yang di-Enter jadi kotak kuning, dropdown saran dari riset sebelumnya */

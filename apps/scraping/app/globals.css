@@ -1,8 +1,9 @@
 /* Gaya dasar Raqio: tema grafit dengan aksen amber dan sudut membulat.
    Token tema didefinisikan sekali di sini. Nilai akhir yang dulu dipaksa lewat !important sudah dilebur ke aturan dasarnya. */
 :root {
+  --raqio-font: "Segoe UI", system-ui, sans-serif;
   --bg: #141414; --panel: #1E1E1E; --sunk: #292929; --line: #373737; --line-2: #2B2B2B;
-  --radius-card: 18px; --radius-control: 10px;
+  --radius-card: 8px; --radius-control: 6px;
   --text: #E5E5E5; --muted: #A6A6A6; --faint: #767676;
   --ink: #FFFFFF; --ink-text: #000000; --accent: #FFFFFF; --accent-soft: #1F1F1F;
   --warn: #FF8A3D; --bad: #FF5A4E; --good: #FFB020; --wa: #FFB020; --c1: #FFB020; --c2: #6B6B6B;
@@ -19,7 +20,7 @@ html { color-scheme: dark; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
-body { font-family: var(--font-sans), "Albert Sans", "Helvetica Neue", Arial, sans-serif; background: var(--bg); color: var(--text);
+body { font-family: var(--raqio-font); background: var(--bg); color: var(--text);
        font-size: 16px; line-height: 1.43; letter-spacing: 0; -webkit-font-smoothing: antialiased; }
 a { color: inherit; }
 .mono { font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Menlo, monospace; font-size: 12.5px; white-space: nowrap; }
@@ -315,3 +316,77 @@ body:has(> .scraping-sidebar) .btn:not(.ghost):hover:not(:disabled) { background
   .scraping-sidebar nav .more .menu { top: calc(100% + 4px); }
   body:has(> .scraping-sidebar) .wrap { padding: 16px 16px 60px; }
 }
+
+/* Satu font dan ketebalan untuk seluruh aplikasi, sama seperti WA-Suite. Halaman cetak dikecualikan. */
+body:not(:has(.printp)) :not(#_), body:not(:has(.printp)) :not(#_)::before, body:not(:has(.printp)) :not(#_)::after {
+  font-family: var(--raqio-font) !important; font-weight: 300 !important;
+}
+
+/* Sudut WA-Suite: kartu 8px, kontrol 6px, chip pil. */
+body :is(
+  .drawer .dbox, .prog, .big-n, .key3, .empty-cta, .load-err, .part-err, .more .menu, .goalwarn, .stats, .verdict, .reason, .wiz, .wiz .who,
+  .tcard, .dbox, .ch, .mappick, .stat, .watchp .item, .alerts, .pros .card, .campp .wizard, .campp .sendbox, .campp .preview,
+  .topp .pair, .topp .rank li, .topp .deriv, .metod pre, .logo-zoom, .loginp .box, .access-dialog, .access-split, .driver-popover.raqio-tour,
+  .product-chooser-grid article, .search .ac
+) { border-radius: var(--radius-card); }
+body :is(.big-n, .key3, .stats, .tcard) { overflow: hidden; }
+body :is(.tcard) { overflow-x: auto; }
+body :is(
+  .btn, .mini, .mode, .mode button, .offerin, .chk, .f, .nx, .drawer .x, .st-row button, .drawer textarea, .offer input, .lrow select,
+  .pros .bar input, .pros .bar select, .pros .offer input, .pros .card .a a, .pros .card .a button, .pros .card .a select, .pros .more-btn,
+  .wiz textarea, .campp input, .campp textarea, .campp select, .campp .seg, .topp input, .topp textarea, .loginp input, .product-chooser-grid a
+) { border-radius: var(--radius-control); }
+body :is(.badge, .reasons > span, .watchp .sum span, .drill .tags i) { border-radius: 999px; }
+body .watchp .item { margin-bottom: 8px; }
+
+/* Detail ruang kerja yang masih memakai gaya lama: judul, lead, tombol, notifikasi, tombol asisten. */
+body:has(> .scraping-sidebar) .wrap h1 { font-size: 26px; letter-spacing: -.02em; line-height: 1.2; }
+body:has(> .scraping-sidebar) .wrap .lead { font-size: 14px; line-height: 1.5; }
+body:has(> .scraping-sidebar) .wrap > .lead { margin-bottom: 20px; }
+body:has(> .scraping-sidebar) .btn { font-size: 13px; height: 40px; padding: 0 16px; }
+body:has(> .scraping-sidebar) .btn.ghost { height: 36px; padding: 0 12px; }
+body:has(> .scraping-sidebar) .mini {
+  background: transparent; color: var(--text); border: 1px solid var(--line); padding: 5px 10px; font-size: 12px;
+}
+body:has(> .scraping-sidebar) .mini:hover { background: var(--sunk); }
+body:has(> .scraping-sidebar) .mini.primary { background: var(--accent); border-color: var(--accent); color: var(--ink-text); }
+body:has(> .scraping-sidebar) .mini.primary:hover { background: var(--workspace-accent-hover); }
+body:has(> .scraping-sidebar) .offerin {
+  width: 100%; height: 40px; padding: 0 12px; font-size: 13px; color: var(--text); background: #141414; border: 1px solid var(--line);
+}
+body:has(> .scraping-sidebar) .reasons:has(> .reason) { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+body:has(> .scraping-sidebar) .reason { padding: 16px; background: var(--panel); border: 1px solid var(--line-2); }
+body:has(> .scraping-sidebar) .reason .big { font-size: 20px; letter-spacing: -.02em; }
+body:has(> .scraping-sidebar) .reason .big small { margin-left: 8px; font-size: 12px; color: var(--muted); letter-spacing: 0; }
+body:has(> .scraping-sidebar) .reason p { font-size: 13px; line-height: 1.5; }
+body:has(> .scraping-sidebar) .reason span { border: 0; padding: 0; }
+body:has(> .scraping-sidebar) :is(.bz-sec h3, .bz-sec h4, .bz-sec .h, .key3 small, .big-n small, .sec-h, .strip small, .st) { text-transform: none; letter-spacing: 0; }
+body:has(> .scraping-sidebar) .fab {
+  background: var(--accent); border-color: var(--accent); color: var(--ink-text); border-radius: 999px; text-transform: none; letter-spacing: 0; font-size: 13px;
+}
+body:has(> .scraping-sidebar) .fab:hover { background: var(--workspace-accent-hover); color: var(--ink-text); }
+
+/* Sidebar: ukuran, jarak, dan keadaan aktif mengikuti rail WA-Suite. */
+@media (min-width: 821px) {
+  .top.scraping-sidebar { gap: 24px; }
+  .scraping-sidebar nav { gap: 0; }
+  .scraping-sidebar .brand .word { letter-spacing: -.02em; }
+  .scraping-sidebar nav .scraping-nav-list a, .scraping-sidebar nav .more summary { gap: 12px; min-height: 0; padding: 11px 13px; font-size: 12px; line-height: 18px; color: #b7b7b7; border-radius: 8px; }
+  .scraping-sidebar :is(.scraping-nav-list, .more summary) svg { width: 18px; height: 18px; }
+  .scraping-sidebar nav .more summary { list-style: none; }
+  .scraping-sidebar nav .more summary::after { content: ""; }
+}
+.scraping-sidebar nav .scraping-nav-list a.on { color: var(--workspace-accent-hover); padding-bottom: 11px; }
+.scraping-sidebar nav .more .menu { overflow: hidden; }
+
+/* Halaman asisten mengisi sisa layar di bawah notifikasi, jadi hanya daftar pesan yang bergulir. */
+body:has(> .chatp.page) { height: 100dvh; display: flex; flex-direction: column; overflow: hidden; }
+body > .chatp.page { flex: 1; height: auto; min-height: 0; }
+body:has(> .scraping-sidebar) .goalwarn button { padding: 0; border: 0; background: none; color: var(--workspace-accent-hover); text-decoration: underline; }
+
+/* Tombol bantuan skor dan tab laporan: tanpa kotak bawaan browser. */
+.help-btn { display: inline-grid; place-items: center; width: 18px; height: 18px; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: transparent; color: var(--muted); font-size: 11px; line-height: 1; vertical-align: middle; }
+.help-btn:hover { color: var(--text); background: var(--sunk); }
+body:has(> .scraping-sidebar) .verdict .tag { text-transform: none; letter-spacing: 0; }
+body:has(> .scraping-sidebar) .rtabs button { border-radius: 0; text-transform: none; letter-spacing: 0; font-size: 13px; }
+body:has(> .scraping-sidebar) .rtabs button.on { color: var(--workspace-accent-hover); border-bottom-color: var(--accent); }

@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
-import { Albert_Sans, Public_Sans } from "next/font/google";
 import { headers } from "next/headers";
 import "./globals.css";
 import "./tour.css";
 import { ShellProvider } from "@/components/Shell";
 
-const sans = Albert_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-sans", display: "swap" });
-const dashboardSans = Public_Sans({ subsets: ["latin"], variable: "--font-dashboard", display: "swap", preload: false });
 
 const BASE = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "http://localhost:3002").replace(/\/+$/, "");
 
@@ -28,7 +25,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   // nonce dibuat middleware.ts per request; dipakai skrip inline di bawah dan oleh Next untuk skripnya sendiri
   const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
-    <html lang="id" className={`${sans.variable} ${dashboardSans.variable}`}>
+    <html lang="id">
       <body>
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: SW_CLEANUP }} />
         <ShellProvider>{children}</ShellProvider>

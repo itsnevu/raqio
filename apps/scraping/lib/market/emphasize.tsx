@@ -23,8 +23,8 @@ export function emphasizeParts(text: string): { t: string; k: boolean }[] {
   return out;
 }
 
-/** Render teks dengan angka dan kata kunci berwarna kuning Raqio (kelas .k). */
+/** Render teks dengan angka (kelas .k.n) dan kata kunci (.k); warnanya diatur di market.css. */
 export function Em({ text }: { text: string }): ReactNode {
   // potongan biasa tanpa elemen pembungkus supaya tidak kena gaya span (mis. kotak di kartu alasan)
-  return emphasizeParts(text).map((p, i) => (p.k ? <mark className="k" key={i}>{p.t}</mark> : <Fragment key={i}>{p.t}</Fragment>));
+  return emphasizeParts(text).map((p, i) => (p.k ? <mark className={/^\d/.test(p.t) ? "k n" : "k"} key={i}>{p.t}</mark> : <Fragment key={i}>{p.t}</Fragment>));
 }
