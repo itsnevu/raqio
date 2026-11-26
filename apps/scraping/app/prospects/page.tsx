@@ -4,6 +4,7 @@ import ScoreHelp from "@/components/ScoreHelp";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import "./prospects.css";
+import "@/components/profile-form.css";
 import ExtLink from "@/components/ExtLink";
 import LoadError, { PageSkeleton } from "@/components/LoadError";
 import { useShell, useToast } from "@/components/Shell";
@@ -11,8 +12,9 @@ import { useTour } from "@/components/Tour";
 import { apiGet, errMsg } from "@/lib/api";
 import { type Biz, LEAD_ST, ST_LABEL, clean, dec, downloadCsv, draft, leadKey, saveLead, waOf } from "@/lib/biz";
 import { invalidate, isDue, loadProspects, PROSPECTS_KEY, REFRESH_MSG } from "@/lib/cache";
+import { byFit, type BusinessProfile, type Fit, fitOf } from "@/lib/profile";
 import { igUrl } from "@/lib/safe";
-import { getOffer, isDefaultOffer, loadSettings, setOffer } from "@/lib/settings";
+import { getOffer, getProfile, isDefaultOffer, loadSettings, setOffer } from "@/lib/settings";
 import { PROSPECTS_TOUR } from "@/lib/tours";
 import { useRefresh } from "@/lib/useRefresh";
 
@@ -38,6 +40,7 @@ export default function ProspectsPage() {
   const [area, setArea] = useState("");
   const [due, setDue] = useState(false);
   const [offer, setOfferState] = useState("");
+  const [profile, setProfile] = useState<BusinessProfile>({});
   const [members, setMembers] = useState<{ user_id: string; email: string }[]>([]);
   const [pj, setPj] = useState(""); // filter penanggung jawab: "" semua, "none" belum dipegang, selainnya user_id
   const [show, setShow] = useState<Record<string, number>>({});
@@ -49,6 +52,7 @@ export default function ProspectsPage() {
     try {
       await loadSettings().catch(() => null);
       setOfferState(isDefaultOffer() ? "" : getOffer());
+      setProfile(getProfile());
       // anggota org untuk pembagian penanggung jawab; gagal dimuat bukan masalah (fitur tim saja)
       apiGet<{ members?: { user_id: string; email: string }[] }>("/org").then((o) => setMembers(o.members || [])).catch(() => {});
       const items = await loadProspects();
@@ -107,8 +111,8 @@ export default function ProspectsPage() {
         (!due || isDue(p)) &&
         (!pj || (pj === "none" ? !p.lead?.assignee : p.lead?.assignee === pj)) &&
         (!q || [p.name, p.area, p.industry, p.category, p.lead && p.lead.note].join(" ").toLowerCase().includes(q)),
-    );
-  }, [items, area, due, q, pj]);
+    ).sort(byFit(profile));
+  }, [items, area, due, q, pj, profile]);
 
   if (st.loading && !items) return <PageSkeleton className="pros" />;
   if (st.error || !items)
@@ -245,6 +249,7 @@ export default function ProspectsPage() {
                           p={p}
                           id={key}
                           members={members}
+                          fit={fitOf(p, profile)}
                           dragging={dragging === key}
                           onDragStart={() => setDragging(key)}
                           onDragEnd={() => setDragging(null)}
@@ -272,9 +277,9 @@ export default function ProspectsPage() {
 }
 
 function Card({
-  p, id, members, dragging, onDragStart, onDragEnd, onOpen, onMove, onAssign, onWa,
+  p, id, members, fit, dragging, onDragStart, onDragEnd, onOpen, onMove, onAssign, onWa,
 }: {
-  p: Biz; id: string; members: { user_id: string; email: string }[]; dragging: boolean; onDragStart: () => void; onDragEnd: () => void;
+  p: Biz; id: string; fit: Fit; members: { user_id: string; email: string }[]; dragging: boolean; onDragStart: () => void; onDragEnd: () => void;
   onOpen: () => void; onMove: (st: string) => void; onAssign: (userId: string) => void; onWa: () => void;
 }) {
   const wa = waOf(p),
@@ -303,6 +308,7 @@ function Card({
         {p.rating ? " · ★ " + dec(p.rating) : ""}
       </div>
       <div className="r">{(p.lead_reasons || []).slice(0, 3).join(", ")}</div>
+      {fit.avoid ? <div className="fit no">Kurang cocok: {fit.avoid}</div> : fit.matches.length > 0 && <div className="fit">Cocok: {fit.matches.join(", ")}</div>}
       {p.lead?.note && <div className="note">{p.lead.note}</div>}
       {p.lead?.remind && (
         <span className={"remind" + (due ? " due" : "")}>

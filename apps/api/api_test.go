@@ -253,6 +253,25 @@ func TestIntegrationTenancy(t *testing.T) {
 		t.Fatalf("settings A: %v", j)
 	}
 
+	// profil bisnis: field tak dikenal dibuang, nilai di luar daftar ditolak, simpan sebagian tidak menghapusnya
+	code, j = a.post("/org/settings", map[string]any{"profile": map[string]any{"kind": "agensi", "name": " Kita ", "solves": []string{"website", "website"}, "lain": "x"}})
+	a.must(200, code, j)
+	code, j = a.post("/org/settings", map[string]any{"profile": map[string]any{"kind": "robot"}})
+	a.must(400, code, j)
+	code, j = a.post("/org/settings", map[string]any{"profile": map[string]any{"solves": []string{"semua"}}})
+	a.must(400, code, j)
+	code, j = a.post("/org/settings", map[string]any{"offer": "jasa A"})
+	a.must(200, code, j)
+	code, j = a.get("/org/settings")
+	a.must(200, code, j)
+	if p := j["profile"].(map[string]any); p["name"] != "Kita" || len(p["solves"].([]any)) != 1 || p["lain"] != nil {
+		t.Fatalf("profil A: %v", p)
+	}
+	_, j = b.get("/org/settings")
+	if len(j["profile"].(map[string]any)) != 0 {
+		t.Fatalf("B bocor profil A: %v", j)
+	}
+
 	// B tidak melihat apa pun milik A
 	code, j = b.get("/market/reports")
 	b.must(200, code, j)

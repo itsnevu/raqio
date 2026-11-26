@@ -3,6 +3,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import "../login/login.css";
 import ExtLink from "@/components/ExtLink";
+import ProfileForm from "@/components/ProfileForm";
 import LoadError, { PageSkeleton } from "@/components/LoadError";
 import { useToast } from "@/components/Shell";
 import { useTour } from "@/components/Tour";
@@ -139,6 +140,12 @@ function Settings() {
           <button type="button" disabled={busy === "/auth/resend-verify"} onClick={async () => (await post("/auth/resend-verify", {})) && toast("Email verifikasi dikirim ulang")}>kirim ulang</button>.
         </div>
       )}
+
+      <div className="bz-sec" id="profil" style={{ marginTop: 24 }}>
+        <h4>Profil bisnis</h4>
+        <p className="muted-note">Sekali isi, dipakai draf pesan, urutan prospek, dan asisten.</p>
+        <ProfileForm />
+      </div>
 
       <div className="key3" style={{ marginTop: 24 }}>
         <div><small>Riset bulan ini</small><p>{org.usage.market_run || 0} dari {limits?.runs ?? "-"}</p></div>

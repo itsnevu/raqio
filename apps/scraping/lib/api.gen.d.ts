@@ -1312,6 +1312,7 @@ export interface paths {
                         goals?: {
                             [key: string]: "client" | "rival";
                         };
+                        profile?: components["schemas"]["BusinessProfile"];
                         /** @description kosong = hapus */
                         notify_email?: string;
                         /** @description angka */
@@ -3044,6 +3045,18 @@ export interface components {
             /** Format: date-time */
             revoked_at?: string | null;
         };
+        /** @description profil bisnis pengguna, dipakai draf pesan, kecocokan prospek, dan asisten */
+        BusinessProfile: {
+            /** @enum {string} */
+            kind?: "usaha" | "perorangan" | "agensi";
+            name?: string;
+            customers?: string;
+            area?: string;
+            strengths?: string;
+            /** @description kata dipisah koma */
+            avoid?: string;
+            solves?: ("website" | "instagram" | "ulasan" | "layanan" | "maps")[];
+        };
         Settings: {
             /** @description jasa yang ditawarkan */
             offer: string;
@@ -3051,6 +3064,7 @@ export interface components {
             goals: {
                 [key: string]: "client" | "rival";
             };
+            profile: components["schemas"]["BusinessProfile"];
             /** @description penerima alert dan pengingat; kosong = semua owner/admin */
             notify_email: string;
             /** @description id chat Telegram (angka */

@@ -47,6 +47,7 @@ export default function ReportView({ R, rival, current, watched, onSwapGoal, onR
   const onFilter = useCallback((k: string) => setView((x) => setFilterIn(x, k)), []);
   const onSort = useCallback((k: SortKey) => setView((x) => toggleSort(x, k)), []);
   const onOffer = useCallback((o: string) => { setOffer(o); setOfferState(o); }, []);
+  const onProfileOffer = useCallback((o: string) => setOfferState(o), []);
 
   const toggleWatch = async () => {
     const on = !isWatched;
@@ -116,7 +117,7 @@ export default function ReportView({ R, rival, current, watched, onSwapGoal, onR
             <Charts R={R} all={all} rival={rival} power={power} onOpen={onOpen} />
           </ErrorBoundary>
         )}
-        {tab === "pros" && <DraftPanel R={R} all={all} offer={offer} onOffer={onOffer} setLead={setLead} toast={toast} />}
+        {tab === "pros" && <DraftPanel R={R} all={all} offer={offer} onOffer={onProfileOffer} setLead={setLead} toast={toast} />}
         {tab !== "sum" && (
           <BizTable tab={tab} all={all} filtered={filtered} view={view} rival={rival} industry={R.industry} area={R.area} offer={offer}
             onQuery={onQuery} onFilter={onFilter} onSort={onSort} onOffer={onOffer} onToggleDraft={onToggleDraft} onOpen={onOpen} onCheck={onCheck} onLead={setLead} />

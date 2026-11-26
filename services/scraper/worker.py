@@ -611,9 +611,12 @@ def do_chat(conn, job):
         job["permanent"] = True
         return "failed", None, "sesi chat tidak ada"
     history = row[0] if isinstance(row[0], list) else (json.loads(row[0]) if row[0] else [])
+    saved = conn.execute("SELECT profile, offer FROM org_settings WHERE org_id=%s", (job["org_id"],)).fetchone()
+    profile, offer = saved or ({}, "")
     q = queue.Queue()
     stop = threading.Event()
-    ctx = agent.Context(org_id=job["org_id"], job_id=job["id"], db=connect, limits=p.get("limits") or {},
+    ctx = agent.Context(profile=profile, offer=offer,
+                        org_id=job["org_id"], job_id=job["id"], db=connect, limits=p.get("limits") or {},
                         app_url=p.get("app_url") or APP_URL, log=q.put, should_stop=stop.is_set,
                         role=p.get("role") or "", org_name=p.get("org_name") or "", plan=p.get("plan") or "",
                         verified=p.get("verified"), page_context=p.get("context") or {})

@@ -98,7 +98,8 @@ export const host = (u: string) => {
 export const leadKey = (p: Biz) => p.key || p.place_id || p.maps_url || "";
 
 export { getOffer, isDefaultOffer, setOffer } from "./settings";
-import { getOffer } from "./settings";
+import type { BusinessProfile } from "./profile";
+import { getOffer, getProfile } from "./settings";
 
 export const short = (n: string) => (clean(n).split(/\s[-|@·,(]\s?/)[0] ?? "").trim();
 
@@ -120,7 +121,7 @@ export const isProspect = (p: Biz, rival = false) => {
   return !!(g && g.length && (p.reviews ?? 0) <= 800 && (waOf(p) || p.instagram));
 };
 
-export function draft(p: Biz, industry?: string, area?: string, offer: string = getOffer()) {
+export function draft(p: Biz, industry?: string, area?: string, offer: string = getOffer(), profile: BusinessProfile = getProfile()) {
   const r = p.lead_reasons || [];
   const g = gapsOf(p) || [];
   const praise =
@@ -135,7 +136,9 @@ export function draft(p: Biz, industry?: string, area?: string, offer: string = 
         : g.includes("review sedikit") || (p.reviews || 0) < 100
           ? "Ulasannya masih bisa ditambah supaya lebih sering muncul di pencarian."
           : "Masih ada ruang untuk tampil lebih menonjol dibanding pesaing sekitar.";
-  return `Halo kak, salam kenal. Saya lihat ${short(p.name)} punya ${praise} ${why} Kebetulan saya bantu bisnis ${industry || ""} di sekitar ${area || ""} untuk ${offer}. Boleh saya kirim contoh singkatnya? Terima kasih 🙏`;
+  const who = profile.name?.trim();
+  const intro = who ? (profile.kind === "perorangan" ? `Saya ${who}. ` : `Saya dari ${who}. `) : "";
+  return `Halo kak, salam kenal. ${intro}Saya lihat ${short(p.name)} punya ${praise} ${why} Kebetulan saya bantu bisnis ${industry || ""} di sekitar ${area || ""} untuk ${offer}. Boleh saya kirim contoh singkatnya? Terima kasih 🙏`;
 }
 
 /** Gabungkan status lead baru dengan yang lama tanpa memutasi `p`. */

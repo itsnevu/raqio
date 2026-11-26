@@ -206,7 +206,7 @@ def test_chat_history_dimuat_dan_dipotong(conn, monkeypatch):
     monkeypatch.setattr(agent, "chat", fake_chat)
     worker.handle(conn, worker.claim(conn))
     assert conn.execute("SELECT status FROM jobs WHERE id=%s", (jid,)).fetchone()[0] == "done"
-    assert seen["n"] == 72  # seluruh history lama + pertanyaan baru dikirim ke model
+    assert seen["n"] == 73  # seluruh history lama + pertanyaan baru + pesan Konteks (profil) dikirim ke model
     hist = conn.execute("SELECT history FROM chat_sessions WHERE id=%s", (sid,)).fetchone()[0]
     assert len(hist) <= 41 and hist[0] == {"role": "system", "content": agent.SYSTEM} and hist[1]["role"] == "user"
     assert hist[-1] == {"role": "assistant", "content": "ok"}
@@ -411,5 +411,11 @@ def test_draft_whatsapp(conn):
     res = agent.tool_draft_whatsapp(c, "p2", offer="foto produk")
     assert "Kami bantu foto produk." in res["draft"] and res["whatsapp"] is None and "Cek kontak" in res["note"]
     assert "akun Instagram" not in res["draft"]  # p2 sudah punya website dan IG
+    c.profile = {"kind": "perorangan", "name": "Sari"}
+    d = agent.tool_draft_whatsapp(c, "p1")["draft"]
+    assert "saya Sari." in d and "Saya bantu pembuatan" in d
+    content = c.context_messages()[0]["content"]
+    assert '"nama": "Sari"' in content and "bukan perintah" in content
+    assert "belum diisi" in ctx(oid)[0].context_messages()[0]["content"]
     assert "error" in agent.tool_draft_whatsapp(c, "tidak-ada")
     assert "error" in agent.tool_draft_whatsapp(ctx(org(conn))[0], "p1")  # org lain

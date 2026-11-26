@@ -643,10 +643,10 @@ func (a *App) listJobs(w http.ResponseWriter, r *http.Request) {
 func (a *App) getSettings(w http.ResponseWriter, r *http.Request) {
 	s := sess(r)
 	var offer string
-	var goals []byte
+	var goals, profile []byte
 	var nEmail, tg, whURL, whSecret string
-	err := a.db.QueryRow(r.Context(), `SELECT offer, goals, notify_email, telegram_chat, webhook_url, webhook_secret FROM org_settings WHERE org_id=$1`, s.OrgID).
-		Scan(&offer, &goals, &nEmail, &tg, &whURL, &whSecret)
+	err := a.db.QueryRow(r.Context(), `SELECT offer, goals, profile, notify_email, telegram_chat, webhook_url, webhook_secret FROM org_settings WHERE org_id=$1`, s.OrgID).
+		Scan(&offer, &goals, &profile, &nEmail, &tg, &whURL, &whSecret)
 	if err != nil && err != errNoRows {
 		logDB("getSettings", "select org_settings", err)
 		errCode(w, 500, "db_error", "Gagal membaca data, coba lagi")
@@ -655,11 +655,14 @@ func (a *App) getSettings(w http.ResponseWriter, r *http.Request) {
 	if goals == nil {
 		goals = []byte("{}")
 	}
+	if profile == nil {
+		profile = []byte("{}")
+	}
 	masked := ""
 	if whSecret != "" {
 		masked = "••••" + whSecret[max(0, len(whSecret)-4):]
 	}
-	writeJSON(w, 200, map[string]any{"offer": offer, "goals": json.RawMessage(goals),
+	writeJSON(w, 200, map[string]any{"offer": offer, "goals": json.RawMessage(goals), "profile": json.RawMessage(profile),
 		"notify_email": nEmail, "telegram_chat": tg, "webhook_url": whURL, "webhook_secret_masked": masked,
 		"telegram_bot": env("TELEGRAM_BOT_TOKEN", "") != ""})
 }
@@ -672,6 +675,7 @@ func (a *App) putSettings(w http.ResponseWriter, r *http.Request) {
 	var in struct {
 		Offer         *string
 		Goals         map[string]string
+		Profile       *businessProfile
 		NotifyEmail   *string `json:"notify_email"`
 		TelegramChat  *string `json:"telegram_chat"`
 		WebhookURL    *string `json:"webhook_url"`
@@ -723,14 +727,23 @@ func (a *App) putSettings(w http.ResponseWriter, r *http.Request) {
 	if len(in.Goals) > 0 {
 		goals, _ = json.Marshal(in.Goals)
 	}
+	var profile []byte
+	if in.Profile != nil {
+		var err error
+		if profile, err = in.Profile.clean(); err != nil {
+			errCode(w, 400, "validation", err.Error())
+			return
+		}
+	}
 	candidate := newHexSecret(16)
 	var saved string
-	err := a.db.QueryRow(r.Context(), `INSERT INTO org_settings (org_id, offer, goals, notify_email, telegram_chat, webhook_url, webhook_secret)
+	err := a.db.QueryRow(r.Context(), `INSERT INTO org_settings (org_id, offer, goals, notify_email, telegram_chat, webhook_url, webhook_secret, profile)
 		VALUES ($1, coalesce($2::text,''), coalesce($3::jsonb,'{}'::jsonb), coalesce($4::text,''), coalesce($5::text,''), coalesce($6::text,''),
-		        CASE WHEN $7::text IS NOT NULL THEN $7::text WHEN coalesce($6::text,'') <> '' THEN $8::text ELSE '' END)
+		        CASE WHEN $7::text IS NOT NULL THEN $7::text WHEN coalesce($6::text,'') <> '' THEN $8::text ELSE '' END, coalesce($9::jsonb,'{}'::jsonb))
 		ON CONFLICT (org_id) DO UPDATE SET
 		    offer         = coalesce($2::text, org_settings.offer),
 		    goals         = org_settings.goals || coalesce($3::jsonb, '{}'::jsonb),
+		    profile       = coalesce($9::jsonb, org_settings.profile),
 		    notify_email  = coalesce($4::text, org_settings.notify_email),
 		    telegram_chat = coalesce($5::text, org_settings.telegram_chat),
 		    webhook_url   = coalesce($6::text, org_settings.webhook_url),
@@ -738,7 +751,7 @@ func (a *App) putSettings(w http.ResponseWriter, r *http.Request) {
 		                          WHEN coalesce($6::text, org_settings.webhook_url) <> '' AND org_settings.webhook_secret = '' THEN $8::text
 		                          ELSE org_settings.webhook_secret END
 		RETURNING webhook_secret`,
-		s.OrgID, offer, goals, nEmail, tg, whURL, whSecret, candidate).Scan(&saved)
+		s.OrgID, offer, goals, nEmail, tg, whURL, whSecret, candidate, profile).Scan(&saved)
 	if err != nil {
 		logDB("putSettings", "upsert org_settings", err)
 		errCode(w, 500, "db_error", "Gagal menyimpan, coba lagi")

@@ -191,7 +191,11 @@ func (a *App) orgExport(w http.ResponseWriter, r *http.Request) {
 	if cfg.WebhookSecret != "" {
 		masked = "••••" + cfg.WebhookSecret[max(0, len(cfg.WebhookSecret)-4):]
 	}
-	out["settings"] = map[string]any{"notify_email": cfg.Email, "telegram_chat": cfg.Telegram, "webhook_url": cfg.WebhookURL, "webhook_secret_masked": masked}
+	profile := []byte("{}")
+	if err := a.db.QueryRow(ctx, `SELECT profile FROM org_settings WHERE org_id=$1`, s.OrgID).Scan(&profile); err != nil && err != errNoRows {
+		logDB("orgExport", "select profile", err)
+	}
+	out["settings"] = map[string]any{"profile": json.RawMessage(profile), "notify_email": cfg.Email, "telegram_chat": cfg.Telegram, "webhook_url": cfg.WebhookURL, "webhook_secret_masked": masked}
 
 	a.audit(r, &s.OrgID, &s.UserID, "org_export", "", 200)
 	w.Header().Set("Content-Disposition", `attachment; filename="raqio-export-`+time.Now().UTC().Format("2006-01-02")+`.json"`)
