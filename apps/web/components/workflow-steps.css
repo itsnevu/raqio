@@ -1,0 +1,59 @@
+/* From scattered manual work to one tidy flow. Scenes are plain UI; the canvas carries the dots between them. */
+.fs-pin{height:calc(100svh*4)}
+.fs-left{position:relative;display:flex;flex-direction:column;justify-content:center;gap:1rem;min-width:0;padding:clamp(1.5rem,4vh,3rem) 0 clamp(1.5rem,4vh,3rem) max(var(--gutter),calc((100vw - 86rem)/2))}
+.fs-tabs{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem}
+.fs-tabs button{min-height:36px;padding:.35rem .95rem;border:1px solid #ffffff1f;border-radius:999px;background:none;color:#bdbdbd;font-size:.85rem;cursor:pointer}
+.fs-tabs button:hover{color:#f2f2f2;background:#232323}
+.fs-tabs button[aria-pressed=true]{color:#ffc65b;border-color:#e9a13b;background:#e9a13b1f}
+.fs-tabs button:focus-visible{outline:2px solid #ffb020;outline-offset:2px}
+.fs-tabs small{margin-left:auto;color:#8f8f8f;font-size:.75rem}
+.fs-stage{position:relative;height:min(64svh,36rem);min-height:24rem;overflow:hidden;border:1px solid #ffffff12;border-radius:8px;background:radial-gradient(#ffffff0d 1px,transparent 1.2px) 0 0/18px 18px,#0e0e0e;color:#f2f2f2;font-size:13px;line-height:1.5}
+.fs-stage canvas{z-index:0;position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.fs-scene{position:absolute;inset:0;padding:clamp(1rem,3vw,2rem)}
+.fs-scene:not(.fs-manual){opacity:0}
+.fs-scene :is(b,strong,small,em,p){display:block;margin:0;font-style:normal;max-width:none}
+.fs-scene p{color:inherit;font-size:inherit;line-height:inherit}
+.fs-scene small{color:#9a9a9a;font-size:12px}
+.fs-count strong{font-size:clamp(1.6rem,2.6vw,2.3rem);line-height:1.15;color:#ffb020}
+
+.fs-manual>*{position:absolute;border:1px solid #ffffff14;background:#1d1d1d;color:#a8a8a8;box-shadow:0 16px 30px #0008}
+.fs-manual b{padding:.5rem .75rem;border-bottom:1px solid #ffffff14;color:#8a8a8a;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fs-sheet{left:7%;top:14%;width:62%;rotate:-3deg}
+.fs-sheet p{display:grid;grid-template-columns:1.2fr 1fr 1.2fr;border-bottom:1px solid #ffffff0d}
+.fs-sheet span{padding:.45rem .6rem;border-right:1px solid #ffffff0d;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.fs-browser{right:5%;top:40%;width:46%;rotate:4deg}
+.fs-browser p{padding:.45rem .75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fs-note{left:12%;bottom:9%;width:min(13rem,42%);padding:.9rem;rotate:-5deg;background:#2a2823!important}
+.fs-note.two{left:auto;right:12%;bottom:6%;rotate:3deg}
+
+.fs-map svg{position:absolute;inset:0;width:100%;height:100%;fill:none;stroke:#ffffff14;stroke-width:1}
+.fs-map path{vector-effect:non-scaling-stroke}
+.fs-map .fs-count{position:absolute;left:clamp(1rem,3vw,2rem);bottom:clamp(1rem,3vw,2rem);padding:.8rem 1.1rem;border:1px solid #ffffff1f;border-radius:8px;background:#141414e6}
+
+.fs-prospect,.fs-chat{display:flex;flex-direction:column;justify-content:center;gap:.75rem}
+.fs-card,.fs-window{width:min(100%,30rem);border:1px solid #ffffff14;border-radius:8px;background:#1a1a1a}
+.fs-card{padding:.8rem 1rem}
+.fs-card.lead{border-color:#e9a13b;display:grid;gap:.7rem}
+.fs-stage header{display:flex;align-items:center;gap:.75rem;min-width:0}
+.fs-stage header div{flex:1;min-width:0}
+.fs-stage header i{display:grid;place-items:center;width:38px;height:38px;flex:none;border-radius:50%;background:#2c2c2c;font-style:normal;font-size:13px}
+.fs-stage header b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fs-stage header em{flex:none;padding:.1rem .55rem;border-radius:999px;background:#e9a13b1f;color:#ffc65b;font-size:12px}
+.fs-card>p{color:#ffc65b}
+.fs-card blockquote{margin:0;padding:.65rem .8rem;border-radius:6px;background:#111;color:#cfcfcf}
+.fs-chat{align-items:center}
+.fs-window header{padding:.8rem 1rem;border-bottom:1px solid #ffffff12}
+.fs-msgs{display:flex;flex-direction:column;gap:.65rem;padding:1.2rem 1rem 1.6rem}
+.fs-msgs p{align-self:flex-start;max-width:80%;padding:.55rem .75rem;border-radius:8px 8px 8px 2px;background:#242424}
+.fs-msgs p.me{align-self:flex-end;border-radius:8px 8px 2px 8px;background:#322719}
+.fs-cta{align-self:flex-start;margin-top:2rem}
+@media(min-width:801px){.fs-pin .workflow-copy{padding-block:2rem;padding-right:var(--gutter)}.fs-pin .workflow-copy h2{margin-bottom:1.6rem}.fs-pin .workflow-steps button{padding-block:.65rem}}
+@media(max-width:800px){
+  .fs-pin{height:auto}
+  .fs-left{padding:2.5rem var(--gutter) 0}
+  .fs-stage{height:26rem}
+  .fs-sheet{left:4%;width:80%}
+  .fs-browser{right:4%;width:62%}
+}
+.fs-card{width:100%}
+.fs-map .fs-count{z-index:1;background:#141414}

@@ -34,9 +34,9 @@ export default function DeviceChassis({mobile=false}:{mobile?:boolean}){
       const scene=new THREE.Scene();
       const camera=new THREE.OrthographicCamera();
       const ambient=new THREE.HemisphereLight(0xffffff,0x858994,2.5);
-      const light=new THREE.DirectionalLight(0xffeee0,3);
+      const light=new THREE.DirectionalLight(0xffeee0,mobile?3:1.5);
       light.position.set(-3,5,6);
-      const fill=new THREE.DirectionalLight(0xd5e4ff,2);
+      const fill=new THREE.DirectionalLight(0xd5e4ff,mobile?2:.7);
       fill.position.set(4,1,-3);
       scene.add(ambient,light,fill);
       const pose=new THREE.Group();
@@ -82,15 +82,26 @@ export default function DeviceChassis({mobile=false}:{mobile?:boolean}){
         if(!mesh.isMesh)return;
         for(const material of [mesh.material].flat()){
           if(material.name===device.screen)display=mesh;
-          if(!mobile||!(material instanceof THREE.MeshStandardMaterial))continue;
+          if(!(material instanceof THREE.MeshStandardMaterial))continue;
+          if(material.map)material.map.anisotropy=renderer.capabilities.getMaxAnisotropy();
+          if(!mobile){
+            // Blown-out highlights on sub-pixel edges and key legends read as dashed lines and specks.
+            material.roughness=Math.max(material.roughness,.55);
+            if(material.name==="sIfSZcqgDlKMJPf")material.color.setHex(0x4a4a4a);
+          }
+          if(!mobile&&material.name!==device.screen)continue;
           if(["basecolor.001","metalframe.002","backpanel.001"].includes(material.name)){
             material.color.setHex(0x363b40);
             material.map?.dispose();
             material.map=null;
           }
           if(material.name===device.screen){
-            material.color.setHex(0x08090a);
-            material.emissive.setHex(0x08090a);
+            material.color.setHex(mobile?0x08090a:0x000000);
+            material.metalness=0;
+            material.roughness=1;
+            material.metalnessMap=null;
+            material.roughnessMap=null;
+            material.emissive.setHex(mobile?0x08090a:0x000000);
             material.map?.dispose();
             material.emissiveMap?.dispose();
             material.map=null;
@@ -148,12 +159,13 @@ export default function DeviceChassis({mobile=false}:{mobile?:boolean}){
       const size=body.getSize(new THREE.Vector3());
       const focus=body.getCenter(new THREE.Vector3());
       camera.position.copy(focus).add(new THREE.Vector3(0,0,size.length()*2));
-      camera.near=.001;
-      camera.far=size.length()*5;
+      camera.near=size.length();
+      camera.far=size.length()*3;
       camera.lookAt(focus);
       camera.updateMatrixWorld();
 
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.65));
+      // Supersample: the keyboard, hinge and bezel are thinner than a pixel and shimmer at 1x.
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio*2,mobile?3:4));
       const displayRatio=String(width/height);
       let renderWidth=0,renderHeight=0;
       function render(){

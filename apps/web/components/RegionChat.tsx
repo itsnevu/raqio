@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useState} from "react";
+import {useI18n} from "../i18n/client";
 
 // Chat overlay for the region photo: messages appear one by one, RAQIO replies after a typing indicator. Loops.
 const thread:[boolean,string][]=[
@@ -12,6 +13,7 @@ const thread:[boolean,string][]=[
 ];
 
 export default function RegionChat(){
+  const {t:tr}=useI18n();
   const [shown,setShown]=useState(0);
   const [typing,setTyping]=useState(false);
   useEffect(()=>{
@@ -28,7 +30,7 @@ export default function RegionChat(){
   return <div className="region-chat" aria-hidden="true">
     {thread.slice(0,shown).map(([bot,text],i)=><div key={i} className={"rc-row"+(bot?" bot":" me")}>
       {bot?<span className="rc-avatar"/>:null}
-      <p>{text}</p></div>)}
+      <p>{tr(text)}</p></div>)}
     {typing?<div className="rc-row bot"><span className="rc-avatar"/><p className="rc-typing"><i/><i/><i/></p></div>:null}
   </div>;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import {useEffect,useRef,useState} from "react";
+import {useI18n} from "../i18n/client";
 
 const mapWidth=2145;
 const mapHeight=733;
@@ -40,6 +41,8 @@ const islands=[
 ];
 
 export default function IndonesiaMap({children}:{children:React.ReactNode}){
+  const {t,lang}=useI18n();
+  const num=(v:string)=>lang==="id"?v:v.replace(",",".");
   const frame=useRef<HTMLDivElement>(null);
   const surface=useRef<HTMLCanvasElement>(null);
   const [selected,setSelected]=useState<number|null>(null);
@@ -178,9 +181,9 @@ export default function IndonesiaMap({children}:{children:React.ReactNode}){
         </defs>
       </svg>
       {/* eslint-disable-next-line @next/next/no-img-element -- static image also serves as the animation fallback */}
-      <img src="/media/raqio-indonesia-map.webp" alt="Ilustrasi relief kepulauan Indonesia berwarna grafit dengan aksen amber" width={mapWidth} height={mapHeight} loading="lazy"/>
+      <img src="/media/raqio-indonesia-map.webp" alt={t("Ilustrasi relief kepulauan Indonesia berwarna grafit dengan aksen amber")} width={mapWidth} height={mapHeight} loading="lazy"/>
       <canvas ref={surface} aria-hidden="true"/>
-      <div className="about-map-points" data-overview={selected===null} role="group" aria-label="Pilih wilayah untuk melihat data ekonomi">
+      <div className="about-map-points" data-overview={selected===null} role="group" aria-label={t("Pilih wilayah untuk melihat data ekonomi")}>
         <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
           {visibleRegions.map(({region,endX,endY,panelY})=><path className="about-map-leader-wide" key={region.name} vectorEffect="non-scaling-stroke"
             d={`M ${region.x} ${region.y} V ${endY} H ${endX} V ${panelY}`}/>)}
@@ -191,7 +194,7 @@ export default function IndonesiaMap({children}:{children:React.ReactNode}){
           key={name}
           className="about-map-pin"
           type="button"
-          aria-label={name}
+          aria-label={t(name)}
           aria-pressed={selected===index}
           aria-controls="about-map-example"
           style={{left:`${x}%`,top:`${y}%`}}
@@ -204,19 +207,19 @@ export default function IndonesiaMap({children}:{children:React.ReactNode}){
             style={{left:`${endX}%`,top:`${panelY}%`}}>
             {selected===null
               ? <button type="button" className="about-map-summary" onClick={()=>toggleRegion(index)}>
-                {region.name} <strong>{region.share}%</strong>
+                {t(region.name)} <strong>{num(region.share)}%</strong>
               </button>
               : <div className="about-map-region">
-                <h3>{region.name}</h3>
-                <p><strong>{region.share}%</strong> PDB nasional · <strong>{region.growth}%</strong> pertumbuhan</p>
-                <p>{region.sectors}</p>
-                <a href={regionalSource}>Sumber data 2025 · BPS / Kemenko Perekonomian</a>
+                <h3>{t(region.name)}</h3>
+                <p><strong>{num(region.share)}%</strong> {t("PDB nasional")} · <strong>{num(region.growth)}%</strong> {t("pertumbuhan")}</p>
+                <p>{t(region.sectors)}</p>
+                <a href={regionalSource}>{t("Sumber data 2025 · BPS / Kemenko Perekonomian")}</a>
               </div>}
           </div>)}
         </div>
       </div>
     </div>
-      <p className="about-map-note"><span aria-hidden="true">*</span> Pilih titik di peta untuk melihat kontribusi ekonomi dan sektor yang mendorong pertumbuhan tiap wilayah.</p>
+      <p className="about-map-note"><span aria-hidden="true">*</span> {t("Pilih titik di peta untuk melihat kontribusi ekonomi dan sektor yang mendorong pertumbuhan tiap wilayah.")}</p>
     </div>
     <div className="about-copy">{children}</div>
   </>;

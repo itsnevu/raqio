@@ -1,11 +1,11 @@
 /* Source values from Scraping app/globals.css, market/market.css and prospects/prospects.css. */
 .mock-cs {
---bg: #000000; --panel: #0A0A0A; --sunk: #151515; --line: #262626; --line-2: #1A1A1A;
-  --text: #E5E5E5; --muted: #A6A6A6; --faint: #767676;
-  --ink: #FFFFFF; --ink-text: #000000; --accent: #FFFFFF; --accent-soft: #1F1F1F;
-  --warn: #FF8A3D; --bad: #FF5A4E; --good: #FFB020; --wa: #FFB020; --c1: #FFB020; --c2: #6B6B6B;
+--bg: #0e0e0e; --panel: #1a1a1a; --sunk: #232323; --line: rgba(255,255,255,.12); --line-2: rgba(255,255,255,.06);
+  --text: #f2f2f2; --muted: #9a9a9a; --faint: #929292;
+  --ink: #e9a13b; --ink-text: #201505; --accent: #e9a13b; --accent-h: #ffc65b; --accent-soft: rgba(233,161,59,.12);
+  --warn: #e9a13b; --bad: #ff9c94; --good: #e9a13b; --wa: #9bd6ad;
   height:100%; overflow:hidden; color-scheme:dark;
-  font:16px/1.43 var(--mock-cs-font), "Albert Sans", "Helvetica Neue", Arial, sans-serif;
+  font:13px/1.43 var(--raqio-font);
   background:var(--bg); color:var(--text); letter-spacing:0; text-align:left;
   -webkit-font-smoothing:antialiased;
 }
@@ -121,3 +121,64 @@
 .mock-cs.mobile .pros .strip { grid-template-columns:repeat(2,1fr); }
 .mock-cs.mobile .pros .strip > div:nth-child(2) { border-right:0; }
 .mock-cs.mobile .pros .strip > div:nth-child(-n+2) { border-bottom:1px solid var(--line); }
+
+/* Workspace shell from the Scraping app: rail, 26px titles, 8px cards, 6px controls, pill chips. */
+.mock-cs:not(.mobile) { display:grid; grid-template-columns:190px minmax(0,1fr); }
+.mock-cs .wrap { width:100%; max-width:none; margin:0; padding:24px; }
+.mock-cs .page-title,.mock-cs.mobile .page-title,.mock-cs .pros .page-title { font-size:26px; line-height:1.2; margin-bottom:18px; }
+.mock-cs .pros .page-title { margin-bottom:6px; }
+.mock-cs .lead { font-size:14px; line-height:1.5; }
+.mock-cs .top { flex-direction:column; align-items:stretch; gap:24px; padding:24px 12px 16px; background:#171717; border:0; border-right:1px solid var(--line-2); }
+.mock-cs .top .brand { padding-inline:12px; }
+.mock-cs .brand .word { letter-spacing:-.02em; }
+.mock-cs .top svg { width:18px; height:18px; flex:none; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+.mock-cs .top nav { flex:1; flex-direction:column; align-items:stretch; gap:4px; margin:0; }
+.mock-cs .top nav > span,.mock-cs .account { display:flex; align-items:center; gap:12px; padding:11px 13px; border-radius:8px; color:#b7b7b7; font-size:12px; line-height:18px; text-transform:none; letter-spacing:0; white-space:nowrap; }
+.mock-cs .top nav > span.on { padding-bottom:11px; color:var(--accent-h); background:var(--accent-soft); box-shadow:inset 2px 0 var(--accent); }
+.mock-cs .account { border-top:1px solid var(--line-2); border-radius:0; }
+.mock-cs .market-controls { padding:20px; border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+.mock-cs .market-controls .goal { margin-bottom:14px; }
+.mock-cs .search { padding:0; border:0; background:none; }
+.mock-cs .search .sep { display:none; }
+.mock-cs .search .search-input { min-height:44px; padding:11px 12px; border:1px solid var(--line); border-radius:6px; }
+.mock-cs .search .btn { min-height:44px; }
+.mock-cs .btn { height:40px; padding:0 16px; border-radius:6px; font-size:13px; text-transform:none; letter-spacing:0; }
+.mock-cs .btn.ghost { height:36px; padding:0 12px; }
+.mock-cs .search .mapbtn,.mock-cs .mode,.mock-cs .mode button,.mock-cs .goal label { border-radius:6px; }
+.mock-cs :is(.prog,.pros .strip,.pros .board,.pros .card) { border-radius:8px; }
+.mock-cs .pros :is(.strip,.board) { overflow:hidden; }
+.mock-cs .pros :is(.bar input,.bar select,.offer input,.card .a button,.card .a select) { border-radius:6px; }
+.mock-cs .pros :is(.strip small,.col-h) { text-transform:none; letter-spacing:0; }
+.mock-cs .pros .card .sc,.mock-cs .help-btn { border-radius:999px; }
+.mock-cs .bavatar { border-radius:6px; }
+.mock-cs .help-btn { width:18px; height:18px; padding:0; border:1px solid var(--line); background:none; color:var(--muted); font-size:11px; line-height:1; }
+.mock-cs .prog-bar i { background:var(--accent); }
+.mock-cs .prog { background:var(--panel); }
+.mock-cs .empty { margin-top:32px; padding:28px 16px; border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+.mock-cs.mobile .top { flex-flow:row wrap; align-items:center; gap:6px; padding:10px 14px; border-right:0; border-bottom:1px solid var(--line-2); }
+.mock-cs.mobile .top .brand { width:100%; padding:0; }
+.mock-cs.mobile .top nav { flex:1; min-width:0; flex-direction:row; gap:4px; overflow:hidden; }
+.mock-cs.mobile .top nav > span,.mock-cs.mobile .account { padding:11px 8px; gap:10px; font-size:13px; border:0; }
+.mock-cs.mobile .wrap { padding:16px; }
+.mock-cs.mobile .market-controls { padding:12px; }
+.mock-cs.mobile .search .search-input { flex:none; }
+.mock-cs.mobile .search .mapbtn { min-height:44px; }
+
+/* Fit the 880px device viewport. */
+.mock-cs:not(.mobile) { grid-template-columns:158px minmax(0,1fr); }
+.mock-cs:not(.mobile) .top { padding:18px 10px 12px; gap:16px; }
+.mock-cs:not(.mobile) .wrap { padding:18px 20px; }
+.mock-cs:not(.mobile) .page-title { margin-bottom:12px; }
+.mock-cs:not(.mobile) .market-controls { padding:14px; }
+.mock-cs .search .search-input span { overflow:hidden; text-overflow:ellipsis; display:block; }
+.mock-cs:not(.mobile) .pros .head { flex-wrap:nowrap; align-items:flex-start; margin-bottom:12px; }
+.mock-cs:not(.mobile) .pros .lead { font-size:13px; }
+.mock-cs:not(.mobile) .pros .strip div { padding:9px 14px; }
+.mock-cs:not(.mobile) .pros .strip b { font-size:22px; margin-top:0; }
+.mock-cs:not(.mobile) .pros .offer { display:none; }
+.mock-cs:not(.mobile) .pros .board { grid-template-columns:repeat(5,218px); }
+.mock-cs.mobile .page-title { margin-bottom:12px; }
+.mock-cs.mobile .goal label { min-width:100%; }
+.mock-cs.mobile .search .search-input,.mock-cs.mobile .search .mapbtn,.mock-cs.mobile .search .btn { min-height:40px; padding-block:9px; }
+.mock-cs.mobile .empty { margin-top:16px; }
+.mock-cs.mobile .top nav > span:nth-child(n+3) { display:none; }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {notFound} from "next/navigation";
 import {Contact,Footer,Header} from "../../../components/Marketing";
+import {getI18n} from "../../../i18n/server";
 import {products,productPath,type ProductKey} from "../../../content";
 import WaSuiteHero from "../../../components/WaSuiteHero";
 import ScrapingHero from "../../../components/ScrapingHero";
@@ -22,20 +23,25 @@ const featureIcons: Record<ProductKey,readonly string[]> = {
 };
 
 const known=(slug:string):slug is ProductKey=>Object.hasOwn(products,slug);
-export function generateStaticParams() { return Object.keys(products).map(slug=>({slug})); }
-export const dynamicParams=false;
 export async function generateMetadata({params}:{params:Promise<{slug:string}>}):Promise<Metadata> {
   const {slug}=await params;
-  return known(slug) ? { title:products[slug].name,description:products[slug].description } : {};
+  const {t}=await getI18n();
+  return known(slug) ? { title:products[slug].name,description:t(products[slug].description) } : {};
 }
 export default async function Product({params}:{params:Promise<{slug:string}>}) {
   const {slug}=await params;
   if(!known(slug)) notFound();
+  const {t,href}=await getI18n();
   const info=products[slug];
   const other=slug==="wa-suite" ? "competitor-scraping" : "wa-suite";
   const chat=slug==="wa-suite";
   const audience: [title:string,image:string,example?:string][]=chat
-    ? [["Layanan pelanggan","/media/audience-wa-support.webp"],["Tim penjualan","/media/audience-wa-sales.webp"],["Toko online","/media/audience-wa-store.webp"],["Bisnis multi-cabang","/media/audience-wa-branches.webp"]]
+    ? [
+      ["Layanan pelanggan","/media/audience-wa-support.webp","Bagi percakapan ke agen supaya setiap pelanggan ada yang menangani."],
+      ["Tim penjualan","/media/audience-wa-sales.webp","Tandai calon pembeli dengan label dan lanjutkan obrolannya."],
+      ["Toko online","/media/audience-wa-store.webp","Balas pertanyaan yang sering muncul dengan template."],
+      ["Bisnis multi-cabang","/media/audience-wa-branches.webp","Kelola nomor tiap cabang dari satu dashboard."],
+    ]
     : [
       ["Pemilik UMKM","/media/audience-cs-umkm.webp","Cek siapa saja yang menjual produk sejenis di sekitar toko Anda."],
       ["Tim penjualan","/media/audience-cs-sales.webp","Susun daftar bisnis di wilayah target untuk dihubungi tim."],
@@ -46,30 +52,30 @@ export default async function Product({params}:{params:Promise<{slug:string}>}) 
     : ["Pilih industri dan wilayah","Jalankan riset pasar","Bandingkan profil bisnis","Simpan prospek pilihan"];
   return <><Header/><main id="konten">
     {chat ? <WaSuiteHero description={info.description} appUrl={info.url}/> : <ScrapingHero description={info.description} appUrl={info.url}/>}
-    {!chat&&<nav className="shell product-jump" aria-label="Bagian Competitor Scraping">
-      <a href="#fitur">Fitur</a>
-      <a href="#cara-kerja">Cara kerja</a>
-      <a href="#audiens">Untuk siapa</a>
-    </nav>}
+    <nav className="shell product-jump" aria-label={t("Bagian ")+info.name}>
+      <a href="#fitur">{t("Fitur")}</a>
+      <a href="#cara-kerja">{t("Cara kerja")}</a>
+      <a href="#audiens">{t("Untuk siapa")}</a>
+    </nav>
     <section className="shell section features-v2" id="fitur">
-      <div className="block-head"><h2>Yang bisa Anda lakukan.</h2></div>
+      <div className="block-head"><h2>{t("Yang bisa Anda lakukan.")}</h2></div>
       <div className="feature-grid">{info.features.map(([title,body],i)=><article key={title}>
         <svg className="feature-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d={featureIcons[slug][i]}/></svg>
-        <h3>{title}</h3><p>{body}</p>
+        <h3>{t(title)}</h3><p>{t(body)}</p>
       </article>)}</div>
     </section>
     <section className="steps-band" id="cara-kerja"><div className="shell section">
-      <div className="block-head"><h2>Empat langkah, dari awal sampai selesai.</h2></div>
-      <ol className="stepper">{steps.map(x=><li key={x}>{x}</li>)}</ol>
+      <div className="block-head"><h2>{t("Empat langkah, dari awal sampai selesai.")}</h2></div>
+      <ol className="stepper">{steps.map(x=><li key={x}>{t(x)}</li>)}</ol>
     </div></section>
     <section className="shell section" id="audiens">
-      <div className="block-head"><h2>Dibuat untuk siapa.</h2></div>
+      <div className="block-head"><h2>{t("Dibuat untuk siapa.")}</h2></div>
       <div className="audience-grid">{audience.map(([title,image,example])=><figure key={title} className={example?"audience-card audience-card-example":"audience-card"}>
         {/* eslint-disable-next-line @next/next/no-img-element -- local art */}
-        <img src={image} alt="" loading="lazy"/><figcaption>{title}{example&&<span>{example}</span>}</figcaption></figure>)}</div>
-      <p className="detail-note">{chat?"Penautan nomor memerlukan akun WhatsApp Business dan akses ke perangkat pemilik nomor.":"Competitor Scraping menggunakan sumber data publik. Ketersediaan data bergantung pada industri dan wilayah."}</p>
+        <img src={image} alt="" loading="lazy"/><figcaption>{t(title)}{example&&<span>{t(example)}</span>}</figcaption></figure>)}</div>
+      <p className="detail-note">{t(chat?"Penautan nomor memerlukan akun WhatsApp Business dan akses ke perangkat pemilik nomor.":"Competitor Scraping menggunakan sumber data publik. Ketersediaan data bergantung pada industri dan wilayah.")}</p>
     </section>
-    <section className="shell also"><Link className="text-link" href={productPath(other)}>Kenali juga {products[other].name}</Link></section>
+    <section className="shell also"><Link className="text-link" href={href(productPath(other))}>{t("Kenali juga ")}{products[other].name}</Link></section>
     <Contact/>
   </main><Footer/></>;
 }

@@ -17,7 +17,7 @@ export const copy = {
     ["Apa itu RAQIO?", "RAQIO menyediakan Competitor Scraping untuk riset pasar lokal dan WA-Suite untuk mengelola percakapan pelanggan."],
     ["Dari mana data riset berasal?", "Riset menggunakan sumber publik, termasuk listing Google Maps dan situs bisnis. Cakupan bergantung pada wilayah dan ketersediaan sumber."],
     ["Bagaimana WhatsApp Business dipakai?", "WA-Suite menautkan nomor WhatsApp Business sebagai perangkat tertaut. Dashboard ini berjalan terpisah dari aplikasi WhatsApp."],
-    ["Berapa biayanya?", "Periksa pilihan yang tersedia di aplikasi, atau hubungi RAQIO untuk membahas kebutuhan tim Anda."],
+    ["Berapa biayanya?", "Hubungi tim kami untuk membahas pilihan dan kebutuhan tim Anda."],
     ["Bisakah saya meminta demo?", "Gunakan halaman Kontak untuk menyiapkan permintaan demo dan memilih produk yang ingin dibahas."],
   ],
 } as const;
@@ -55,5 +55,7 @@ const scrapingOrigin=products["competitor-scraping"].url ??
 export const loginPath=scrapingOrigin
   ? new URL("/login?next=%2Fpilih-produk",scrapingOrigin).href
   : "/kontak";
+// Digits only, e.g. 62812... When empty, sales buttons go to the contact page.
+export const salesWhatsapp=(process.env.NEXT_PUBLIC_RAQIO_SALES_WHATSAPP ?? "").replace(/\D/g,"");
 export const contactEmail = /^[\w.!#$%&'*+/=?^`{|}~-]+@[a-z0-9.-]+\.[a-z]{2,}$/i.test(process.env.NEXT_PUBLIC_RAQIO_CONTACT_EMAIL ?? "") ?
   process.env.NEXT_PUBLIC_RAQIO_CONTACT_EMAIL : undefined;

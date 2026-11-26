@@ -1,10 +1,8 @@
 import Image from "next/image";
-import {Public_Sans} from "next/font/google";
 import {CountUp} from "./ProductStory";
 import {WaMockIcon,type WaMockIconName} from "./WaMockIcons";
 import "./wa-suite-mock.css";
 
-const font=Public_Sans({subsets:["latin"],weight:["400","500","600","700"],variable:"--mock-wa-font",display:"swap"});
 
 const menu: [WaMockIconName,string][]=[
   ["railDashboard","Ringkasan"],["railChat","Chat"],["railNumbers","Nomor"],
@@ -52,29 +50,24 @@ function Inbox({arrival,taken,typing,sent}:{arrival:boolean;taken:boolean;typing
   },...previousChats]:previousChats;
   return <aside className="number-panel">
     <div className="section-head"><strong>Nomor</strong><button type="button" className="ghost guide"><WaMockIcon name="help"/>Panduan</button></div>
-    <select aria-label="Filter nomor" defaultValue="all"><option value="all">Semua nomor</option></select>
-    <button type="button" className="add-number" title="Tambah nomor"><WaMockIcon name="plus"/></button>
-    {["Kopi Senja","Cabang Bekasi"].map((name,i)=><div key={name} className={i===0?"num active":"num"}>
-      <span className="dot online"/><div className="num-info"><div>{name}</div><small>628120000000{i+1} · online</small></div><button type="button" className="ghost number-rename"><WaMockIcon name="rename"/></button>
-    </div>)}
+    <div className="number-controls"><SelectMock>Kopi Senja</SelectMock><button type="button" className="add-number" title="Hubungkan nomor"><WaMockIcon name="plus"/></button></div>
+    <div className="number-manager"><WaMockIcon name="select"/>Kelola nomor</div>
     <div className="search-head">
-      <input readOnly placeholder="Cari isi pesan"/>
-      <div className="inbox-filters">{["Semua","Belum dibaca","Milik saya","Belum ditugaskan"].map((label,i)=><button type="button" key={label} aria-pressed={i===0}>{label}</button>)}</div>
+      <div className="inbox-search"><WaMockIcon name="railSearch"/>Cari chat atau nomor</div>
+      <div className="inbox-filters">{["Semua","Belum dibaca"].map((label,i)=><button type="button" key={label} aria-pressed={i===0}>{label}</button>)}<button type="button" aria-pressed={false} className="filter-more"><WaMockIcon name="select"/></button></div>
       <div className="inbox-status-filter"><label>Status</label><SelectMock>Semua status</SelectMock></div>
-      <small className="inbox-count">{chats.length} percakapan</small>
     </div>
     {chats.map(({name,time,preview,status,agent},i)=>{
       const active=i===0;
       return <div key={name} className={"chat"+(active?" active":"")+(active&&arrival?" arriving":"")}>
         <span className="chat-avatar">{name.split(" ").map(word=>word[0]).join("")}</span>
         <div className="chat-info">
-          <div className="chat-topline"><strong>{name}</strong><time>{time}</time><button type="button" className="ghost chat-rename"><WaMockIcon name="rename"/></button></div>
+          <div className="chat-topline"><strong>{name}</strong><time>{time}</time></div>
           <div className="chat-preview">{preview}</div>
           <div className="chat-bottomline"><span className="conversation-tag">{status}</span><small>{agent}</small>
             {active&&arrival&&!taken&&<span className="unread-count">{typing?2:1}</span>}
           </div>
         </div>
-        <button type="button" className="ghost chat-pin"><WaMockIcon name="pin"/></button>
       </div>;
     })}
   </aside>;
@@ -93,12 +86,13 @@ export default function WaSuiteMock({step,mobile=false}:{step:number;mobile?:boo
   const press=step===4;
   const name=arrival?"Nadia Putri":"Rizky Pratama";
   const cursorMark=<i className={"story-cursor"+(cursor?" at":"")+(press?" click":"")}/>;
-  return <div className={"mock-wa "+font.variable+(mobile?" mobile":"")}>
+  return <div className={"mock-wa"+(mobile?" mobile":"")}>
     <Rail mobile={mobile} unread={arrival&&!taken}/>
     {!mobile&&<Inbox arrival={arrival} taken={taken} typing={step>=3} sent={sent}/>}
     <div className="thread">
       <div className="head card">
         {mobile&&<button type="button" className="ghost"><WaMockIcon name="back"/></button>}
+        <span className="chat-avatar">{name.split(" ").map(word=>word[0]).join("")}</span>
         <div className="contact-heading"><strong>{name}</strong><small>+62 812-0000-10{arrival?"01":"02"}</small></div>
         {mobile?<button type="button" className="ghost"><WaMockIcon name="more"/></button>:<>
           <SelectMock>{taken||!arrival?"Diproses":"Baru"}</SelectMock>
@@ -126,8 +120,8 @@ export default function WaSuiteMock({step,mobile=false}:{step:number;mobile?:boo
         <div className="composer">
           <button type="button" className="ghost"><WaMockIcon name="tplPick"/></button>
           <button type="button" className="ghost"><WaMockIcon name="btnFile"/></button>
-          <textarea readOnly placeholder="tulis pesan"/>
-          <button type="button" className="primary send">{mobile?<WaMockIcon name="send"/>:"Kirim"}</button>
+          <textarea readOnly rows={1} placeholder="tulis pesan"/>
+          <button type="button" className="primary send"><WaMockIcon name="send"/></button>
         </div>
       </div>
     </div>

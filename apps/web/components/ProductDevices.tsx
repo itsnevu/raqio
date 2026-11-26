@@ -6,7 +6,8 @@ import "./product-devices.css";
 
 function Canvas({mobile=false,children}:{mobile?:boolean;children:ReactNode}){
   const screen=useRef<HTMLDivElement>(null);
-  const width=mobile?390:1440;
+  // Small virtual viewports keep the UI text legible at the size the devices are drawn.
+  const width=mobile?330:880;
 
   useEffect(()=>{
     const element=screen.current!;
@@ -23,7 +24,7 @@ function Canvas({mobile=false,children}:{mobile?:boolean;children:ReactNode}){
   },[width]);
 
   return <div ref={screen} className="product-device-screen">
-    <div className="product-device-canvas" style={{width,height:`var(--mock-height, ${mobile?844:900}px)`}}>{children}</div>
+    <div className="product-device-canvas" style={{width,height:`var(--mock-height, ${mobile?714:570}px)`}}>{children}</div>
   </div>;
 }
 

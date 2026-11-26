@@ -1,10 +1,17 @@
 import Image from "next/image";
-import {Albert_Sans} from "next/font/google";
 import {CountUp} from "./ProductStory";
 import "./scraping-mock.css";
 
-const font=Albert_Sans({subsets:["latin"],weight:["400","500","600","700"],variable:"--mock-cs-font",display:"swap"});
-const nav=["Riset","Prospek","Pantau","Kampanye","Peringkat","Asisten","Lanjutan"];
+// Menu and icons from Scraping components/shell/Nav.tsx.
+const nav=[
+  ["Riset","M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm5 12 4 4"],
+  ["Prospek","M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0"],
+  ["Pantau","M3 12s3-6 9-6 9 6 9 6-3 6-9 6-9-6-9-6Zm12 0a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"],
+  ["Kampanye","M4 10v5h4l9 4V6l-9 4H4Zm4 5 2 5"],
+  ["Peringkat","M4 20h16M7 16v-4m5 4V5m5 11V9"],
+  ["Asisten","M5 5h14v11H9l-4 4V5Zm4 5h6"],
+];
+const accountIcon="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0";
 const stages=["Cari di Google Maps","Ambil telepon dan website","Cari akun IG","Susun laporan","Simpan"];
 const progress=[10,30,50,70,90];
 const countdown=[52,34,25,19,12];
@@ -85,19 +92,20 @@ export default function ScrapingMock({step,mobile=false}:{step:number;mobile?:bo
   const running=step>=5&&step<=9;
   const finished=step>=10;
   const pressing=step===4;
-  return <div className={`mock-cs ${font.variable}${mobile?" mobile":""}`}>
+  return <div className={`mock-cs${mobile?" mobile":""}`}>
     <div className="top">
       <div className="brand"><Image className="mark" src="/brand-transparent.svg" alt="" width={32} height={32}/><span className="word">raqio</span></div>
-      <nav>{nav.map((label,i)=><span key={label} className={(label===(finished?"Prospek":"Riset")?"on ":"")+(i===5?"hide-m":i===6?"more":"")}>{label}</span>)}</nav>
+      <nav>{nav.map(([label,icon])=><span key={label} className={label===(finished?"Prospek":"Riset")?"on":undefined}><svg viewBox="0 0 24 24"><path d={icon}/></svg>{label}</span>)}</nav>
+      <span className="account"><svg viewBox="0 0 24 24"><path d={accountIcon}/></svg>Akun</span>
     </div>
     <div className="wrap">
       {finished?<ProspectBoard/>:<>
-        <div className="page-title">Peta pasar industri apa pun.</div>
-        <p className="lead">Scraping langsung dari Google Maps dan website bisnis. Data dibersihkan, tanpa duplikat.</p>
+        <div className="page-title">Riset pasar</div>
+        <div className="market-controls">
         <div className="mode"><button type="button" className="on">Satu wilayah</button><button type="button">Bandingkan wilayah</button></div>
         <div className="goal">
-          <label className="on"><input type="radio" checked readOnly name={mobile?"goal-mobile":"goal-desktop"}/><div><b>Cari calon klien</b><span>Isi industri bisnis yang mau kamu tawari. Contoh: kamu agency, isi &quot;coffee shop&quot; atau &quot;klinik gigi&quot;.</span></div></label>
-          <label><input type="radio" readOnly name={mobile?"goal-mobile":"goal-desktop"}/><div><b>Pelajari pesaing</b><span>Isi industri bisnismu sendiri. Contoh: kamu agency, isi &quot;digital agency&quot;. Hasilnya pesaing, bukan klien.</span></div></label>
+          <label className="on"><input type="radio" checked readOnly name={mobile?"goal-mobile":"goal-desktop"}/><div><b>Cari calon klien</b><span>Masukkan industri yang ingin kamu jangkau.</span></div></label>
+          <label><input type="radio" readOnly name={mobile?"goal-mobile":"goal-desktop"}/><div><b>Pelajari pesaing</b><span>Masukkan industri bisnismu.</span></div></label>
         </div>
         <div className="search">
           <MockField text={step>=1?"coffee shop":""} placeholder="Industri, mis. coffee shop, salon, digital agency" typing={step===1}/>
@@ -107,6 +115,7 @@ export default function ScrapingMock({step,mobile=false}:{step:number;mobile?:bo
           <button type="button" className={"btn run-button"+(pressing?" story-press":"")} disabled={running}>Riset
             <i className={"story-cursor"+(step===3||pressing?" at":"")+(pressing?" click":"")}/>
           </button>
+        </div>
         </div>
         {running?<MockProgress phase={step-5}/>:<div className="empty">Belum ada riset. Isi industri dan wilayah di atas.</div>}
       </>}

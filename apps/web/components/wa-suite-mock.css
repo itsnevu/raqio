@@ -1,10 +1,11 @@
 /* Inbox styles from WA-Suite public/index.html, style-extra.css and dashboard.css. */
 .mock-wa {
-  --page:#f5f5f5; --card:#fff; --line:#e5e5e5; --line2:#d1d1d1;
-  --text:#202020; --muted:#737373; --accent:#262626; --danger:#dc2626;
-  display:grid; grid-template-columns:190px 290px minmax(0,1fr); height:100%;
-  color:var(--text); background:var(--page); color-scheme:light;
-  font:13px/1.6 var(--mock-wa-font), "Public Sans", "Helvetica Neue", Arial, sans-serif;
+  --page:#0e0e0e; --card:#1a1a1a; --line:rgba(255,255,255,.06); --line2:rgba(255,255,255,.12);
+  --text:#f2f2f2; --muted:#9a9a9a; --accent:#e9a13b; --danger:#ff9c94;
+  --inset:#141414; --hover:#232323; --soft:rgba(233,161,59,.12); --accent-h:#ffc65b;
+  display:grid; grid-template-columns:190px 360px minmax(0,1fr); height:100%;
+  color:var(--text); background:var(--page); color-scheme:dark;
+  font:13px/1.6 var(--raqio-font);
   letter-spacing:normal; text-align:left;
 }
 .mock-wa :where(*) { font-family:inherit; }
@@ -14,40 +15,40 @@
 .mock-wa button { padding:8px 14px; }
 .mock-wa input,.mock-wa select,.mock-wa textarea { padding:8px 10px; width:100%; min-width:0; }
 .mock-wa .ghost { border:0; background:transparent; padding:6px; }
-.mock-wa .primary { background:linear-gradient(150deg,#393939,#171717); border-color:#252525; color:white; font-weight:600; }
-.mock-wa .rail { display:flex; flex-direction:column; padding:24px 12px 16px; gap:4px; overflow:hidden; background:linear-gradient(165deg,#303030 0%,#191919 45%,#0d0d0d 100%); }
+.mock-wa .primary { background:var(--accent); border-color:var(--accent); color:#201505; font-weight:600; }
+.mock-wa .rail { display:flex; flex-direction:column; padding:24px 12px 16px; gap:4px; overflow:hidden; background:#171717; border-right:1px solid var(--line); }
 .mock-wa .rail button { position:relative; display:flex; align-items:center; gap:12px; padding:11px 13px; border:0; border-radius:9px; background:transparent; color:#b7b7b7; text-align:left; flex-shrink:0; font-size:12px; }
 .mock-wa .rail button:last-child { margin-top:auto; }
-.mock-wa .rail .active { background:linear-gradient(130deg,#ffffff24,#ffffff0d); box-shadow:inset 0 0 0 1px #ffffff12; color:#fff; }
+.mock-wa .rail .active { background:var(--soft); box-shadow:inset 2px 0 var(--accent); color:var(--accent-h); }
 .mock-wa .rail .logo { height:32px; display:flex; align-items:center; gap:10px; margin-bottom:24px; padding-left:12px; color:white; font-size:25px; font-weight:500; letter-spacing:-.04em; line-height:1; }
 .mock-wa .logo img { width:32px; height:32px; flex-shrink:0; }
 .mock-wa .notification-badge { margin-left:auto; min-width:18px; padding:1px 5px; border-radius:6px; background:#ffffff18; text-align:center; font-size:10px; }
-.mock-wa .number-panel { min-width:0; overflow:hidden; background:#fff; border-right:1px solid var(--line); padding:24px 16px; }
+.mock-wa .number-panel { min-width:0; overflow:hidden; background:var(--page); border-right:1px solid var(--line); padding:14px 12px; }
 .mock-wa .section-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; font-size:18px; }
 .mock-wa .guide { display:flex; align-items:center; gap:6px; font-size:12px; }
-.mock-wa .select-trigger { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-width:0; min-height:44px; padding:10px 12px; border:1px solid var(--line); border-radius:12px; text-align:left; box-shadow:0 1px 2px #00000004; }
+.mock-wa .select-trigger { display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%; min-width:0; min-height:36px; padding:6px 12px; border:1px solid var(--line2); border-radius:8px; background:var(--inset); text-align:left; box-shadow:0 1px 2px #00000004; }
 .mock-wa .select-trigger svg { width:16px; height:16px; color:var(--muted); }
-.mock-wa .add-number { display:flex; align-items:center; justify-content:center; width:44px; height:44px; margin:10px 0; padding:10px; color:var(--accent); border:1px dashed #bcbcbc; background:#fafafa; }
+.mock-wa .add-number { display:flex; align-items:center; justify-content:center; width:36px; height:36px; margin:8px 0; padding:10px; color:var(--accent); border:1px solid var(--line); border-radius:8px; background:var(--soft); }
 .mock-wa .num { display:flex; align-items:center; gap:8px; padding:12px; margin-bottom:5px; border:1px solid transparent; border-radius:8px; }
-.mock-wa :is(.num,.chat).active { background:#f1f1f1; border-color:#dedede; }
+.mock-wa :is(.num,.chat).active { background:var(--soft); border-color:#ffb02047; }
 .mock-wa .dot { width:7px; height:7px; border-radius:50%; background:#ffb020; box-shadow:0 0 0 3px #ffb02020; }
 .mock-wa .num-info { flex:1; min-width:0; }
 .mock-wa .num .number-rename { display:grid; place-items:center; width:32px; height:32px; padding:7px; margin-right:28px; color:var(--muted); }
 .mock-wa .num .number-rename svg { width:16px; height:16px; }
 .mock-wa .num-info small { font-size:11px; color:var(--muted); }
 .mock-wa .search-head { display:grid; gap:12px; margin:20px 0 4px; }
-.mock-wa .search-head input { height:40px; }
-.mock-wa .inbox-filters { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; padding:5px; border:1px solid var(--line); border-radius:12px; background:#f7f7f7; }
-.mock-wa .inbox-filters button { min-height:36px; border:1px solid transparent; padding:7px 5px; font-size:11px; line-height:1.4; background:transparent; border-radius:8px; }
-.mock-wa .inbox-filters button[aria-pressed=true] { background:#262626; border-color:#262626; color:#fff; }
+.mock-wa .search-head input { height:36px; border-radius:999px; padding-inline:14px; }
+.mock-wa .inbox-filters { display:flex; flex-wrap:wrap; gap:4px; padding:5px; border:1px solid var(--line); border:0; padding:0; background:transparent; }
+.mock-wa .inbox-filters button { min-height:28px; border:1px solid var(--line); padding:3px 8px; font-size:12px; line-height:1.4; background:transparent; border-radius:999px; }
+.mock-wa .inbox-filters button[aria-pressed=true] { background:var(--soft); border-color:#ffb02047; color:var(--accent); }
 .mock-wa .inbox-status-filter { display:flex; align-items:center; gap:10px; }
 .mock-wa .inbox-status-filter label,.mock-wa .inbox-count { color:var(--muted); font-size:11px; }
 .mock-wa .inbox-status-filter .select-trigger { flex:1; width:0; font-size:12px; }
 .mock-wa .inbox-count { padding-bottom:12px; border-bottom:1px solid var(--line); }
-.mock-wa .chat { position:relative; display:flex; align-items:center; gap:10px; padding:16px 10px; border-bottom:1px solid #eee; }
+.mock-wa .chat { position:relative; display:flex; align-items:center; gap:10px; padding:16px 10px; border-bottom:1px solid var(--line); }
 .mock-wa .chat.arriving { animation:mock-wa-arrival .3s ease-out; }
 @keyframes mock-wa-arrival { from { opacity:0; transform:translateY(-8px); } }
-.mock-wa .chat-avatar { display:grid; place-items:center; width:36px; height:36px; flex:0 0 36px; border-radius:12px; color:#525252; background:linear-gradient(145deg,#f1f1f1,#e5e5e5); font-size:11px; font-weight:600; }
+.mock-wa .chat-avatar { display:grid; place-items:center; width:36px; height:36px; flex:0 0 36px; border-radius:50%; color:var(--text); background:var(--hover); font-size:11px; font-weight:600; }
 .mock-wa .chat-info { flex:1; min-width:0; overflow:hidden; }
 .mock-wa .chat-topline,.mock-wa .chat-bottomline { display:flex; align-items:center; gap:6px; min-width:0; }
 .mock-wa .chat-topline { padding-right:32px; }
@@ -57,11 +58,11 @@
 .mock-wa .chat-pin { position:absolute; top:16px; right:10px; width:28px; height:28px; padding:5px; color:var(--muted); }
 .mock-wa .chat-topline time,.mock-wa .chat-bottomline small { color:var(--muted); font-size:9px; }
 .mock-wa .chat-preview { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--muted); font-size:11px; margin:3px 0 7px; }
-.mock-wa .conversation-tag { font-size:9px; padding:1px 5px; border:1px solid #dcdcdc; border-radius:4px; color:#525252; }
-.mock-wa .unread-count { display:inline-flex; justify-content:center; min-width:18px; height:18px; line-height:18px; margin-left:auto; background:#262626; color:#fff; border-radius:20px; padding:0 5px; font-size:10px; }
-.mock-wa .thread { display:flex; flex-direction:column; min-width:0; min-height:0; overflow:hidden; padding:24px; gap:16px; }
-.mock-wa .card { width:100%; max-width:860px; margin:0 auto; background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px; box-shadow:0 4px 18px #00000004; }
-.mock-wa .head { display:flex; align-items:center; gap:10px; padding:20px; }
+.mock-wa .conversation-tag { font-size:9px; padding:1px 5px; border:1px solid var(--line2); border-radius:4px; color:var(--muted); }
+.mock-wa .unread-count { display:inline-flex; justify-content:center; min-width:18px; height:18px; line-height:18px; margin-left:auto; background:var(--accent); color:#201505; border-radius:20px; padding:0 5px; font-size:10px; }
+.mock-wa .thread { display:flex; flex-direction:column; min-width:0; min-height:0; overflow:hidden; padding:0; gap:0; }
+.mock-wa .card { width:100%; margin:0; background:var(--page); border:0; border-radius:0; padding:10px 16px; }
+.mock-wa .head { display:flex; align-items:center; gap:10px; padding:10px 16px; border-bottom:1px solid var(--line); }
 .mock-wa .contact-heading { flex:1; min-width:0; margin-right:12px; }
 .mock-wa .contact-heading strong { display:block; font-size:14px; }
 .mock-wa .contact-heading small { display:block; color:var(--muted); font-size:11.5px; }
@@ -69,23 +70,24 @@
 .mock-wa :is(.head,.composer) .ghost { width:40px; height:40px; padding:10px; flex:0 0 40px; }
 .mock-wa .head .ghost:last-child { color:var(--danger); }
 .mock-wa .take { position:relative; }
-.mock-wa .msgs { flex:1; display:flex; flex-direction:column; gap:0; background:#fafafa; padding:20px 24px; }
+.mock-wa .msgs { flex:1; display:flex; flex-direction:column; gap:0; padding:20px 32px; background:radial-gradient(rgba(255,255,255,.035) 1px,transparent 1.5px) 0 0/18px 18px,var(--page); }
+.mock-wa .composer-card { border-top:1px solid var(--line); }
 .mock-wa .message-date,.mock-wa .unread-divider { display:flex; align-items:center; gap:10px; font-size:11px; color:var(--muted); margin:14px 0 4px; }
 .mock-wa .message-date { gap:0; margin:16px 0 8px; }
 .mock-wa .message-date span { background:var(--card); padding:0 10px; }
 .mock-wa .message-date::before,.mock-wa .message-date::after,.mock-wa .unread-divider::before,.mock-wa .unread-divider::after { content:""; height:1px; background:var(--line); flex:1; }
 .mock-wa .unread-divider { color:var(--accent); }
 .mock-wa .unread-divider::before,.mock-wa .unread-divider::after { background:var(--accent); }
-.mock-wa .b { max-width:68%; align-self:flex-start; background:white; border:1px solid var(--line); border-radius:14px 14px 14px 4px; padding:8px 12px; margin-top:8px; }
+.mock-wa .b { max-width:68%; align-self:flex-start; background:var(--card); border:1px solid var(--line); border-radius:8px 8px 8px 2px; padding:8px 12px; margin-top:8px; }
 
-.mock-wa .b.me { align-self:flex-end; background:#ececec; border-color:#e0e0e0; border-radius:14px 14px 4px 14px; }
+.mock-wa .b.me { align-self:flex-end; background:#322719; border-color:transparent; border-radius:8px 8px 2px 8px; }
 .mock-wa .message-time { font-size:10.5px; color:var(--muted); text-align:right; margin-top:3px; }
 .mock-wa .typing { color:var(--muted); }
 .mock-wa .typing span { animation:mock-wa-typing .65s alternate infinite; }
 @keyframes mock-wa-typing { to { opacity:.25; } }
 .mock-wa .composer { display:flex; align-items:flex-end; gap:8px; }
-.mock-wa .composer textarea { flex:1 1 0; width:0; height:40px; resize:none; }
-.mock-wa .composer .send { min-width:88px; height:40px; }
+.mock-wa .composer textarea { flex:1 1 0; width:0; height:40px; resize:none; border-radius:999px; padding-inline:16px; background:var(--page); }
+.mock-wa .composer .send { min-width:40px; width:40px; height:40px; padding:0; border-radius:50%; }
 
 .mock-wa.mobile { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr) 56px; }
 .mock-wa.mobile .thread { grid-row:1; padding:0; gap:0; }
@@ -93,7 +95,7 @@
 .mock-wa.mobile .rail button { flex-direction:column; justify-content:center; gap:2px; width:56px; height:56px; padding:0; font-size:10px; line-height:12px; }
 .mock-wa.mobile .rail .active { background:transparent; box-shadow:none; }
 .mock-wa.mobile .rail svg { width:22px; height:22px; }
-.mock-wa.mobile .notification-badge { position:absolute; top:4px; right:6px; min-width:16px; height:16px; padding:0 4px; border-radius:8px; background:var(--danger); color:white; line-height:16px; }
+.mock-wa.mobile .notification-badge { position:absolute; top:4px; right:6px; min-width:16px; height:16px; padding:0 4px; border-radius:8px; background:var(--accent); color:#201505; line-height:16px; }
 .mock-wa.mobile .head { min-height:52px; gap:0; padding:3px 4px 3px 0; }
 .mock-wa.mobile .head,.mock-wa.mobile .msgs,.mock-wa.mobile .composer-card { margin:0; border:0; border-radius:0; box-shadow:none; }
 .mock-wa.mobile .head { border-bottom:1px solid var(--line); }
@@ -111,3 +113,60 @@
 .mock-wa.mobile .composer textarea { font-size:16px; height:44px; padding:10px 12px; border-radius:22px; }
 .mock-wa.mobile .composer .send { border-radius:22px; }
 .mock-wa.mobile .composer .send svg { width:20px; height:20px; stroke-width:2; }
+
+/* Inbox as in public/raqio-workspace.css: full-height list, round avatars, dotted wallpaper. */
+.mock-wa .number-panel { padding:0; }
+.mock-wa .section-head { min-height:56px; margin:0; padding:0 12px; font-size:16px; }
+.mock-wa .number-controls { display:flex; align-items:center; gap:8px; padding:6px 12px; }
+.mock-wa .number-controls .select-trigger { flex:1; font-size:12px; }
+.mock-wa .add-number { flex:0 0 36px; margin:0; padding:0; }
+.mock-wa .select-trigger { box-shadow:none; }
+.mock-wa .number-manager { display:flex; align-items:center; gap:4px; padding:4px 12px; color:var(--muted); font-size:12px; }
+.mock-wa .number-manager svg { width:14px; height:14px; rotate:-90deg; }
+.mock-wa .search-head { gap:10px; margin:0; padding:10px 12px; border-bottom:1px solid var(--line); }
+.mock-wa .inbox-search { display:flex; align-items:center; gap:7px; height:36px; padding-inline:10px; background:var(--card); border:1px solid var(--line); border-radius:999px; color:var(--muted); }
+.mock-wa .inbox-search svg { width:14px; height:14px; }
+.mock-wa .filter-more { display:grid; place-items:center; width:28px; padding:0!important; }
+.mock-wa .filter-more svg { width:14px; height:14px; }
+.mock-wa .chat { min-height:72px; gap:12px; padding:5px 12px; border:0; border-bottom:1px solid var(--line); }
+.mock-wa .chat.active { background:var(--hover); border-color:var(--line); box-shadow:inset 2px 0 var(--accent); }
+.mock-wa .chat-avatar { width:44px; height:44px; flex-basis:44px; font-size:15px; }
+.mock-wa .head .chat-avatar { width:38px; height:38px; flex-basis:38px; font-size:13px; }
+.mock-wa .chat-topline { padding-right:0; }
+.mock-wa .chat-topline strong { font-size:14px; }
+.mock-wa .chat-topline time { font-size:11px; }
+.mock-wa .chat-preview { margin:0; font-size:13px; line-height:17px; }
+.mock-wa .chat-bottomline { min-height:22px; }
+.mock-wa .head { min-height:60px; }
+.mock-wa .message-date::before,.mock-wa .message-date::after { content:none; }
+.mock-wa .message-date { justify-content:center; }
+.mock-wa .message-date span { padding:4px 10px; border-radius:6px; }
+.mock-wa .b { max-width:62%; padding:7px 9px 6px; margin-top:12px; font-size:14px; line-height:1.45; }
+.mock-wa .composer { align-items:center; }
+.mock-wa textarea { overflow:hidden; scrollbar-width:none; }
+.mock-wa .composer textarea { min-height:0; line-height:22px; }
+.mock-wa .composer .send { display:grid; place-items:center; flex:0 0 40px; }
+.mock-wa.mobile .head { gap:8px; }
+.mock-wa.mobile .rail { border-right:0; border-top:1px solid var(--line); background:#171717; }
+.mock-wa.mobile .rail .active { color:var(--accent-h); box-shadow:inset 0 2px var(--accent); border-radius:0; }
+.mock-wa.mobile .b { max-width:85%; }
+.mock-wa:not(.mobile) .rail button:nth-last-child(2) { margin-top:auto; }
+.mock-wa:not(.mobile) .rail button:last-child { margin-top:0; }
+
+/* Fit the 880px device viewport. */
+.mock-wa:not(.mobile) { grid-template-columns:158px 264px minmax(0,1fr); }
+.mock-wa:not(.mobile) .rail { padding:18px 10px 12px; }
+.mock-wa:not(.mobile) .rail .logo { margin-bottom:16px; }
+.mock-wa:not(.mobile) .rail button { padding-block:9px; }
+.mock-wa:not(.mobile) .rail button:nth-of-type(n+10):not(:nth-last-child(-n+2)) { display:none; }
+.mock-wa:not(.mobile) .section-head { min-height:46px; }
+.mock-wa:not(.mobile) .inbox-status-filter { display:none; }
+.mock-wa:not(.mobile) .number-manager { display:none; }
+.mock-wa:not(.mobile) .head .select-trigger { width:104px; flex-basis:104px; }
+.mock-wa:not(.mobile) .head .ghost { width:32px; height:32px; flex-basis:32px; padding:7px; }
+.mock-wa:not(.mobile) .head .ghost:nth-last-child(2),.mock-wa:not(.mobile) .head .ghost:nth-last-child(3) { display:none; }
+.mock-wa:not(.mobile) .head { gap:6px; }
+.mock-wa .contact-heading { margin-right:0; }
+.mock-wa .contact-heading strong,.mock-wa .contact-heading small { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.mock-wa:not(.mobile) .msgs { padding:12px 18px; }
+.mock-wa:not(.mobile) .b { max-width:78%; }

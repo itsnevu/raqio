@@ -423,7 +423,7 @@ html.fx .product-tile.rv.rv-in{transform:none}
 /* ---------- Hero: real footage with room for parallax ---------- */
 .hero.hero-full{overflow:hidden}
 .hero-full .hero-art{inset:-12% 0}
-.hero-full .hero-art::after{background:linear-gradient(90deg,#0d0d0df2 0%,#0d0d0dc4 38%,#0d0d0d40 75%,#0d0d0d26 100%),linear-gradient(0deg,#111 0%,transparent 30%)!important}
+.hero-full .hero-art::after{background:linear-gradient(90deg,#0d0d0dfa 0%,#0d0d0df2 25%,#0d0d0dd9 42%,#0d0d0d80 62%,#0d0d0d26 82%,transparent 100%),linear-gradient(0deg,#111 0%,transparent 30%)!important}
 .hero-full h1{letter-spacing:-.045em;text-wrap:balance}
 .hero-full h1 em{font-style:normal;color:#ffb020}
 .hero-intro{font-size:clamp(1.05rem,1.4vw,1.25rem);color:#e6e6e6;max-width:34ch}
@@ -591,8 +591,8 @@ main section p{color:#d2d2d2}
   .contact-split{grid-template-columns:1fr}
 }
 
-/* ================= Typography: Newsreader headings + Instrument Sans UI ================= */
-:root{--display-face:var(--font-serif);--body-face:var(--raqio-font);--mono-face:var(--raqio-font);--display-fallback:Georgia,"Times New Roman",serif}
+/* ================= Typography: Segoe UI, same as WA-Suite ================= */
+:root{--raqio-font:"Segoe UI",system-ui,sans-serif;--font-serif:var(--raqio-font);--display-face:var(--raqio-font);--body-face:var(--raqio-font);--mono-face:var(--raqio-font);--display-fallback:system-ui,sans-serif}
 h1,h2,h3,.statement li,.workflow-steps button span{font-family:var(--font-serif),Georgia,"Times New Roman",serif}
 :is(h1,h2,h3){font-weight:400;letter-spacing:-.022em!important;line-height:1.04}
 h1{font-weight:400}
@@ -690,8 +690,7 @@ h3{font-size:clamp(1.3rem,1.8vw,1.75rem)}
 
 /* ================= Statement: centered, larger, dot-matrix lettering ================= */
 .statement-morph{background:
-  radial-gradient(circle,#ffffff12 .9px,transparent 1.2px) 0 0/7px 7px,
-  radial-gradient(ellipse at 50% 40%,#262626,transparent 70%),#151515}
+  radial-gradient(circle,#ffffff12 .9px,transparent 1.2px) 0 0/7px 7px,#181818}
 .statement-morph .statement-inner{max-width:74rem;margin-inline:auto}
 .statement-morph .statement-inner h2{font-size:clamp(1.4rem,2.2vw,2rem);max-width:none}
 .statement-morph .statement-inner ul{margin-top:clamp(1.5rem,4vh,3rem)}
@@ -730,11 +729,11 @@ h3{font-size:clamp(1.3rem,1.8vw,1.75rem)}
 @media(max-width:700px){.rc-row p{font-size:.8rem}}
 .rc-avatar{background:#141414 url("/brand-transparent.svg") center/62% no-repeat}
 
-/* ---------- Header: Instrument Sans, 14px ---------- */
+/* ---------- Header: Segoe UI, 14px ---------- */
 .header,.header *{font-family:var(--raqio-font),system-ui,sans-serif!important}
 .header nav a,.header nav summary,.header .product-menu summary,.header .nav-about{font-size:14px!important;font-weight:400!important;letter-spacing:0}
 .header .nav-contact{font-size:14px!important;font-weight:500!important}
-/* Secondary text stays in Instrument Sans everywhere */
+/* Secondary text stays in Segoe UI everywhere */
 p,small,li,dd,figcaption:not(.audience-card figcaption),label,input,textarea,select{font-family:var(--raqio-font),system-ui,sans-serif}
 .statement li,.audience-card figcaption{font-family:var(--font-serif),Georgia,serif}
 
@@ -828,3 +827,30 @@ p,small,li,dd,figcaption:not(.audience-card figcaption),label,input,textarea,sel
   font-size:.9rem;
   line-height:1.5;
 }
+
+/* One font for the whole site, matching WA-Suite. :not(#_) outranks older !important rules. */
+body,body :not(#_),body :not(#_)::before,body :not(#_)::after{font-family:var(--raqio-font)!important;font-weight:300!important}
+
+/* Plain text until it breaks; then the canvas takes over with fragments cut from the same letters. */
+.statement-morph .statement-inner li>span{background:none;color:#f4eadf;-webkit-text-fill-color:currentColor}
+.statement-morph.morph-ready .statement-inner li>span{white-space:nowrap}
+.statement-morph.morph-ready.is-burst .statement-inner li>span{visibility:hidden}
+@media(max-width:860px){.statement-morph.morph-ready .statement-inner li{font-size:min(7.6vw,8.4vh)}}
+
+/* Statement block: shrink to its text and sit in the middle of the stage. Em indents keep the stagger. */
+@media(min-width:861px){
+  .statement-morph .statement-inner{width:fit-content;max-width:calc(100% - 2*var(--gutter));margin-inline:auto;padding-inline:0}
+  .statement-morph .statement-inner li:nth-child(2){--line-indent:3em}
+  .statement-morph .statement-inner li:nth-child(3){--line-indent:1.95em}
+  .statement-morph .statement-inner li:nth-child(4){--line-indent:7.3em}
+  .statement-morph .statement-inner li:nth-child(5){--line-indent:3.2em}
+  .statement-morph .statement-inner li>span{white-space:nowrap}
+}
+
+/* Language switch */
+.nav-end{display:flex;align-items:center;gap:clamp(.6rem,1.6vw,1.4rem)}
+.lang-switch{display:flex;gap:.1rem}
+.lang-switch a{display:grid;place-items:center;min-width:34px;min-height:40px;color:inherit;opacity:.6;font-size:13px;text-decoration:none}
+.lang-switch a:hover,.lang-switch a[aria-current]{opacity:1}
+.lang-switch a[aria-current]{text-decoration:underline;text-decoration-color:#ffb020;text-underline-offset:6px}
+@media(max-width:480px){.nav-end{gap:.3rem}.lang-switch a{min-width:28px;font-size:12px}}
