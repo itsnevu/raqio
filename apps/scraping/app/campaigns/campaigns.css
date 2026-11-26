@@ -52,3 +52,24 @@
 .campp .rs.failed, .campp .rs.unsubscribed { color: var(--bad, #EF6B5F); }
 .campp .rs.skipped, .campp .rs.pending { color: var(--muted); }
 @media (max-width: 760px) { .campp .wgrid { grid-template-columns: 1fr; } .campp .crow { grid-template-columns: 1fr; } }
+
+/* Semua kiriman */
+.campp .ob-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 16px; }
+.campp .ob-card { display: grid; gap: 4px; padding: 16px; text-align: left; color: var(--text); background: var(--panel); border: 1px solid var(--line-2); border-radius: 8px; }
+.campp .ob-card:hover { background: var(--sunk); }
+.campp .ob-card.on { border-color: var(--accent); background: var(--accent-soft); }
+.campp .ob-card b { font-size: 24px; letter-spacing: -.02em; }
+.campp .ob-card small { font-size: 12px; color: var(--muted); letter-spacing: 0; }
+.campp .ob-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.campp .ob-bar input { flex: 1; min-width: 200px; }
+.campp .ob-bar :is(input, select) { height: 40px; padding: 0 12px; font: inherit; font-size: 13px; color: var(--text); background: #141414; border: 1px solid var(--line); }
+.campp .ob-scroll { position: relative; overflow-x: auto; border: 1px solid var(--line-2); border-radius: 8px; background: var(--panel); }
+.campp .ob-scroll .rtable { min-width: 720px; font-size: 13px; }
+.campp .ob-scroll td { vertical-align: top; }
+.campp .ob-scroll a { color: var(--text); }
+.campp .ob-scroll summary { cursor: pointer; }
+.campp .ob-scroll pre { max-width: 420px; margin: 6px 0; white-space: pre-wrap; font-size: 12px; line-height: 1.5; color: var(--muted); }
+.campp .ob-page { display: flex; gap: 8px; align-items: center; margin: 12px 0; }
+.campp .ob-page .meta { flex: 1; }
+body:has(> .scraping-sidebar) .campp :is(.rtable th, .st) { text-transform: none; letter-spacing: 0; }
+@media (max-width: 620px) { .campp .ob-cards { grid-template-columns: 1fr; gap: 8px; } }

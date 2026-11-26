@@ -13,6 +13,11 @@ export type Recipient = {
   id: number; lead_key: string; name: string; to_addr: string; rendered: string; status: RecipientStatus; error: string;
   sent_at: string | null; audit_url: string; link: string;
 };
+export type OutboxItem = {
+  id: number; campaign_id: number; campaign: string; channel: Channel; lead_key: string; name: string; to_addr: string; rendered: string;
+  status: RecipientStatus; error: string; sent_at: string | null;
+};
+export type Outbox = { summary: Record<Channel, Partial<Record<RecipientStatus, number>>>; items: OutboxItem[]; total: number; page: number };
 export type Templates = Record<Channel, { Subject: string; Body: string }>;
 export type Preview = { rendered: string; subject: string; matched: number; reachable: number; sample: { name: string; addr: string; vars: Record<string, string> } | null };
 export type Sender = { sender_name: string; sender_phone: string; reply_to: string; wa_provider: string; wa_gateway_url: string; wa_gateway_token_masked: string; offer: string };

@@ -107,6 +107,31 @@ func TestIntegrationCampaignManualFlow(t *testing.T) {
 	if st != "tertarik" {
 		t.Fatalf("lead a setelah balasan: %q", st)
 	}
+	// dashboard kiriman: ringkasan per saluran, filter, dan isolasi org
+	code, j = o.get("/campaigns/outbox")
+	o.must(200, code, j)
+	wa := j["summary"].(map[string]any)["whatsapp"].(map[string]any)
+	if wa["replied"].(float64) != 1 || wa["pending"].(float64) != 1 || j["total"].(float64) != 3 {
+		t.Fatalf("outbox: %v", j)
+	}
+	_, j = o.get("/campaigns/outbox?status=replied&channel=whatsapp&q=kopi+a")
+	if j["total"].(float64) != 1 || j["items"].([]any)[0].(map[string]any)["campaign"] != "WA Kemang" {
+		t.Fatalf("outbox filter: %v", j)
+	}
+	_, j = o.get("/campaigns/outbox?q=%25")
+	if j["total"].(float64) != 0 { // % dicari apa adanya, bukan wildcard
+		t.Fatalf("outbox wildcard: %v", j)
+	}
+	code, j = o.get("/campaigns/outbox?status=apa")
+	o.must(400, code, j)
+	other := e.client()
+	other.register("lain@x.id", "Lain")
+	code, j = other.get("/campaigns/outbox")
+	other.must(200, code, j)
+	if j["total"].(float64) != 0 {
+		t.Fatalf("outbox bocor: %v", j)
+	}
+
 	// penerima kedua dilewati -> kampanye selesai
 	code, j = o.get("/campaigns/" + idStr + "/next")
 	o.must(200, code, j)

@@ -301,6 +301,7 @@ func (app *App) router() *http.ServeMux {
 	mux.Handle("GET /campaigns", auth(app.listCampaigns))
 	mux.Handle("POST /campaigns", auth(analyst(app.createCampaign)))
 	mux.Handle("POST /campaigns/preview", auth(app.previewCampaign))
+	mux.Handle("GET /campaigns/outbox", auth(app.campaignOutbox)) // semua kiriman lintas kampanye
 	mux.Handle("GET /campaigns/{id}", auth(app.getCampaign))
 	mux.Handle("POST /campaigns/{id}/start", auth(analyst(app.startCampaign)))
 	mux.Handle("POST /campaigns/{id}/pause", auth(analyst(app.pauseCampaign)))

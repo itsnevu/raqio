@@ -101,7 +101,7 @@ export default function CampaignDetailPage() {
       )}
 
       <table className="rtable">
-        <thead><tr><th>Prospek</th><th>Tujuan</th><th>Status</th><th>Waktu</th><th>Audit</th></tr></thead>
+        <thead><tr><th>Prospek</th><th>Tujuan</th><th>Status</th><th>Waktu</th><th>Audit</th><th><span className="sr-only">Aksi</span></th></tr></thead>
         <tbody>
           {d.recipients.map((x) => (
             <tr key={x.id} className={x.status}>
@@ -110,6 +110,7 @@ export default function CampaignDetailPage() {
               <td><span className={"rs " + x.status}>{RSTATUS_LABEL[x.status]}</span>{x.error && <small className="meta"> {x.error}</small>}</td>
               <td className="meta">{x.sent_at ? new Date(x.sent_at).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "-"}</td>
               <td><ExtLink href={x.audit_url} className="mini">buka</ExtLink></td>
+              <td>{x.status === "sent" && <button type="button" className="mini" disabled={busy} onClick={() => act(`/api/campaigns/${id}/mark`, { recipient_id: x.id, status: "replied" }, `${x.name} ditandai dibalas`)}>Tandai dibalas</button>}</td>
             </tr>
           ))}
         </tbody>

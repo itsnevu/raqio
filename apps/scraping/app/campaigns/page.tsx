@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import "./campaigns.css";
+import Outbox from "@/components/campaigns/Outbox";
 import LoadError from "@/components/LoadError";
 import { useToast } from "@/components/shell/ToastContext";
 import { ApiError, apiGet, apiPost, errMsg } from "@/lib/api";
@@ -25,6 +26,7 @@ function Campaigns() {
   const [list, setList] = useState<Campaign[] | null>(null);
   const [templates, setTemplates] = useState<Templates | null>(null);
   const [err, setErr] = useState<string>("");
+  const [tab, setTab] = useState<"list" | "outbox">(params.get("tab") === "kiriman" ? "outbox" : "list");
   const [open, setOpen] = useState(params.get("new") === "1" || params.get("from") === "prospects");
 
   const load = useCallback(async () => {
@@ -46,8 +48,14 @@ function Campaigns() {
           <h1>Kampanye</h1>
           <p className="lead">Dari riset ke klien: kirim pesan personal ke prospek lewat WhatsApp, Instagram, atau email, lengkap dengan tautan audit per bisnis. Setiap kiriman otomatis menandai prospek &quot;dihubungi&quot;.</p>
         </div>
-        <button type="button" className="btn" onClick={() => setOpen(true)}>Kampanye baru</button>
+        <button type="button" className="btn" onClick={() => { setTab("list"); setOpen(true); }}>Kampanye baru</button>
       </div>
+      <div className="rtabs" role="tablist" aria-label="Tampilan kampanye">
+        <button type="button" role="tab" aria-selected={tab === "list"} className={tab === "list" ? "on" : ""} onClick={() => setTab("list")}>Kampanye</button>
+        <button type="button" role="tab" aria-selected={tab === "outbox"} className={tab === "outbox" ? "on" : ""} onClick={() => setTab("outbox")}>Semua kiriman</button>
+      </div>
+      {tab === "outbox" && <Outbox />}
+      {tab === "list" && <>
       {open && templates && (
         <NewCampaign templates={templates} onClose={() => setOpen(false)} onCreated={(id) => { setOpen(false); toast("Kampanye dibuat"); router.push("/campaigns/" + id); }} />
       )}
@@ -74,6 +82,7 @@ function Campaigns() {
           ))}
         </div>
       )}
+      </>}
     </div>
   );
 }
