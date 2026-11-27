@@ -65,6 +65,7 @@ func setupIntegration(t *testing.T) *testEnv {
 	// ops alerter tanpa env OPS_*: alarm hanya dicatat di log (diuji terpisah di ops_alert_test)
 	app := &App{db: pool, secret: []byte("secret-tes-yang-cukup-panjang"), mail: &Mailer{}, retention: 24 * time.Hour, ops: newOpsAlerter()}
 	t.Setenv("JOB_RATE_LIMIT_BURST", "100") // rate limit per org diuji terpisah di ops_test; di sini fokus kuota
+	t.Setenv("INVITE_ONLY", "0")            // tes lama menguji daftar dan tamu terbuka; invite_codes_test menyalakannya sendiri
 	srv := httptest.NewServer(app.router())
 	t.Cleanup(func() { srv.Close(); pool.Close() })
 	return &testEnv{t: t, app: app, srv: srv}

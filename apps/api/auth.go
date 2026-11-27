@@ -337,7 +337,7 @@ func (a *App) notifyExistingAccount(w http.ResponseWriter, email string) {
 }
 
 func (a *App) register(w http.ResponseWriter, r *http.Request) {
-	var in struct{ Email, Password, Name, Org, Invite string }
+	var in struct{ Email, Password, Name, Org, Invite, Code string } // Code: kode undangan akses awal (invite_codes.go)
 	if err := readJSON(r, &in); err != nil {
 		errJSON(w, 400, "Request tidak valid.")
 		return
@@ -353,6 +353,12 @@ func (a *App) register(w http.ResponseWriter, r *http.Request) {
 	}
 	if env("ALLOW_REGISTER", "1") != "1" {
 		errJSON(w, 403, "Pendaftaran ditutup.")
+		return
+	}
+	// akses lewat undangan: tanpa undangan tim dan tanpa kode berbentuk benar, tolak sebelum bcrypt
+	if inviteOnly() && in.Invite == "" && inviteCodeHash(in.Code) == "" {
+		a.noteAccessRequest(r.Context(), email, "register")
+		errCode(w, 403, "invite_only", msgInviteOnly)
 		return
 	}
 	hash, err := hashPassword(in.Password)
@@ -374,6 +380,14 @@ func (a *App) register(w http.ResponseWriter, r *http.Request) {
 			inv = t
 		}
 	}
+	codeHash := "" // kode undangan yang akan dipakai satu jatahnya di transaksi di bawah
+	if inv == nil && inviteOnly() {
+		if codeHash = inviteCodeHash(in.Code); codeHash == "" {
+			a.noteAccessRequest(ctx, email, "register")
+			errCode(w, 403, "invite_only", msgInviteOnly)
+			return
+		}
+	}
 	tx, err := a.db.Begin(ctx)
 	if err != nil {
 		errJSON(w, 500, "db")
@@ -390,6 +404,17 @@ func (a *App) register(w http.ResponseWriter, r *http.Request) {
 		slog.Error("register", "err", err)
 		errJSON(w, 500, "db")
 		return
+	}
+	if codeHash != "" { // gagal di sini membatalkan seluruh pendaftaran (defer Rollback), jatah kode tidak berkurang
+		if err := redeemInviteCode(ctx, tx, codeHash, uid); err != nil {
+			if errors.Is(err, errInviteCodeUsed) {
+				errCode(w, 403, "invite_code_invalid", msgInviteCodeInvalid)
+				return
+			}
+			slog.Error("register kode undangan", "err", err)
+			errJSON(w, 500, "db")
+			return
+		}
 	}
 	if inv != nil { // daftar lewat undangan: langsung jadi anggota org pengundang, tanpa org pribadi
 		oid = *inv.OrgID
@@ -484,6 +509,13 @@ func (a *App) login(w http.ResponseWriter, r *http.Request) {
 	}
 	if bcrypt.CompareHashAndPassword(cmp, []byte(in.Password)) != nil || err != nil {
 		a.noteFail(ctx, key)
+		// Akses lewat undangan (seperti Scale): email yang belum punya akun dibalas invite_only dan dicatat sebagai
+		// peminat. Sengaja membedakan "belum diundang" dari "password salah"; percobaan tetap kena kunci login_attempts.
+		if errors.Is(err, pgx.ErrNoRows) && inviteOnly() {
+			a.noteAccessRequest(ctx, email, "login")
+			errCode(w, 403, "invite_only", msgInviteOnly)
+			return
+		}
 		errJSON(w, 401, "Email atau password salah.")
 		return
 	}

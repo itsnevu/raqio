@@ -56,6 +56,9 @@ func checkAuthSecret(secret string) error {
 }
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "invites" { // CLI admin kode undangan: go run . invites create -n 5
+		os.Exit(invitesCLI(os.Args[2:]))
+	}
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	// ctx dibatalkan saat SIGINT/SIGTERM: scheduler berhenti, server shutdown rapi (compose stop, deploy ulang).
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -255,6 +258,8 @@ func (app *App) router() *http.ServeMux {
 	mux.Handle("POST /auth/reset", pub(app.resetPassword))
 	mux.HandleFunc("GET /auth/verify", app.verifyEmail)
 	mux.HandleFunc("GET /auth/invite", app.inviteInfo)
+	mux.HandleFunc("GET /auth/access", app.accessConfig)           // INVITE_ONLY: halaman login menampilkan form kode undangan
+	mux.Handle("POST /auth/invite-code", pub(app.checkInviteCode)) // cek kode undangan tanpa memakainya
 	mux.HandleFunc("GET /billing/plans", app.listPlans)
 	mux.HandleFunc("POST /billing/webhook/xendit", app.xenditWebhook) // server ke server, dijaga token
 

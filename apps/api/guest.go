@@ -38,6 +38,10 @@ func (a *App) guest(w http.ResponseWriter, r *http.Request) {
 		errJSON(w, 403, "Mode tamu dimatikan.")
 		return
 	}
+	if inviteOnly() { // selama akses lewat undangan, mencoba Raqio memakai kode undangan (invite_codes.go)
+		errCode(w, 403, "invite_only", "Mode tamu ditutup selama Raqio hanya lewat undangan. Masukkan kode undangan untuk mencoba.")
+		return
+	}
 	if !guestLimit.allow(clientIP(r)) {
 		errJSON(w, 429, "Terlalu banyak akun tamu dari jaringan ini, coba lagi nanti atau daftar.")
 		return
