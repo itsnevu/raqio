@@ -70,7 +70,7 @@ details.raw > summary::-webkit-details-marker { display: none; }
 .wiz .who .gap { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .wiz textarea.msg { width: 100%; min-height: 120px; padding: 12px; font: inherit; font-size: 14px; line-height: 1.55; background: var(--sunk); border: 1px solid var(--line); color: var(--text); resize: vertical; box-sizing: border-box; }
 .wiz .acts2 { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
-.wiz .acts2 .btn.wa { background: var(--good); color: #000; }
+.wiz .acts2 .btn.wa { background: var(--good); color: var(--good-ink); }
 .wiz .acts2 .sp { flex: 1; }
 .wiz .done { text-align: center; padding: 20px 0; }
 .wiz .done h4 { font-size: 22px; margin: 0 0 8px; }
@@ -137,7 +137,7 @@ td.biz { min-width: 260px; max-width: 340px; }
 .lnk { text-decoration: none; display: inline-flex; align-items: center; gap: 5px; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lnk:hover { text-decoration: underline; }
 .ico { width: 14px; height: 14px; flex: none; opacity: .75; }
-.wa { display: inline-flex; align-items: center; gap: 5px; background: var(--good); color: #000; text-decoration: none; padding: 3px 8px; font-size: 12px; font-weight: 500; margin-top: 4px; }
+.wa { display: inline-flex; align-items: center; gap: 5px; background: var(--good); color: var(--good-ink); text-decoration: none; padding: 3px 8px; font-size: 12px; font-weight: 500; margin-top: 4px; }
 .mini { border: 1px solid var(--line); background: transparent; color: var(--muted); padding: 3px 8px; font-size: 12px; margin-top: 4px; }
 .mini:hover { color: var(--text); }
 tr.draft td { background: var(--bg) !important; padding: 0 12px 14px; }
@@ -191,7 +191,7 @@ button.hb:hover .b { filter: brightness(1.15); }
 .score { font-weight: 600; font-size: 15px; }
 .ls { display: inline-block; min-width: 30px; text-align: center; font-size: 12px; font-weight: 600; padding: 1px 6px;
       font-variant-numeric: tabular-nums; background: var(--sunk); color: var(--muted); }
-.ls.hi { background: var(--good); color: #000; }
+.ls.hi { background: var(--good); color: var(--good-ink); }
 .lrow { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
 .lrow select { font: inherit; font-size: 12px; padding: 2px 6px; border: 1px solid var(--line); background: var(--panel); color: var(--text); }
 .lrow select.set { border-color: var(--accent); }

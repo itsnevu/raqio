@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import "../login/login.css";
+import AccessLayout from "../login/AccessLayout";
+import { ArrowBox } from "@/components/agents";
 import { apiPost, errMsg } from "@/lib/api";
 
 export default function ResetPage() {
@@ -42,7 +44,7 @@ function Reset() {
     }
   };
   return (
-    <div className="loginp">
+    <AccessLayout aside={false}>
       <form className="box" onSubmit={submit}>
         <h1>Password baru</h1>
         <p className="lead">Semua sesi lama akan keluar setelah password diganti.</p>
@@ -55,12 +57,12 @@ function Reset() {
           Ulangi password
           <input type="password" value={pass2} onChange={(e) => setPass2(e.target.value)} autoComplete="new-password" minLength={8} required />
         </label>
-        <button className="btn" disabled={busy || !token}>{busy ? "Menyimpan…" : "Simpan"}</button>
+        <button className="btn" disabled={busy || !token}><span>{busy ? "Menyimpan…" : "Simpan"}</span><ArrowBox /></button>
         <div className="err" role="alert">{err}</div>
         <div className="foot">
           <Link href="/forgot">Minta tautan baru</Link>
         </div>
       </form>
-    </div>
+    </AccessLayout>
   );
 }

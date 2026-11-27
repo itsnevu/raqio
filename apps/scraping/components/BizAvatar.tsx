@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { host } from "@/lib/biz";
 
-const PALETTE = ["#FFB020", "#19D29C", "#5B8DEF", "#EF6B5F", "#B388FF", "#F28C28"];
+const PALETTE = ["#A78BFA", "#22D3A6", "#5B8DEF", "#FF6B4A", "#DCEBD5", "#F28C28"]; // aksen Raqio; teks inisial gelap terbaca di semuanya
 
 export function initialsOf(name: string) {
   const words = name.replace(/[^\p{L}\p{N} ]/gu, " ").split(/\s+/).filter(Boolean);

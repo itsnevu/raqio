@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
+import { Figtree } from "next/font/google";
 import "./globals.css";
 import "./tour.css";
 import { ShellProvider } from "@/components/Shell";
+import { AccessLangProvider } from "@/lib/access-lang";
 
+
+// Tipografi yang sama dengan situs Raqio (apps/site): Figtree, di-self-host oleh next/font.
+const figtree = Figtree({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-figtree", display: "swap" });
 
 const BASE = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "http://localhost:3002").replace(/\/+$/, "");
 
@@ -11,7 +16,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(BASE),
   title: "Raqio",
   description: "Peta pasar industri apa pun. Scraping langsung dari Google Maps dan website bisnis.",
-  icons: { icon: "/logo.png", apple: "/apple-touch-icon.png" },
+  icons: { icon: "/raqio-mark.svg", apple: "/apple-touch-icon.png" },
   // kartu share: gambar diambil dari app/opengraph-image.tsx (otomatis oleh Next)
   openGraph: { siteName: "Raqio", type: "website", locale: "id_ID" },
   twitter: { card: "summary_large_image" },
@@ -23,12 +28,14 @@ const SW_CLEANUP =
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // nonce dibuat middleware.ts per request; dipakai skrip inline di bawah dan oleh Next untuk skripnya sendiri
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const h = await headers();
+  const nonce = h.get("x-nonce") ?? undefined;
+  const lang = h.get("x-raqio-lang") === "en" ? "en" : "id";
   return (
-    <html lang="id">
+    <html lang={lang} className={figtree.variable}>
       <body>
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: SW_CLEANUP }} />
-        <ShellProvider>{children}</ShellProvider>
+        <AccessLangProvider initial={lang}><ShellProvider>{children}</ShellProvider></AccessLangProvider>
       </body>
     </html>
   );

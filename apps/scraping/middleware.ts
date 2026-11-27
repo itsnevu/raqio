@@ -5,14 +5,24 @@ import { isPublicPath } from "@/lib/routes";
 
 // Semua halaman butuh sesi. Endpoint data juga dilindungi di sini (cek tanda tangan) dan di Go (cek DB).
 // Tiap respons membawa CSP dengan nonce; Next memakai nonce yang sama untuk skripnya sendiri (dibaca dari header request).
+// Bahasa halaman akses: ?lang=en|id dari tautan Masuk di situs, lalu cookie raqio_lang, default Indonesia.
+function langOf(req: NextRequest): { lang: "en" | "id"; fromQuery: boolean } {
+  const q = req.nextUrl.searchParams.get("lang");
+  if (q === "en" || q === "id") return { lang: q, fromQuery: true };
+  return { lang: req.cookies.get("raqio_lang")?.value === "en" ? "en" : "id", fromQuery: false };
+}
+
 function withCsp(req: NextRequest) {
   const nonce = makeNonce();
+  const { lang, fromQuery } = langOf(req);
   const csp = buildCsp(nonce, process.env.NODE_ENV === "development");
   const headers = new Headers(req.headers);
   headers.set("x-nonce", nonce);
   headers.set("Content-Security-Policy", csp);
+  headers.set("x-raqio-lang", lang);
   const res = NextResponse.next({ request: { headers } });
   res.headers.set("Content-Security-Policy", csp);
+  if (fromQuery) res.cookies.set("raqio_lang", lang, { path: "/", maxAge: 31_536_000, sameSite: "lax" });
   return res;
 }
 
@@ -29,6 +39,8 @@ export async function middleware(req: NextRequest) {
   url.search = pathname === "/" ? "" : "?next=" + encodeURIComponent(pathname + req.nextUrl.search);
   // AUTO_GUEST=1 (dev): pengunjung tanpa sesi langsung masuk sebagai tamu, tanpa klik. Login tetap bisa lewat /login?manual=1
   if (process.env.AUTO_GUEST === "1" && pathname !== "/pilih-produk") url.searchParams.set("auto", "1");
+  const { lang, fromQuery } = langOf(req);
+  if (fromQuery) url.searchParams.set("lang", lang);
   return NextResponse.redirect(url);
 }
 

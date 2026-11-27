@@ -1,11 +1,12 @@
 "use client";
-// Tombol melayang "Tanya asisten": membuka panel chat yang sama dengan halaman /, tanpa iframe.
+// Tombol melayang asisten (logo Raqio; label "Tanya asisten" untuk pembaca layar dan tooltip): membuka panel chat yang sama dengan halaman /, tanpa iframe.
 // State percakapan ada di lib/chat/store, jadi obrolan lanjut saat berpindah halaman atau panel ditutup.
 import { usePathname } from "next/navigation";
 import ChatPanel from "@/components/chat/ChatPanel";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { useShell } from "@/components/Shell";
 import { isAuthPage, isBarePage } from "@/lib/routes";
+import { BrandMark } from "@/components/Brand";
 
 export default function Fab() {
   const here = usePathname();
@@ -15,6 +16,8 @@ export default function Fab() {
     <button
       type="button"
       className="fab"
+      aria-label="Tanya asisten"
+      title="Tanya asisten"
       onClick={() =>
         openDrawer(
           "Asisten",
@@ -25,7 +28,7 @@ export default function Fab() {
         )
       }
     >
-      Tanya asisten
+      <BrandMark className="fab-mark" />
     </button>
   );
 }

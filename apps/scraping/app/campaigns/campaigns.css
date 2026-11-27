@@ -29,7 +29,7 @@
 .campp .chk input { width: auto; display: inline; margin: 0; }
 .campp .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; margin: 0 8px 10px 0; }
 .campp .seg button { border: 0; background: transparent; color: var(--muted); padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer; }
-.campp .seg button.on { background: var(--good); color: #0B0B0B; font-weight: 700; }
+.campp .seg button.on { background: var(--good); color: var(--good-ink); font-weight: 700; }
 .campp .seg button:disabled { opacity: .4; cursor: not-allowed; }
 .campp .hint { font-size: 12.5px; color: var(--muted); margin: 0 0 10px; line-height: 1.5; }
 .campp .vars { font-size: 12px; color: var(--muted); display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
@@ -62,7 +62,7 @@
 .campp .ob-card small { font-size: 12px; color: var(--muted); letter-spacing: 0; }
 .campp .ob-bar { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .campp .ob-bar input { flex: 1; min-width: 200px; }
-.campp .ob-bar :is(input, select) { height: 40px; padding: 0 12px; font: inherit; font-size: 13px; color: var(--text); background: #141414; border: 1px solid var(--line); }
+.campp .ob-bar :is(input, select) { height: 40px; padding: 0 12px; font: inherit; font-size: 13px; color: var(--text); background: var(--sunk); border: 1px solid var(--line); }
 .campp .ob-scroll { position: relative; overflow-x: auto; border: 1px solid var(--line-2); border-radius: 8px; background: var(--panel); }
 .campp .ob-scroll .rtable { min-width: 720px; font-size: 13px; }
 .campp .ob-scroll td { vertical-align: top; }

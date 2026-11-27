@@ -10,6 +10,7 @@ import { loadDueCount } from "@/lib/cache";
 import { apiPost } from "@/lib/api";
 import { getMe, resetMe } from "@/lib/me";
 import { isAuthPage, isBarePage } from "@/lib/routes";
+import { safeHttpUrl } from "@/lib/safe";
 import { clearOrgStorage, lsGetGlobal } from "@/lib/storage";
 import type { Me } from "@/lib/api";
 import VerifyBanner from "./VerifyBanner";
@@ -23,6 +24,8 @@ const NAV: [string, string, string][] = [
   ["/chat", "Asisten", "M5 5h14v11H9l-4 4V5Zm4 5h6"],
 ];
 const MORE: [string, string, string][] = [["/settings", "Pengaturan", "Tim, kuota, dan akun"]];
+// WA-Suite (Customer Service Agent) memakai sesi Raqio yang sama (SSO). Tautan hanya http(s).
+const WASUITE = safeHttpUrl(process.env.NEXT_PUBLIC_WASUITE_APP_URL ?? (process.env.NODE_ENV === "development" ? "http://localhost:3001" : undefined));
 
 export default function Nav() {
   const here = usePathname();
@@ -84,6 +87,19 @@ export default function Nav() {
             </Link>
             );
           })}
+          {/* satu login untuk keempat agen: pindah ke peluncur agen atau langsung ke WA-Suite (Customer Service Agent) */}
+          <span className="nav-sep" aria-hidden="true" />
+          <Link href="/pilih-produk">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg>
+            Semua agen
+          </Link>
+          {WASUITE && !me?.guest && (
+            <a href={WASUITE}>
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 5h14v11H9l-4 4V5Zm4 5h6"/></svg>
+              Customer Service
+              <span className="nav-ext" aria-hidden="true">↗</span>
+            </a>
+          )}
           </div>
           <details className="more" ref={moreRef}>
             <summary><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0"/></svg>Akun</summary>

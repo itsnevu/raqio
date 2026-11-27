@@ -1,6 +1,6 @@
 // Satu sumber kebenaran untuk path yang boleh diakses tanpa sesi. Dipakai middleware (edge) dan Shell (client).
 // Jangan masukkan /metrics, /docs, /openapi.yaml: endpoint itu dilayani Go langsung, bukan lewat Next.
-export const PUBLIC_PAGES = ["/login", "/register", "/forgot", "/reset", "/privacy", "/metodologi", "/terms"] as const;
+export const PUBLIC_PAGES = ["/login", "/register", "/forgot", "/reset", "/undangan", "/privacy", "/metodologi", "/terms"] as const;
 
 export const PUBLIC_PATHS: readonly string[] = [
   ...PUBLIC_PAGES,
@@ -12,11 +12,14 @@ export const PUBLIC_PATHS: readonly string[] = [
   "/auth/reset",
   "/auth/verify",
   "/auth/invite",
+  "/auth/access", // kebijakan akses (INVITE_ONLY) untuk halaman login
+  "/auth/invite-code", // cek kode undangan
   "/billing/plans",
   "/billing/webhook/xendit",
   "/logo.svg",
   "/logo.png",
   "/brand-transparent.svg",
+  "/raqio-mark.svg",
   "/icon-192.png",
   "/apple-touch-icon.png",
   "/login-data-grid.webp",

@@ -4,7 +4,8 @@ import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import "../login/login.css";
 import AccessLayout from "../login/AccessLayout";
-import { apiGet, apiPost, errMsg, type Plan } from "@/lib/api";
+import { ArrowBox } from "@/components/agents";
+import { ApiError, apiGet, apiPost, errMsg, type Plan } from "@/lib/api";
 import { resetMe } from "@/lib/me";
 import { clearOrgStorage } from "@/lib/storage";
 
@@ -21,6 +22,8 @@ function Register() {
   const params = useSearchParams();
   const invite = params.get("invite") || "";
   const claim = params.get("claim") === "1"; // tamu menyimpan akunnya: data org tetap
+  const code = params.get("code") || ""; // kode undangan akses awal, sudah dicek di /undangan
+  const [codeBad, setCodeBad] = useState(false);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [org, setOrg] = useState("");
@@ -41,6 +44,16 @@ function Register() {
       .catch(() => {});
     return () => ac.abort();
   }, []);
+
+  // akses lewat undangan: tanpa kode, undangan tim, atau klaim tamu, arahkan ke form kode
+  useEffect(() => {
+    if (code || invite || claim) return;
+    const ac = new AbortController();
+    apiGet<{ invite_only?: boolean }>("/auth/access", { signal: ac.signal })
+      .then((j) => { if (j.invite_only) router.replace("/undangan"); })
+      .catch(() => {});
+    return () => ac.abort();
+  }, [code, invite, claim, router]);
 
   useEffect(() => {
     if (!invite) return;
@@ -65,7 +78,7 @@ function Register() {
     setBusy(true);
     setErr("");
     try {
-      const j = await apiPost<{ ok?: boolean; existing?: boolean }>(claim ? "/auth/claim-guest" : "/auth/register", { email, name, org, password: pass, invite });
+      const j = await apiPost<{ ok?: boolean; existing?: boolean }>(claim ? "/auth/claim-guest" : "/auth/register", { email, name, org, password: pass, invite, code });
       if (j && j.existing) {
         // server tidak membuat sesi baru: email sudah terdaftar
         setInfo("Akun dengan email ini sudah ada, cek email atau pakai lupa password.");
@@ -74,9 +87,11 @@ function Register() {
       }
       if (!claim) clearOrgStorage();
       resetMe();
-      router.replace("/market");
+      router.replace(claim ? "/market" : "/pilih-produk"); // akun baru mulai dari peluncur agen
       router.refresh();
     } catch (e2) {
+      // kode habis dipakai orang lain sejak dicek, atau akses undangan menyala tanpa kode
+      if (e2 instanceof ApiError && (e2.code === "invite_code_invalid" || e2.code === "invite_only")) setCodeBad(true);
       setErr(errMsg(e2, "Gagal mendaftar."));
       setBusy(false);
     }
@@ -93,6 +108,7 @@ function Register() {
         {claim && <div className="lead">Riset dan prospek dari sesi tamu ikut tersimpan. Paket jadi gratis, bisa upgrade kapan saja.</div>}
         {inviteBad && <div className="err" role="alert">Tautan undangan tidak valid atau kedaluwarsa. Kamu tetap bisa mendaftar biasa.</div>}
         <p className="lead">{invitedOrg ? `Kamu diundang ke tim "${invitedOrg}". Buat akun untuk bergabung.` : freeText}</p>
+        {code && !invitedOrg && <p className="code-chip">Kode undangan <b>{code}</b></p>}
         <div className="register-identity">
         <label>
           Nama
@@ -124,9 +140,11 @@ function Register() {
           </p>
         </div>
         <button className="btn" disabled={busy}>
-          {busy ? "Membuat akun…" : invitedOrg ? "Gabung" : "Buat akun"}
+          <span>{busy ? "Membuat akun…" : invitedOrg ? "Gabung" : "Buat akun"}</span>
+          <ArrowBox />
         </button>
         <div className="err" role="alert">{err}</div>
+        {codeBad && <p className="foot"><Link href="/undangan">Masukkan kode undangan lain</Link></p>}
         {info && <p className="ok" role="status">{info} <Link href="/forgot">Lupa password</Link></p>}
         <div className="foot">
           Sudah punya akun? <Link href={"/login" + (invite ? "?next=" + encodeURIComponent("/settings?invite=" + invite) : "")}>Masuk</Link>

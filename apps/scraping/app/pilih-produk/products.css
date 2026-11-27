@@ -1,11 +1,54 @@
-.product-chooser{min-height:100svh;background:radial-gradient(ellipse at 80% 0,#ffb02018,transparent 52%),#141414;color:#f4efe6}
-.product-chooser-inner{width:min(64rem,100% - 2.5rem);margin-inline:auto;padding-block:clamp(2rem,7vw,6rem)}
-.product-chooser h1{font-size:clamp(2.25rem,6vw,4rem);margin:2rem 0 .5rem;line-height:1.1}
-.product-chooser p{color:#c9c9c9}
-.product-chooser-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin-top:2rem;max-width:52rem}
-.product-chooser-grid article{display:flex;flex-direction:column;align-items:flex-start;padding:clamp(1.25rem,3vw,2rem);background:linear-gradient(155deg,#292929,#1c1c1c);border:1px solid #ffffff24;border-radius:1rem}
-.product-chooser-grid h2{font-size:clamp(1.35rem,2.6vw,2rem)}
-.product-chooser-grid p{margin:.65rem 0 1.5rem}
-.product-chooser-grid a{display:inline-block;margin-top:auto;padding:.7rem 1rem;border-radius:2rem;background:#ffb020;color:#141414;font-weight:700;text-decoration:none}
-.product-chooser-grid a:focus-visible{outline:2px solid #fff;outline-offset:4px}
-@media(max-width:600px){.product-chooser-grid{grid-template-columns:1fr}}
+/* Peluncur agent Raqio: terang, kartu pastel seperti CardGrid situs (apps/site/components/slices/CardGrid.tsx). */
+.product-chooser {
+  --text: #0A0A0F; --muted: #5A5A66; --good: #6C4CF1;
+  color-scheme: light; min-height: 100svh; background: #F5F5F7; color: #0A0A0F;
+}
+body:has(.product-chooser) { background: #F5F5F7; }
+.chooser-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: min(100% - 32px, 1176px); margin-inline: auto; min-height: 72px; }
+.chooser-top .brand { color: #0A0A0F; }
+.chooser-account { display: flex; align-items: center; gap: 16px; color: #5A5A66; font-size: 14px; min-width: 0; }
+.chooser-account > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chooser-account b { color: #0A0A0F; font-weight: 500; }
+.chooser-logout { flex: none; height: 40px; padding: 0 16px; border-radius: 6px; border: 1px solid color-mix(in srgb, #0A0A0F 25%, transparent); background: transparent; color: #0A0A0F; font-size: 14px; font-weight: 500; }
+.chooser-logout:hover:not(:disabled) { border-color: color-mix(in srgb, #0A0A0F 60%, transparent); }
+
+.chooser-inner { width: min(100% - 32px, 1176px); margin-inline: auto; padding: clamp(32px, 9vh, 112px) 0 80px; }
+.chooser-eyebrow { margin: 0 0 16px; font-family: ui-monospace, "Cascadia Mono", Menlo, monospace; font-size: 13px; letter-spacing: .04em; text-transform: uppercase; color: #5A5A66; }
+.product-chooser h1 { margin: 0; max-width: 16em; font-size: clamp(32px, 5vw, 56px); line-height: 1.05; font-weight: 400; letter-spacing: -.02em; text-wrap: balance; }
+.chooser-lead { margin: 16px 0 0; max-width: 36em; color: #5A5A66; font-size: 16px; line-height: 1.5; }
+
+.agent-grid { list-style: none; margin: clamp(32px, 6vh, 56px) 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.agent-grid li { display: flex; }
+.agent-card {
+  position: relative; isolation: isolate; overflow: hidden;
+  display: flex; flex-direction: column; gap: 16px; width: 100%; min-height: 400px; padding: clamp(24px, 2.6vw, 36px);
+  border-radius: 16px; background: #DCEBD5; color: #0A0A0F; text-decoration: none;
+}
+.agent-card-fill { position: absolute; inset: 0; z-index: -1; background: #CFE3C6; transform: scaleY(0); transform-origin: bottom; transition: transform .5s cubic-bezier(.16, 1, .3, 1); }
+.agent-card:hover .agent-card-fill, .agent-card:focus-visible .agent-card-fill { transform: scaleY(1); }
+.agent-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.agent-card .agent-glyph { width: 64px; height: 64px; flex: none; }
+.agent-card-product { font-family: ui-monospace, "Cascadia Mono", Menlo, monospace; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; color: color-mix(in srgb, #0A0A0F 72%, #DCEBD5); text-align: right; }
+.agent-card h2 { margin: 8px 0 0; font-size: 24px; line-height: 1.2; font-weight: 400; letter-spacing: -.01em; }
+.agent-card-body { color: color-mix(in srgb, #0A0A0F 72%, #DCEBD5); font-size: 15px; line-height: 1.5; }
+.agent-card-cta {
+  display: inline-flex; align-items: center; gap: 12px; width: fit-content; height: 40px; margin-top: auto; padding: 0 4px 0 16px;
+  border-radius: 6px; background: #F5F5F7; font-size: 14px; font-weight: 500;
+  transition: background-color .5s, color .5s;
+}
+.agent-card-cta .arrow-box { background: color-mix(in srgb, currentColor 10%, transparent); }
+.agent-card:hover .agent-card-cta, .agent-card:focus-visible .agent-card-cta { background: #0A0A0F; color: #F5F5F7; }
+.agent-card:focus-visible { outline: 2px solid #6C4CF1; outline-offset: 3px; }
+.agent-card--off { opacity: .7; }
+
+@media (max-width: 1100px) { .agent-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .agent-card { min-height: 320px; } }
+@media (max-width: 600px) {
+  .agent-grid { grid-template-columns: minmax(0, 1fr); }
+  .agent-card { min-height: 0; }
+  .chooser-account > span { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .agent-card-fill, .agent-card-cta { transition: none; } }
+
+/* Situs Raqio memakai 400 untuk judul dan teks, 500 untuk label dan tombol. Menimpa aturan 300 seluruh aplikasi (globals.css). */
+body .loginp :not(#_), body .product-chooser :not(#_), body .access-dialog :not(#_) { font-weight: 400 !important; }
+body :is(.loginp, .product-chooser, .access-dialog) :is(label, .btn, .btn *, b, .chooser-logout, .agent-card-cta, .access-field-heading a):not(#_) { font-weight: 500 !important; }

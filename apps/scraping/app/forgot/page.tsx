@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import "../login/login.css";
+import AccessLayout from "../login/AccessLayout";
+import { ArrowBox } from "@/components/agents";
 import { apiPost, errMsg } from "@/lib/api";
 
 export default function ForgotPage() {
@@ -23,7 +25,7 @@ export default function ForgotPage() {
     }
   };
   return (
-    <div className="loginp">
+    <AccessLayout aside={false}>
       <form className="box" onSubmit={submit}>
         <h1>Lupa password</h1>
         {done ? (
@@ -35,7 +37,7 @@ export default function ForgotPage() {
               Email
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" required />
             </label>
-            <button className="btn" disabled={busy}>{busy ? "Mengirim…" : "Kirim tautan"}</button>
+            <button className="btn" disabled={busy}><span>{busy ? "Mengirim…" : "Kirim tautan"}</span><ArrowBox /></button>
             <div className="err" role="alert">{err}</div>
           </>
         )}
@@ -43,6 +45,6 @@ export default function ForgotPage() {
           <Link href="/login">Kembali ke masuk</Link>
         </div>
       </form>
-    </div>
+    </AccessLayout>
   );
 }

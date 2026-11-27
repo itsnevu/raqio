@@ -1,158 +1,140 @@
-.loginp { min-height: calc(100vh - 69px); display: grid; place-items: center; padding: 24px 16px; }
-.loginp .box { width: 100%; max-width: 420px; border: 1px solid var(--line); background: var(--panel); padding: 32px 28px; }
-.loginp h1 { font-size: 34px; margin: 0 0 6px; }
-.loginp .lead { font-size: 15px; margin-bottom: 22px; }
-.loginp label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); margin-top: 14px; }
-.loginp input { display: block; width: 100%; margin-top: 6px; font: inherit; font-size: 15px; color: var(--text); background: var(--bg); border: 1px solid var(--line); padding: 11px 12px; }
-.loginp input:focus { border-color: var(--faint); }
-.loginp .btn { width: 100%; margin-top: 22px; }
-.loginp .err { color: var(--bad); font-size: 13px; margin-top: 12px; min-height: 18px; }
-.loginp .ok { margin: 0 0 8px; }
-.loginp .foot { color: var(--muted); font-size: 12px; margin-top: 18px; line-height: 1.6; } /* --faint hanya 4.35:1 di 12px, gagal WCAG AA */
-.loginp .foot code { font-family: ui-monospace, monospace; background: var(--sunk); padding: 1px 5px; }
-.loginp .foot a { color: var(--text); }
-.loginp label.chk { display: flex; gap: 8px; align-items: flex-start; text-transform: none; letter-spacing: 0; font-size: 13px; line-height: 1.5; margin-top: 16px; }
-.loginp label.chk input { width: auto; margin: 3px 0 0; }
-.loginp label.chk a { color: var(--text); }
-
-/* Authentication pages share the RAQIO graphite and amber palette. */
+/* Halaman akses Raqio (masuk, daftar, lupa, reset): terang, sama dengan halaman /demo di situs.
+   Token gelap aplikasi ditimpa lokal di .loginp supaya aturan global (.btn, input, :focus-visible) ikut terang. */
 .loginp {
-  min-height:calc(100svh - 69px);
-  padding:clamp(24px,6vw,64px) 16px;
-  background:var(--bg);
+  --bg: #F5F5F7; --panel: #F5F5F7; --sunk: #EFEFF2; --line: color-mix(in srgb, #0A0A0F 20%, transparent); --line-2: color-mix(in srgb, #0A0A0F 10%, transparent);
+  --text: #0A0A0F; --muted: #5A5A66; --faint: #6E6E7A;
+  --ink: #0A0A0F; --ink-text: #F5F5F7; --accent: #0A0A0F;
+  --good: #6C4CF1; --bad: #C8321A;
+  color-scheme: light;
+  min-height: 100svh;
+  background: var(--bg);
+  color: var(--text);
 }
-.loginp .box {
-  max-width:460px;
-  padding:clamp(22px,5vw,40px);
-  border-radius:var(--radius-card);
-  box-shadow:0 18px 70px #0006;
+body:has(.loginp) { background: #F5F5F7; }
+/* .access-shell membawa bilah atasnya sendiri; header aplikasi tidak perlu tampil di sini */
+body:has(.access-shell) header.top { display: none; }
+
+/* layar "Sebentar…" mode tamu otomatis */
+.loginp:not(.access-shell) { display: grid; place-items: center; padding: 24px 16px; }
+.loginp:not(.access-shell) .box { width: min(100%, 440px); }
+
+.access-shell { display: flex; flex-direction: column; }
+.access-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  width: min(100% - 32px, 1176px); margin-inline: auto; height: 72px;
 }
-.loginp h1 {font-size:clamp(30px,6vw,40px); margin-bottom:10px;}
-.loginp input:not([type="checkbox"]) {min-height:46px; border-radius:var(--radius-control);}
-.loginp .btn {min-height:46px; border-radius:var(--radius-control);}
-.loginp button.btn:not(.ghost) {background:#ffb020; color:#17120a;}
-.loginp button.btn:not(.ghost):hover:not(:disabled) {background:#ffc04a;}
-.loginp .box .err:empty {display:none;}
-.loginp .foot {font-size:13px;}
-.loginp .password-row {position:relative;}
-.loginp .password-row input {padding-right:8rem;}
-.loginp .password-row button {
-  position:absolute;
-  right:4px;
-  top:4px;
-  bottom:4px;
-  padding:0 10px;
-  background:transparent;
-  border:0;
-  color:var(--text);
-  font-size:13px;
-}
+.access-top .brand { color: var(--text); }
+.access-back { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; color: var(--muted); font-size: 14px; text-decoration: none; }
+.access-back:hover { color: var(--text); }
 
-.loginp .field-hint { display:block; margin-top:6px; color:var(--muted); font-size:12px; }
-
-.loginp div.chk {display:grid;grid-template-columns:auto minmax(0,1fr);align-items:start;gap:10px;margin-top:16px;}
-.loginp div.chk input {width:auto;margin:4px 0 0;accent-color:#ffb020;}
-.loginp div.chk p {margin:0;color:var(--muted);font-size:13px;line-height:1.55;}
-.loginp div.chk label {display:inline;margin:0;font:inherit;cursor:pointer;}
-.loginp div.chk a {color:var(--text);text-underline-offset:2px;}
-
-.access-shell { color:var(--text); }
 .access-split {
-  display:grid;
-  grid-template-columns:minmax(0,.85fr) minmax(0,1fr);
-  width:min(100%,960px);
-  padding:8px;
-  border:1px solid var(--line);
-  border-radius:24px;
-  background:var(--panel);
-  box-shadow:0 24px 80px #0005;
+  flex: 1;
+  display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 5fr); column-gap: clamp(32px, 8vw, 128px); align-items: start;
+  width: min(100% - 32px, 1176px); margin-inline: auto;
+  padding: clamp(24px, 7vh, 88px) 0 48px;
 }
-.access-brand {
-  display:flex;
-  flex-direction:column;
-  justify-content:flex-end;
-  padding:clamp(24px,4vw,44px);
-  border-radius:17px;
-  color:#fff4e3;
-  background:
-    radial-gradient(ellipse at 80% 12%,#644320 0%,#2e251e 48%,#191614 88%);
-  position:relative;
-  isolation:isolate;
-  overflow:hidden;
-}
-.access-contours {
-  position:absolute;
-  inset:0;
-  z-index:-1;
-  width:100%;
-  height:100%;
-  fill:none;
-  stroke:#ffd498;
-  stroke-width:1;
-  opacity:.38;
-  mask-image:linear-gradient(180deg,#000 4%,#000 38%,transparent 86%);
-}
-.access-brand .brand { color:#fff; }
-.access-brand p { font:clamp(1.2rem,2vw,1.65rem)/1.24 Georgia,serif; margin:10px 0 0; }
-.access-form { min-width:0; padding:clamp(18px,4vw,44px); }
-.access-shell .box { max-width:none; background:none; padding:0; border:0; box-shadow:none; }
-.access-back svg { flex:none; }
-.access-back { display:inline-flex; gap:8px; min-height:44px; align-items:center; color:var(--muted); margin-bottom:18px; }
-.access-field-heading { display:flex; align-items:baseline; justify-content:space-between; gap:12px; }
-.access-field-heading a,.access-shell .foot .linkish { color:var(--good); font-size:13px; }
-.access-dialog { width:min(calc(100% - 32px),440px); padding:24px; color:var(--text); background:var(--panel); border:1px solid var(--line); border-radius:18px; }
-.access-dialog::backdrop { background:#0009; }
-.access-dialog-head { display:flex; justify-content:space-between; align-items:center; gap:16px; }
-.access-dialog-head h2 { margin:0; font-size:20px; }
-.access-dialog-head button { min-width:44px; min-height:44px; text-decoration:none; }
-.access-dialog p { color:var(--muted); }
-.access-dialog a.btn { background:#ffb020; color:#17120a; }
-@media(max-width:680px) {
-  .access-split { grid-template-columns:1fr; }
-  .access-brand { padding:20px; }
+.access-split--single { grid-template-columns: minmax(0, 440px); justify-content: center; }
+.access-form { min-width: 0; }
 
-  .access-back { margin-bottom:8px; }
+/* judul dan teks: skala header3/body2 situs */
+.loginp h1 { font-size: clamp(32px, 4vw, 40px); line-height: 1.1; font-weight: 400; letter-spacing: -.01em; margin: 0 0 12px; }
+.loginp .lead { color: var(--muted); font-size: 16px; line-height: 1.5; margin: 0 0 32px; max-width: 34em; }
+
+/* field: 46px, garis 1px tinta/20, sudut 6px (geometri /demo) */
+.loginp label { display: block; font-size: 14px; font-weight: 500; color: var(--text); margin-top: 16px; }
+.loginp input:not([type="checkbox"]) {
+  display: block; width: 100%; height: 46px; margin-top: 8px; padding: 0 16px;
+  font: inherit; font-size: 15px; color: var(--text); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 6px; transition: border-color .2s;
+}
+.loginp input:not([type="checkbox"]):hover { border-color: color-mix(in srgb, #0A0A0F 35%, transparent); }
+.loginp input:not([type="checkbox"]):focus { border-color: #6C4CF1; }
+.loginp input[readonly] { color: var(--muted); }
+.loginp .field-hint { display: block; margin-top: 8px; color: var(--muted); font-size: 13px; }
+.access-field-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 16px; }
+.access-field-heading label { margin-top: 0; }
+.access-field-heading a { color: var(--muted); font-size: 14px; text-underline-offset: 3px; }
+.access-field-heading a:hover { color: var(--text); }
+.loginp .password-row { position: relative; }
+.loginp .password-row input { padding-right: 7.5rem; }
+.loginp .password-row button {
+  position: absolute; right: 4px; top: 4px; height: 38px; padding: 0 12px;
+  background: transparent; border: 0; border-radius: 4px; color: var(--muted); font-size: 14px;
+}
+.loginp .password-row button:hover { color: var(--text); background: var(--sunk); }
+.loginp .register-identity { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); column-gap: 16px; }
+
+/* tombol: tinta + kotak panah (FlatCta situs). Panah keluar ke kanan dan masuk dari kiri saat hover. */
+.loginp .btn, .access-dialog a.btn {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; height: 46px; margin-top: 24px; padding: 0 7px 0 16px;
+  background: var(--ink); color: var(--ink-text); border: 0; border-radius: 6px;
+  font-size: 15px; font-weight: 500; text-decoration: none; text-transform: none; letter-spacing: 0;
+}
+.loginp .btn:hover:not(:disabled), .access-dialog a.btn:hover { background: color-mix(in srgb, #0A0A0F 86%, #F5F5F7); }
+.loginp .btn:not(:has(.arrow-box)) { justify-content: center; padding: 0 16px; }
+.loginp .btn.ghost { margin-top: 12px; background: transparent; color: var(--text); border: 1px solid color-mix(in srgb, #0A0A0F 25%, transparent); }
+.loginp .btn.ghost:hover:not(:disabled) { background: transparent; border-color: color-mix(in srgb, #0A0A0F 60%, transparent); }
+.loginp .btn .arrow-box, .access-dialog .btn .arrow-box { background: #F5F5F7; color: #0A0A0F; }
+
+.loginp .err { color: var(--bad); font-size: 14px; margin-top: 12px; }
+.loginp .err:empty { display: none; }
+.loginp .ok { margin: 0 0 8px; padding: 12px 14px; border-radius: 6px; background: #DCEBD5; color: var(--text); font-size: 14px; line-height: 1.5; }
+.loginp .ok a { color: inherit; }
+.loginp .foot { color: var(--muted); font-size: 14px; margin-top: 24px; line-height: 1.6; }
+.loginp .foot a, .loginp .foot .linkish { color: var(--text); text-underline-offset: 3px; }
+.loginp .foot code { font-family: ui-monospace, monospace; background: var(--sunk); padding: 1px 5px; border-radius: 4px; }
+
+/* persetujuan daftar */
+.loginp div.chk { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: start; gap: 10px; margin-top: 20px; }
+.loginp div.chk input { width: 16px; height: 16px; margin: 3px 0 0; accent-color: #6C4CF1; }
+.loginp div.chk p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
+.loginp div.chk label { display: inline; margin: 0; font: inherit; color: inherit; cursor: pointer; }
+.loginp div.chk a { color: var(--text); text-underline-offset: 2px; }
+
+/* panel kanan: kartu pastel seperti panel /demo, berisi keempat agent */
+.access-panel { border-radius: 16px; background: #DCEBD5; color: #0A0A0F; padding: clamp(28px, 3.4vw, 40px); }
+.access-eyebrow { display: flex; align-items: center; gap: 8px; margin: 0; font-family: ui-monospace, "Cascadia Mono", Menlo, monospace; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: color-mix(in srgb, #0A0A0F 72%, #DCEBD5); }
+.access-eyebrow-mark { width: auto; height: 11px; flex: none; }
+.access-panel h2 { margin: 20px 0 8px; font-size: clamp(22px, 2.2vw, 26px); line-height: 1.25; font-weight: 400; letter-spacing: -.01em; text-wrap: balance; }
+.access-agents { list-style: none; margin: 16px 0 0; padding: 0; }
+.access-agents li { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 16px; padding: 16px 0; border-top: 1px solid color-mix(in srgb, #0A0A0F 12%, transparent); }
+.access-agents li:first-child { border-top: 0; }
+.access-agents .agent-glyph { width: 40px; height: 40px; }
+.access-agents b { display: block; font-weight: 500; font-size: 15px; }
+.access-agents li > span > span { display: block; margin-top: 2px; color: color-mix(in srgb, #0A0A0F 72%, #DCEBD5); font-size: 14px; line-height: 1.5; }
+.access-panel-note { margin: 16px 0 0; padding-top: 16px; border-top: 1px solid color-mix(in srgb, #0A0A0F 12%, transparent); color: color-mix(in srgb, #0A0A0F 72%, #DCEBD5); font-size: 13px; line-height: 1.5; }
+
+.access-legal { width: min(100% - 32px, 1176px); margin: 0 auto; padding: 24px 0 28px; text-align: center; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.access-legal p { margin: 0; }
+.access-legal a { color: inherit; text-underline-offset: 3px; }
+
+/* dialog daftar */
+.access-dialog { width: min(calc(100% - 32px), 440px); padding: 28px; color: #0A0A0F; background: #F5F5F7; border: 0; border-radius: 16px; box-shadow: 0 24px 80px #0a0a0f40; }
+.access-dialog::backdrop { background: #0a0a0f99; }
+.access-dialog-head { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+.access-dialog-head h2 { margin: 0; font-size: 22px; font-weight: 400; letter-spacing: -.01em; }
+.access-dialog-head button { min-width: 40px; min-height: 40px; text-decoration: none; color: #5A5A66; }
+.access-dialog p { color: #5A5A66; font-size: 15px; line-height: 1.5; }
+
+@media (max-width: 880px) {
+  .access-split { grid-template-columns: minmax(0, 1fr); }
+  .access-panel { display: none; }
+}
+@media (max-width: 480px) {
+  .access-back { font-size: 0; gap: 0; width: 40px; justify-content: center; }
+  .access-back svg { width: 18px; height: 18px; }
 }
 
-/* Compact auth screens. Let unusually short viewports and error messages expand naturally. */
-body:has(.access-shell) { min-height:100svh; display:flex; flex-direction:column; }
-.loginp.access-shell { flex:1; min-height:0; padding:16px; }
-.access-shell--market { position:relative; isolation:isolate; }
-.access-shell--market::before {
-  content:""; position:absolute; inset:0; z-index:-1; pointer-events:none; opacity:.3;
-  background:url("/login-data-grid.webp") right center / cover no-repeat;
-}
-@media(max-width:600px){.access-shell--market::before{opacity:.18;background-position:right bottom}}
-.access-stack { display:grid; grid-template-rows:1fr auto; align-items:center; align-self:stretch; width:min(100%,840px); }
-.access-legal { text-align:center; margin:clamp(16px,4vh,36px) 0 8px; color:var(--muted); font-size:12px; line-height:1.4; }
-.access-legal p { margin:0; }
-.access-legal a {color:inherit;text-underline-offset:3px;}
-.access-form { padding:clamp(16px,3vw,30px); }
-.access-back { min-height:36px; margin-bottom:10px; }
-.access-shell h1 { font-size:clamp(26px,4vw,32px); margin-bottom:6px; }
-.access-shell .lead { margin-bottom:12px; }
-.access-shell label { margin-top:9px; }
-.access-shell input:not([type="checkbox"]) { min-height:44px; margin-top:4px; padding-block:8px; }
-.access-shell .btn { min-height:44px; margin-top:12px; }
-.access-shell .foot,.access-shell div.chk { margin-top:10px; }
-@media(max-width:680px) {
-  .loginp.access-shell { padding:10px 12px; }
-  .access-brand { display:none; }
-  .access-form { padding:14px; }
-}
-@media (max-height:800px) {
-  .loginp.access-shell { padding-block:6px; }
-  .register-identity {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,8rem),1fr));gap:10px;}
-  .register-identity input {min-width:0;}
-  .access-back {margin-bottom:4px;min-height:32px;}
-  .access-shell .field-hint {margin-top:4px;}
-  .access-legal {margin:6px 0 0;}
-  .access-form {padding-block:5px;}
-  .access-shell .lead {margin-bottom:4px;}
-  .access-shell .box label:not([for="register-agreement"]) {margin-top:7px;}
-}
+/* Situs Raqio memakai 400 untuk judul dan teks, 500 untuk label dan tombol. Menimpa aturan 300 seluruh aplikasi (globals.css). */
+body .loginp :not(#_), body .product-chooser :not(#_), body .access-dialog :not(#_) { font-weight: 400 !important; }
+body :is(.loginp, .product-chooser, .access-dialog) :is(label, .btn, .btn *, b, .chooser-logout, .agent-card-cta, .access-field-heading a):not(#_) { font-weight: 500 !important; }
 
-@media (max-width:680px) and (max-height:700px) {
-  .access-split { padding:4px; }
-  .access-form { padding-block:2px; }
-}
+/* Akses lewat undangan: pesan email belum diundang (seperti Scale), input kode, dan chip kode di form daftar. */
+.loginp .invite-notice { margin-top: 16px; padding: 16px; border-radius: 8px; background: #DCEBD5; color: #0A0A0F; font-size: 14px; line-height: 1.5; }
+.loginp .invite-notice strong { display: block; font-size: 15px; }
+.loginp .invite-notice p { margin: 4px 0 10px; color: color-mix(in srgb, #0A0A0F 72%, #DCEBD5); }
+.loginp .invite-notice a { color: #0A0A0F; text-underline-offset: 3px; }
+.loginp input.invite-code-input { font-family: ui-monospace, "Cascadia Mono", Menlo, monospace; letter-spacing: .08em; text-transform: uppercase; }
+.loginp .code-chip { display: inline-flex; gap: 8px; align-items: center; margin: -16px 0 8px; padding: 6px 10px; border-radius: 6px; background: #DCEBD5; font-size: 13px; color: color-mix(in srgb, #0A0A0F 72%, #DCEBD5); }
+.loginp .code-chip b { color: #0A0A0F; font-family: ui-monospace, "Cascadia Mono", Menlo, monospace; letter-spacing: .04em; }

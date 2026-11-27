@@ -1,10 +1,12 @@
-// Aset logo yang sama dipakai di web dan aplikasi mobile.
-import Image from "next/image";
+// Logo Raqio: empat lingkaran (tiga terhubung, satu berdiri sendiri) + wordmark. Geometri sama dengan apps/site/components/ui/Logo.tsx.
 import Link from "next/link";
 
-export function BrandMark() {
+export function BrandMark({ className = "mark" }: { className?: string }) {
   return (
-    <Image className="mark" src="/brand-transparent.svg" alt="" width={32} height={32} unoptimized />
+    <svg className={className} viewBox="5 8 69 68" fill="currentColor" aria-hidden="true" focusable="false">
+      <circle cx="17" cy="42" r="11" /><circle cx="40" cy="20" r="11" /><circle cx="62" cy="42" r="11" /><circle cx="40" cy="64" r="11" />
+      <path d="M41.81 30.85Q50.01 31.99 51.15 40.19L60.19 31.15Q51.99 30.01 50.85 21.81ZM50.85 62.19Q51.99 53.99 60.19 52.85L51.15 43.81Q50.01 52.01 41.81 53.15Z" />
+    </svg>
   );
 }
 
@@ -12,7 +14,7 @@ export default function Brand({ href }: { href?: string }) {
   const inner = (
     <>
       <BrandMark />
-      <span className="word">raqio</span>
+      <span className="word">Raqio</span>
     </>
   );
   if (!href) return <span className="brand" aria-label="Raqio">{inner}</span>;
