@@ -49,3 +49,6 @@ e2e/test-results/
 
 .turbo/
 .next-verify/
+
+# Hasil crawl situs referensi desain (HTML, screenshot, frame video pihak lain; ~680 MB). Hanya untuk lokal.
+/research/
