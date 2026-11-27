@@ -130,7 +130,7 @@ class _ReportScreenState extends State<ReportScreen> {
             indicatorColor: RaqioColors.text,
             labelColor: RaqioColors.text,
             unselectedLabelColor: RaqioColors.muted,
-            labelStyle: const TextStyle(fontFamily: 'Albert Sans', fontSize: 11, letterSpacing: 0.8),
+            labelStyle: const TextStyle(fontFamily: 'Figtree', fontSize: 11, letterSpacing: 0.8),
             tabs: [
               const Tab(text: 'RINGKASAN'),
               Tab(text: 'PEMAIN ${r.all.length}'),

@@ -23,10 +23,13 @@ flutter:
   assets:
     - assets/branding/raqio-logo.png
   fonts:
-    - family: Albert Sans
+    # Figtree (SIL OFL 1.1, assets/fonts/OFL-Figtree.txt), sama dengan situs dan aplikasi web Raqio
+    - family: Figtree
       fonts:
-        - asset: assets/fonts/AlbertSans-Regular.ttf
-        - asset: assets/fonts/AlbertSans-Medium.ttf
+        - asset: assets/fonts/Figtree-Regular.ttf
+        - asset: assets/fonts/Figtree-Medium.ttf
           weight: 500
-        - asset: assets/fonts/AlbertSans-Bold.ttf
+        - asset: assets/fonts/Figtree-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Figtree-Bold.ttf
           weight: 700

@@ -15,6 +15,7 @@ class FakeServer {
   int logins = 0;
   int guests = 0;
   bool claimed = false;
+  bool inviteOnly = false; // API INVITE_ONLY: GET /auth/access melaporkan akses lewat undangan
   bool get _guestSession => seen.isNotEmpty && (seen.last.headers['Cookie'] ?? '').contains('guest1') && !claimed;
 
   http.Response _json(Object body, {int status = 200, Map<String, String>? headers}) =>
@@ -25,9 +26,19 @@ class FakeServer {
     final cookie = r.headers['Cookie'] ?? '';
     final authed = cookie.contains('raqio_session=tok123') || cookie.contains('raqio_session=guest1');
     switch ('${r.method} ${r.url.path}') {
+      case 'GET /auth/access':
+        if (!inviteOnly) break; // API lama: endpoint belum ada (404), layar masuk tetap memakai tombol tamu
+        return _json({'invite_only': true, 'guest': false, 'register': true});
+      case 'POST /auth/invite-code':
+        final c = (jsonDecode(r.body) as Map)['code'].toString().toLowerCase();
+        if (!c.contains('ab12')) return _json({'error': 'Kode tidak valid.', 'code': 'invite_code_invalid'}, status: 404);
+        return _json({'ok': true, 'code': 'RAQIO-AB12-CD34-EF56'});
       case 'POST /auth/login':
         logins++;
         final b = jsonDecode(r.body) as Map;
+        if (inviteOnly && b['email'] == 'baru@test.id') {
+          return _json({'error': 'Akun Raqio saat ini hanya lewat undangan.', 'code': 'invite_only'}, status: 403);
+        }
         if (b['password'] != 'rahasia123') return _json({'error': 'Email atau password salah.'}, status: 401);
         return _json({'ok': true}, headers: {'set-cookie': 'raqio_session=tok123; Path=/; HttpOnly; Max-Age=604800'});
       case 'POST /auth/guest':
@@ -151,5 +162,31 @@ void main() {
     expect(server.claimed, isTrue);
     expect(api.lastMe?.guest, isFalse);
     expect(find.textContaining('Mode tamu'), findsNothing, reason: 'bilah tamu hilang setelah akun tersimpan');
+  });
+
+  testWidgets('akses lewat undangan: email asing dapat pesan, kode membuka form daftar', (tester) async {
+    server.inviteOnly = true;
+    await tester.pumpWidget(RaqioApp(api: api));
+    await tester.pumpAndSettle();
+    expect(find.text('PAKAI KODE UNDANGAN'), findsOneWidget);
+    expect(find.text('COBA TANPA DAFTAR'), findsNothing);
+    await tester.enterText(find.byType(TextField).at(0), 'baru@test.id');
+    await tester.enterText(find.byType(TextField).at(1), 'apa-saja-123');
+    await tester.ensureVisible(find.text('MASUK'));
+    await tester.tap(find.text('MASUK'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('invite-notice')), findsOneWidget);
+    await tester.ensureVisible(find.text('PAKAI KODE UNDANGAN'));
+    await tester.tap(find.text('PAKAI KODE UNDANGAN'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('invite-code')), 'salah');
+    await tester.tap(find.text('LANJUT'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('tidak valid'), findsOneWidget);
+    await tester.enterText(find.byKey(const Key('invite-code')), 'raqio ab12 cd34 ef56');
+    await tester.tap(find.text('LANJUT'));
+    await tester.pumpAndSettle();
+    final code = tester.widget<TextField>(find.byKey(const Key('register-code')));
+    expect(code.controller!.text, 'RAQIO-AB12-CD34-EF56');
   });
 }

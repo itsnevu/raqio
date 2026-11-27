@@ -13,7 +13,7 @@ void main() {
     await tester.pump();
     expect(find.byType(SplashScreen), findsOneWidget);
     expect(find.byType(RaqioMark), findsOneWidget);
-    expect(find.text('raqio'), findsOneWidget);
+    expect(find.text('Raqio'), findsOneWidget);
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(SplashScreen), findsOneWidget, reason: 'belum lewat durasi minimum');
     await tester.pump(const Duration(seconds: 2));

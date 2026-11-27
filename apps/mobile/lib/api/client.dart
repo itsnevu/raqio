@@ -142,8 +142,26 @@ class ApiClient extends ChangeNotifier {
 
   Future<void> resendVerify() => post('/auth/resend-verify');
 
-  Future<void> register({required String email, required String password, required String name, String org = ''}) =>
-      post('/auth/register', {'email': email, 'password': password, 'name': name, 'org': org});
+  /// [code]: kode undangan akses awal (wajib saat API INVITE_ONLY menyala).
+  Future<void> register({required String email, required String password, required String name, String org = '', String code = ''}) =>
+      post('/auth/register', {'email': email, 'password': password, 'name': name, 'org': org, if (code.isNotEmpty) 'code': code});
+
+  /// Kebijakan akses API: true bila pendaftaran hanya lewat kode undangan. Gagal dibaca (API lama) = false,
+  /// jadi layar masuk kembali ke perilaku lama (tombol tamu).
+  Future<bool> inviteOnly() async {
+    try {
+      final j = await get('/auth/access');
+      return j is Map && j['invite_only'] == true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Cek kode undangan tanpa memakainya. Mengembalikan bentuk baku (RAQIO-XXXX-XXXX-XXXX).
+  Future<String> checkInviteCode(String code) async {
+    final j = await post('/auth/invite-code', {'code': code});
+    return (j is Map ? j['code'] : null)?.toString() ?? code.trim().toUpperCase();
+  }
 
   Future<void> logout() async {
     try {
