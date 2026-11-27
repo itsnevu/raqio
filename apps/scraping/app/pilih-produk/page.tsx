@@ -5,7 +5,6 @@ import {redirect} from "next/navigation";
 import Brand from "@/components/Brand";
 import {AGENTS, AgentGlyph, ArrowBox, type Agent} from "@/components/agents";
 import {COOKIE} from "@/lib/auth";
-import {safeHttpUrl} from "@/lib/safe";
 import LogoutButton from "./LogoutButton";
 import "./products.css";
 
@@ -13,9 +12,21 @@ export const metadata:Metadata={title:"Pilih agen | Raqio"};
 
 const login="/login?next=%2Fpilih-produk";
 
-type Profile={guest?:boolean;email?:string;org_id?:string;orgs?:{ID:string;Name:string}[]};
+type Product="scraping"|"wasuite";
+type Profile={guest?:boolean;email?:string;org_id?:string;orgs?:{ID:string;Name:string}[];products?:Product[]};
 
-export default async function ProductChooser(){
+// Satu akun Raqio, produk per org: Research/SEO/Marketing ada di Competitor Scraping, Customer Service di WA-Suite.
+const productOf=(a:Agent):Product=>a.key==="cs"?"wasuite":"scraping";
+
+// pesan dari /go/<produk> (apps/api/sso.go) saat produk tidak bisa dibuka
+const ERRORS:Record<string,string>={
+  verify_required:"Verifikasi email akun Raqio dulu untuk membuka WA-Suite. Cek kotak masuk email Anda, atau kirim ulang dari banner di aplikasi.",
+  product_required:"Akun ini belum memiliki produk tersebut. Minta akses ke tim Raqio.",
+  account_required:"Masuk dengan akun Raqio (bukan sesi tamu) untuk membuka WA-Suite.",
+  unavailable:"WA-Suite sedang tidak bisa dihubungi. Coba lagi sebentar lagi.",
+};
+
+export default async function ProductChooser({searchParams}:{searchParams:Promise<{error?:string}>}){
   const session=(await cookies()).get(COOKIE);
   if(!session)redirect(login);
 
@@ -29,12 +40,20 @@ export default async function ProductChooser(){
   const profile:Profile=await response.json();
   if(profile.guest)redirect("/market"); // sesi tamu hanya untuk mencoba riset; WA-Suite butuh akun terverifikasi
 
-  const waSuite=safeHttpUrl(process.env.WASUITE_APP_URL??process.env.NEXT_PUBLIC_WASUITE_APP_URL??
-    (process.env.NODE_ENV==="development"?"http://localhost:3001":undefined));
+  const owned=new Set(profile.products??[]);
   const org=profile.orgs?.find(o=>o.ID===profile.org_id)?.Name;
+  const {error}=await searchParams;
+  const notice=error?ERRORS[error]??ERRORS.unavailable:"";
 
   const card=(a:Agent)=>{
+    const product=productOf(a);
     const top=<span className="agent-card-top"><AgentGlyph agent={a}/><span className="agent-card-product">{a.product}</span></span>;
+    if(!owned.has(product))return <div className="agent-card agent-card--locked" aria-disabled="true">
+      {top}
+      <h2>{a.name}</h2>
+      <span className="agent-card-body">{a.body}</span>
+      <span className="agent-card-lock">Belum aktif untuk akun ini</span>
+    </div>;
     const inner=<>
       <span className="agent-card-fill" aria-hidden="true"/>
       {top}
@@ -42,13 +61,11 @@ export default async function ProductChooser(){
       <span className="agent-card-body">{a.body}</span>
       <span className="agent-card-cta">Buka<ArrowBox/></span>
     </>;
-    if(a.path)return <Link className="agent-card" href={a.path}>{inner}</Link>;
-    if(waSuite)return <a className="agent-card" href={waSuite}>{inner}</a>;
-    return <div className="agent-card agent-card--off">
-      {top}
-      <h2>{a.name}</h2>
-      <span className="agent-card-body">Hubungi admin untuk akses WA-Suite.</span>
-    </div>;
+    // produk di host lain dibuka lewat tiket SSO sekali pakai (app/go/[product]/route.ts). Sengaja <a>, bukan
+    // <Link>: prefetch Link akan menerbitkan tiket tanpa diklik.
+    // eslint-disable-next-line @next/next/no-html-link-for-pages
+    if(product==="wasuite")return <a className="agent-card" href="/go/wasuite">{inner}</a>;
+    return <Link className="agent-card" href={a.path??"/market"}>{inner}</Link>;
   };
 
   return <main className="product-chooser">
@@ -62,7 +79,8 @@ export default async function ProductChooser(){
     <section className="chooser-inner" aria-labelledby="chooser-title">
       <p className="chooser-eyebrow">Satu akun Raqio</p>
       <h1 id="chooser-title">Pilih agen yang ingin Anda pakai.</h1>
-      <p className="chooser-lead">Keempat agen AI memakai satu akun yang sama. Pindah kapan saja tanpa login ulang.</p>
+      <p className="chooser-lead">Satu akun Raqio untuk semua produk yang dimiliki organisasi Anda. Pindah kapan saja tanpa login ulang.</p>
+      {notice&&<p className="chooser-notice" role="alert">{notice}</p>}
       <ul className="agent-grid">
         {AGENTS.map(a=><li key={a.key}>{card(a)}</li>)}
       </ul>

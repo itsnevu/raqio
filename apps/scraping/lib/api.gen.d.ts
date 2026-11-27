@@ -3004,6 +3004,8 @@ export interface components {
             verified: boolean;
             /** @description org tamu (plan guest) */
             guest: boolean;
+            /** @description hak produk org aktif (satu akun Raqio, produk per org). scraping = Competitor Scraping, wasuite = WA-Suite */
+            products?: ("scraping" | "wasuite")[];
             /**
              * Format: date-time
              * @description masa paket berbayar berakhir; null untuk free/guest

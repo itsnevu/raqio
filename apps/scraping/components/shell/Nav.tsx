@@ -10,7 +10,6 @@ import { loadDueCount } from "@/lib/cache";
 import { apiPost } from "@/lib/api";
 import { getMe, resetMe } from "@/lib/me";
 import { isAuthPage, isBarePage } from "@/lib/routes";
-import { safeHttpUrl } from "@/lib/safe";
 import { clearOrgStorage, lsGetGlobal } from "@/lib/storage";
 import type { Me } from "@/lib/api";
 import VerifyBanner from "./VerifyBanner";
@@ -24,8 +23,9 @@ const NAV: [string, string, string][] = [
   ["/chat", "Asisten", "M5 5h14v11H9l-4 4V5Zm4 5h6"],
 ];
 const MORE: [string, string, string][] = [["/settings", "Pengaturan", "Tim, kuota, dan akun"]];
-// WA-Suite (Customer Service Agent) memakai sesi Raqio yang sama (SSO). Tautan hanya http(s).
-const WASUITE = safeHttpUrl(process.env.NEXT_PUBLIC_WASUITE_APP_URL ?? (process.env.NODE_ENV === "development" ? "http://localhost:3001" : undefined));
+// Halaman fitur Competitor Scraping. Org tanpa produk itu (mis. hanya WA-Suite) diarahkan ke peluncur agen;
+// API juga menolak endpoint-nya (403 product_required).
+const SCRAPING_PAGES = ["/market", "/prospects", "/watch", "/campaigns", "/chat"];
 
 export default function Nav() {
   const here = usePathname();
@@ -41,7 +41,13 @@ export default function Nav() {
     if (isLogin || bare) return;
     let alive = true;
     getMe()
-      .then((m) => alive && setMe(m))
+      .then((m) => {
+        if (!alive) return;
+        setMe(m);
+        if (m?.products && !m.products.includes("scraping") && SCRAPING_PAGES.some((p) => here === p || here.startsWith(p + "/"))) {
+          router.replace("/pilih-produk");
+        }
+      })
       .catch(() => {});
     loadDueCount()
       .then((n) => alive && setDue(n))
@@ -55,7 +61,7 @@ export default function Nav() {
       alive = false;
       document.removeEventListener("click", close);
     };
-  }, [isLogin, bare, here]);
+  }, [isLogin, bare, here, router]);
 
   if (bare) return null;
   if (isLogin)
@@ -93,8 +99,11 @@ export default function Nav() {
             <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></svg>
             Semua agen
           </Link>
-          {WASUITE && !me?.guest && (
-            <a href={WASUITE}>
+          {me?.products?.includes("wasuite") && (
+            /* WA-Suite dibuka lewat tiket SSO sekali pakai (app/go/[product]/route.ts), bukan cookie bersama.
+               Sengaja <a>, bukan <Link>: prefetch Link akan menerbitkan tiket tanpa diklik. */
+            // eslint-disable-next-line @next/next/no-html-link-for-pages
+            <a href="/go/wasuite">
               <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 5h14v11H9l-4 4V5Zm4 5h6"/></svg>
               Customer Service
               <span className="nav-ext" aria-hidden="true">↗</span>
