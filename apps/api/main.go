@@ -59,6 +59,9 @@ func main() {
 	if len(os.Args) > 1 && os.Args[1] == "invites" { // CLI admin kode undangan: go run . invites create -n 5
 		os.Exit(invitesCLI(os.Args[2:]))
 	}
+	if len(os.Args) > 1 && os.Args[1] == "products" { // CLI hak produk per org: go run . products grant EMAIL wasuite
+		os.Exit(productsCLI(os.Args[2:]))
+	}
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	// ctx dibatalkan saat SIGINT/SIGTERM: scheduler berhenti, server shutdown rapi (compose stop, deploy ulang).
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -266,7 +269,12 @@ func (app *App) router() *http.ServeMux {
 	// butuh sesi
 	auth := app.requireSession
 	verified := app.requireVerified
+	// fitur Competitor Scraping hanya untuk org yang memegang produk itu (products.go)
+	scr := func(h http.HandlerFunc) http.HandlerFunc { return app.requireProduct(productScraping, h) }
 	mux.Handle("GET /auth/me", auth(app.me))
+	// SSO antar-produk (sso.go): tiket sekali pakai untuk produk di host lain, ditukar server-ke-server
+	mux.Handle("POST /auth/sso/ticket", auth(app.issueSSOTicket))
+	mux.HandleFunc("POST /auth/sso/redeem", app.redeemSSOTicket) // Authorization: Bearer SSO_SECRET, bukan dari browser
 	mux.Handle("POST /auth/switch-org", auth(app.switchOrg))
 	mux.Handle("POST /auth/delete-account", auth(app.deleteAccount))
 	mux.Handle("GET /org", auth(app.orgInfo))
@@ -288,32 +296,32 @@ func (app *App) router() *http.ServeMux {
 	mux.Handle("POST /org/settings", auth(app.requireRole("admin",
 		app.requireVerifiedFields(app.putSettings, "notify_email", "telegram_chat", "webhook_url", "webhook_secret"))))
 
-	mux.Handle("GET /market/reports", auth(app.listReports))
-	mux.Handle("GET /market/report", auth(app.getReport))
+	mux.Handle("GET /market/reports", auth(scr(app.listReports)))
+	mux.Handle("GET /market/report", auth(scr(app.getReport)))
 	// endpoint yang membuat job dibatasi per org, bukan hanya per IP
 	jobLimit := newLimiter(envInt("JOB_RATE_LIMIT_PER_MINUTE", 10), envInt("JOB_RATE_LIMIT_BURST", 5))
 	analyst := func(h http.HandlerFunc) http.HandlerFunc { return app.requireRole("analyst", h) }
-	mux.Handle("POST /market/run", auth(analyst(app.rateLimitOrg(jobLimit, app.runMarket))))
-	mux.Handle("POST /market/compare/run", auth(analyst(app.rateLimitOrg(jobLimit, app.runCompare))))
-	mux.Handle("GET /market/compare", auth(app.getCompare))
-	mux.Handle("GET /market/watches", auth(app.listWatches))
-	mux.Handle("POST /market/watch", auth(analyst(app.setWatch)))
-	mux.Handle("POST /market/lead", auth(analyst(app.setLead)))
-	mux.Handle("POST /market/detail", auth(analyst(app.rateLimitOrg(jobLimit, app.detail))))
-	mux.Handle("GET /prospects/data", auth(app.prospects))
-	mux.Handle("GET /watch/data", auth(app.watchData))
+	mux.Handle("POST /market/run", auth(scr(analyst(app.rateLimitOrg(jobLimit, app.runMarket)))))
+	mux.Handle("POST /market/compare/run", auth(scr(analyst(app.rateLimitOrg(jobLimit, app.runCompare)))))
+	mux.Handle("GET /market/compare", auth(scr(app.getCompare)))
+	mux.Handle("GET /market/watches", auth(scr(app.listWatches)))
+	mux.Handle("POST /market/watch", auth(scr(analyst(app.setWatch))))
+	mux.Handle("POST /market/lead", auth(scr(analyst(app.setLead))))
+	mux.Handle("POST /market/detail", auth(scr(analyst(app.rateLimitOrg(jobLimit, app.detail)))))
+	mux.Handle("GET /prospects/data", auth(scr(app.prospects)))
+	mux.Handle("GET /watch/data", auth(scr(app.watchData)))
 	// kampanye outreach (turn research into client)
-	mux.Handle("GET /campaigns", auth(app.listCampaigns))
-	mux.Handle("POST /campaigns", auth(analyst(app.createCampaign)))
-	mux.Handle("POST /campaigns/preview", auth(app.previewCampaign))
-	mux.Handle("GET /campaigns/outbox", auth(app.campaignOutbox)) // semua kiriman lintas kampanye
-	mux.Handle("GET /campaigns/{id}", auth(app.getCampaign))
-	mux.Handle("POST /campaigns/{id}/start", auth(analyst(app.startCampaign)))
-	mux.Handle("POST /campaigns/{id}/pause", auth(analyst(app.pauseCampaign)))
-	mux.Handle("GET /campaigns/{id}/next", auth(app.nextRecipient))
-	mux.Handle("POST /campaigns/{id}/mark", auth(analyst(app.markRecipient)))
-	mux.Handle("GET /org/sender", auth(app.getSender))
-	mux.Handle("POST /org/sender", auth(app.requireRole("admin", app.putSender)))
+	mux.Handle("GET /campaigns", auth(scr(app.listCampaigns)))
+	mux.Handle("POST /campaigns", auth(scr(analyst(app.createCampaign))))
+	mux.Handle("POST /campaigns/preview", auth(scr(app.previewCampaign)))
+	mux.Handle("GET /campaigns/outbox", auth(scr(app.campaignOutbox))) // semua kiriman lintas kampanye
+	mux.Handle("GET /campaigns/{id}", auth(scr(app.getCampaign)))
+	mux.Handle("POST /campaigns/{id}/start", auth(scr(analyst(app.startCampaign))))
+	mux.Handle("POST /campaigns/{id}/pause", auth(scr(analyst(app.pauseCampaign))))
+	mux.Handle("GET /campaigns/{id}/next", auth(scr(app.nextRecipient)))
+	mux.Handle("POST /campaigns/{id}/mark", auth(scr(analyst(app.markRecipient))))
+	mux.Handle("GET /org/sender", auth(scr(app.getSender)))
+	mux.Handle("POST /org/sender", auth(scr(app.requireRole("admin", app.putSender))))
 	mux.HandleFunc("GET /u/{token}", app.unsubscribe)
 	mux.HandleFunc("GET /audit/{token}", app.auditPublic)
 	mux.HandleFunc("GET /logo/{key}", app.logoImage)
@@ -323,28 +331,28 @@ func (app *App) router() *http.ServeMux {
 	mux.HandleFunc("POST /rank/report", app.rankReport) // laporan "data keliru" dari halaman publik, dibatasi per IP
 	mux.HandleFunc("GET /badge/{industry}/{area}/{key}", app.badgeSVG)
 	mux.HandleFunc("GET /stats", app.statsPublic) // angka total data terkumpul (publik, cache 60 detik)
-	mux.Handle("GET /watch/alerts", auth(app.listAlerts))
-	mux.Handle("POST /watch/alerts/read", auth(app.readAlerts))
-	mux.Handle("GET /market/suggest", auth(app.suggest))
+	mux.Handle("GET /watch/alerts", auth(scr(app.listAlerts)))
+	mux.Handle("POST /watch/alerts/read", auth(scr(app.readAlerts)))
+	mux.Handle("GET /market/suggest", auth(scr(app.suggest)))
 	mux.Handle("POST /org/webhook/test", auth(app.requireRole("admin", app.testWebhook)))
-	mux.Handle("GET /log", auth(app.jobLog))
-	mux.Handle("GET /log/stream", auth(app.jobLogStreamV2)) // delta dari job_logs, maksimal sseMaxPerOrg stream per org
-	mux.Handle("POST /stop", auth(analyst(app.stopJob)))
-	mux.Handle("GET /jobs", auth(app.listJobs))
+	mux.Handle("GET /log", auth(scr(app.jobLog)))
+	mux.Handle("GET /log/stream", auth(scr(app.jobLogStreamV2))) // delta dari job_logs, maksimal sseMaxPerOrg stream per org
+	mux.Handle("POST /stop", auth(scr(analyst(app.stopJob))))
+	mux.Handle("GET /jobs", auth(scr(app.listJobs)))
 
 	// fitur IG lewat job worker; wajib login dan minimal analyst (memakai kuota cek kontak)
-	mux.Handle("GET /business", auth(app.igProfile))
-	mux.Handle("POST /run", auth(analyst(app.rateLimitOrg(jobLimit, app.igRun))))
+	mux.Handle("GET /business", auth(scr(app.igProfile)))
+	mux.Handle("POST /run", auth(scr(analyst(app.rateLimitOrg(jobLimit, app.igRun)))))
 
 	// asisten (chat agent) lewat job worker kind "chat" dengan kuota chat per org (chat.go). Tamu boleh.
-	mux.Handle("POST /chat/sid", auth(analyst(app.chatNewSession)))
-	mux.Handle("POST /chat", auth(analyst(app.rateLimitOrg(jobLimit, app.chatSend))))
-	mux.Handle("GET /chat/poll", auth(app.chatPoll))
-	mux.Handle("POST /chat/stop", auth(analyst(app.chatStop)))
-	mux.Handle("GET /chat/sessions", auth(app.chatSessions))
-	mux.Handle("GET /chat/messages", auth(app.chatMessages))
-	mux.Handle("POST /chat/sessions/delete", auth(analyst(app.chatDeleteSession)))
-	mux.Handle("GET /chat/suggestions", auth(analyst(app.chatSuggestions)))
+	mux.Handle("POST /chat/sid", auth(scr(analyst(app.chatNewSession))))
+	mux.Handle("POST /chat", auth(scr(analyst(app.rateLimitOrg(jobLimit, app.chatSend)))))
+	mux.Handle("GET /chat/poll", auth(scr(app.chatPoll)))
+	mux.Handle("POST /chat/stop", auth(scr(analyst(app.chatStop))))
+	mux.Handle("GET /chat/sessions", auth(scr(app.chatSessions)))
+	mux.Handle("GET /chat/messages", auth(scr(app.chatMessages)))
+	mux.Handle("POST /chat/sessions/delete", auth(scr(analyst(app.chatDeleteSession))))
+	mux.Handle("GET /chat/suggestions", auth(scr(analyst(app.chatSuggestions))))
 
 	return mux
 }

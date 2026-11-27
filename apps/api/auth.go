@@ -405,8 +405,11 @@ func (a *App) register(w http.ResponseWriter, r *http.Request) {
 		errJSON(w, 500, "db")
 		return
 	}
-	if codeHash != "" { // gagal di sini membatalkan seluruh pendaftaran (defer Rollback), jatah kode tidak berkurang
-		if err := redeemInviteCode(ctx, tx, codeHash, uid); err != nil {
+	products := []string{productScraping} // org baru tanpa kode (INVITE_ONLY=0) mendapat Competitor Scraping seperti dulu
+	if codeHash != "" {                   // gagal di sini membatalkan seluruh pendaftaran (defer Rollback), jatah kode tidak berkurang
+		p, err := redeemInviteCode(ctx, tx, codeHash, uid)
+		products = p
+		if err != nil {
 			if errors.Is(err, errInviteCodeUsed) {
 				errCode(w, 403, "invite_code_invalid", msgInviteCodeInvalid)
 				return
@@ -472,6 +475,12 @@ func (a *App) register(w http.ResponseWriter, r *http.Request) {
 				errJSON(w, 500, "db")
 				return
 			}
+		}
+		// produk org baru: dari kode undangan, atau Competitor Scraping bila daftar terbuka. Undangan tim mewarisi org.
+		if err := grantProducts(ctx, tx, oid, products); err != nil {
+			slog.Error("register produk", "err", err)
+			errJSON(w, 500, "db")
+			return
 		}
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -585,7 +594,8 @@ func (a *App) me(w http.ResponseWriter, r *http.Request) {
 	var planUntil *time.Time
 	a.db.QueryRow(r.Context(), `SELECT plan_until FROM orgs WHERE id=$1`, s.OrgID).Scan(&planUntil)
 	writeJSON(w, 200, map[string]any{"email": s.Email, "org_id": s.OrgID, "role": s.Role, "plan": s.Plan, "orgs": orgs,
-		"limits": planLimits(s.Plan), "verified": s.Verified || s.Guest, "guest": s.Guest, "plan_until": planUntil})
+		"limits": planLimits(s.Plan), "verified": s.Verified || s.Guest, "guest": s.Guest, "plan_until": planUntil,
+		"products": a.orgProducts(r.Context(), s.OrgID)}) // hak produk org aktif: scraping, wasuite (products.go)
 }
 
 func (a *App) switchOrg(w http.ResponseWriter, r *http.Request) {

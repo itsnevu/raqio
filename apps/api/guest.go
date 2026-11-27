@@ -84,6 +84,10 @@ func (a *App) guest(w http.ResponseWriter, r *http.Request) {
 		errJSON(w, 500, "db")
 		return
 	}
+	if err := grantProducts(ctx, tx, oid, []string{productScraping}); err != nil { // tamu hanya mencoba riset
+		errJSON(w, 500, "db")
+		return
+	}
 	if err := tx.Commit(ctx); err != nil {
 		errJSON(w, 500, "db")
 		return

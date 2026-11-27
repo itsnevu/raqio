@@ -149,18 +149,20 @@ func formatInviteCore(n string) string {
 
 var errInviteCodeUsed = errors.New("kode undangan tidak bisa dipakai")
 
-// redeemInviteCode memakai satu jatah kode di dalam transaksi pendaftaran. Kode habis/kedaluwarsa/dimatikan →
-// errInviteCodeUsed (transaksi di-rollback pemanggil, jatah tidak berkurang).
-func redeemInviteCode(ctx context.Context, tx pgx.Tx, codeHash, userID string) error {
-	tag, err := tx.Exec(ctx, `UPDATE invite_codes SET uses=uses+1 WHERE code_hash=$1 AND `+inviteCodeUsable, codeHash)
-	if err != nil {
-		return err
+// redeemInviteCode memakai satu jatah kode di dalam transaksi pendaftaran dan mengembalikan produk yang dibawa
+// kode itu (diberikan ke org baru). Kode habis/kedaluwarsa/dimatikan → errInviteCodeUsed (transaksi di-rollback
+// pemanggil, jatah tidak berkurang).
+func redeemInviteCode(ctx context.Context, tx pgx.Tx, codeHash, userID string) ([]string, error) {
+	var products []string
+	err := tx.QueryRow(ctx, `UPDATE invite_codes SET uses=uses+1 WHERE code_hash=$1 AND `+inviteCodeUsable+` RETURNING products`, codeHash).Scan(&products)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, errInviteCodeUsed
 	}
-	if tag.RowsAffected() == 0 {
-		return errInviteCodeUsed
+	if err != nil {
+		return nil, err
 	}
 	_, err = tx.Exec(ctx, `INSERT INTO invite_code_redemptions (code_hash, user_id) VALUES ($1,$2)`, codeHash, userID)
-	return err
+	return products, err
 }
 
 // ---------- CLI admin ----------
@@ -171,7 +173,9 @@ const devDSN = "postgres://raqio:raqio@127.0.0.1:5433/raqio?sslmode=disable"
 func invitesCLI(args []string) int {
 	usage := func() int {
 		fmt.Fprintln(os.Stderr, `pakai:
-  invites create [-n 5] [-uses 1] [-days 30] [-label teks]   buat kode baru (kode hanya tampil sekali)
+  invites create [-n 5] [-uses 1] [-days 30] [-label teks] [-products scraping,wasuite]
+                                                            buat kode baru (kode hanya tampil sekali);
+                                                            -products = produk yang didapat org pemakai kode
   invites list                                              daftar kode: hint, label, terpakai, kedaluwarsa
   invites stats                                             jumlah email yang mencoba masuk tanpa undangan
   invites disable KODE                                      matikan kode`)
@@ -205,20 +209,26 @@ func invitesCLI(args []string) int {
 		uses := fs.Int("uses", 1, "berapa akun per kode")
 		days := fs.Int("days", 30, "masa berlaku dalam hari (0 = tanpa batas)")
 		label := fs.String("label", "", "catatan, mis. nama penerima atau kanal")
+		productsFlag := fs.String("products", productScraping, "produk untuk org pemakai kode: scraping, wasuite, atau keduanya")
 		if err := fs.Parse(args[1:]); err != nil || *n < 1 || *n > 500 || *uses < 1 || *days < 0 {
 			return usage()
+		}
+		products := parseProducts(*productsFlag)
+		if len(products) == 0 {
+			fmt.Fprintln(os.Stderr, "-products tidak valid: pakai scraping, wasuite, atau scraping,wasuite")
+			return 2
 		}
 		var exp *time.Time
 		if *days > 0 {
 			t := time.Now().Add(time.Duration(*days) * 24 * time.Hour)
 			exp = &t
 		}
-		fmt.Fprintln(out, "KODE\tPEMAKAIAN\tBERLAKU SAMPAI\tLABEL")
+		fmt.Fprintln(out, "KODE\tPEMAKAIAN\tBERLAKU SAMPAI\tPRODUK\tLABEL")
 		for i := 0; i < *n; i++ {
 			code := newInviteCode()
 			core := normalizeInviteCode(code)
-			if _, err := pool.Exec(ctx, `INSERT INTO invite_codes (code_hash, hint, label, max_uses, expires_at) VALUES ($1,$2,$3,$4,$5)`,
-				inviteCodeHash(code), core[len(core)-4:], trunc(*label, 80), *uses, exp); err != nil {
+			if _, err := pool.Exec(ctx, `INSERT INTO invite_codes (code_hash, hint, label, max_uses, expires_at, products) VALUES ($1,$2,$3,$4,$5,$6)`,
+				inviteCodeHash(code), core[len(core)-4:], trunc(*label, 80), *uses, exp, products); err != nil {
 				fmt.Fprintln(os.Stderr, "simpan kode:", err)
 				return 1
 			}
@@ -226,22 +236,22 @@ func invitesCLI(args []string) int {
 			if exp != nil {
 				until = exp.Format("2006-01-02")
 			}
-			fmt.Fprintf(out, "%s\t%d akun\t%s\t%s\n", code, *uses, until, *label)
+			fmt.Fprintf(out, "%s\t%d akun\t%s\t%s\t%s\n", code, *uses, until, strings.Join(products, ","), *label)
 		}
 	case "list":
-		rows, err := pool.Query(ctx, `SELECT hint, label, uses, max_uses, expires_at, disabled_at, created_at FROM invite_codes ORDER BY created_at`)
+		rows, err := pool.Query(ctx, `SELECT hint, label, uses, max_uses, expires_at, disabled_at, created_at, array_to_string(products, ',') FROM invite_codes ORDER BY created_at`)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "db:", err)
 			return 1
 		}
 		defer rows.Close()
-		fmt.Fprintln(out, "HINT\tLABEL\tTERPAKAI\tBERLAKU SAMPAI\tSTATUS\tDIBUAT")
+		fmt.Fprintln(out, "HINT\tLABEL\tPRODUK\tTERPAKAI\tBERLAKU SAMPAI\tSTATUS\tDIBUAT")
 		for rows.Next() {
-			var hint, label string
+			var hint, label, prods string
 			var used, max int
 			var exp, dis *time.Time
 			var created time.Time
-			if err := rows.Scan(&hint, &label, &used, &max, &exp, &dis, &created); err != nil {
+			if err := rows.Scan(&hint, &label, &used, &max, &exp, &dis, &created, &prods); err != nil {
 				fmt.Fprintln(os.Stderr, "db:", err)
 				return 1
 			}
@@ -258,7 +268,7 @@ func invitesCLI(args []string) int {
 			if dis != nil {
 				status = "dimatikan"
 			}
-			fmt.Fprintf(out, "…%s\t%s\t%d/%d\t%s\t%s\t%s\n", hint, label, used, max, until, status, created.Format("2006-01-02"))
+			fmt.Fprintf(out, "…%s\t%s\t%s\t%d/%d\t%s\t%s\t%s\n", hint, label, prods, used, max, until, status, created.Format("2006-01-02"))
 		}
 	case "stats":
 		var people, attempts, week int

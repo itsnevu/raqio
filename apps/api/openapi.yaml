@@ -82,6 +82,10 @@ components:
         plan: { type: string, enum: [free, pro, team, guest] }
         verified: { type: boolean, description: email terverifikasi (tamu dianggap terverifikasi) }
         guest: { type: boolean, description: org tamu (plan guest), dihapus otomatis setelah GUEST_TTL }
+        products:
+          type: array
+          description: hak produk org aktif (satu akun Raqio, produk per org). scraping = Competitor Scraping, wasuite = WA-Suite
+          items: { type: string, enum: [scraping, wasuite] }
         plan_until: { type: string, format: date-time, nullable: true, description: masa paket berbayar berakhir; null untuk free/guest }
         limits: { $ref: "#/components/schemas/Limits" }
         orgs:
