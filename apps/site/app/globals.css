@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+/* ── Raqio tokens (palette from the brief; roles mapped from scale.com, see PLAN.md §1) ── */
+:root {
+  --ink: #0a0a0f; --surface: #111119; --surface-2: #181822; --line: #242430;
+  --fg: #f5f5f7; --fg-muted: #9a9aa8; --light: #efeff2;
+  --accent-primary: #6c4cf1; --accent-2: #ff6b4a; --accent-3: #22d3a6; --accent-4: #5b8def; --highlight: #a78bfa;
+  /* derived neutral for muted text on light surfaces: --fg-muted on --light is 2.42:1 and fails */
+  --ink-muted: color-mix(in srgb, var(--ink) 72%, var(--light));
+  /* cards only: soft pastel green (coffee-house feel). --ink on it 15.9:1, --ink-muted 6.9:1 */
+  --card: #dcebd5; --card-2: #cfe3c6;
+
+  --gutter: 1.5rem; --col-gap: .5rem; --page-max: 2048px;
+  --ease-expo: cubic-bezier(.16,1,.3,1); --ease-io: cubic-bezier(.65,0,.35,1); --ease-tw: cubic-bezier(.4,0,.2,1);
+
+  /* header theme is set from JS (useSectionTheme) */
+  --nav-bg: var(--fg); --nav-text: var(--ink);
+}
+
+@theme inline {
+  --color-ink: var(--ink); --color-surface: var(--surface); --color-surface-2: var(--surface-2); --color-line: var(--line);
+  --color-fg: var(--fg); --color-fg-muted: var(--fg-muted); --color-light: var(--light); --color-ink-muted: var(--ink-muted);
+  --color-accent: var(--accent-primary); --color-accent-2: var(--accent-2); --color-accent-3: var(--accent-3); --color-accent-4: var(--accent-4);
+  --color-highlight: var(--highlight);
+  --color-card: var(--card); --color-card-2: var(--card-2);
+  --font-sans: var(--font-figtree), "General Sans", system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --radius-card: 1rem; --radius-section: 1.5rem;
+  --ease-expo: cubic-bezier(.16,1,.3,1);
+}
+
+html[data-nav-theme="dark"] { --nav-bg: var(--ink); --nav-text: var(--fg); }
+html[data-nav-theme="light"] { --nav-bg: var(--fg); --nav-text: var(--ink); }
+html { background: var(--fg); color: var(--ink); -webkit-font-smoothing: antialiased; }
+body { font-family: var(--font-sans); background: var(--fg); overflow-x: clip; }
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: clip; }
+:focus-visible { outline: 2px solid var(--highlight); outline-offset: 2px; }
+
+/* ── Grid (measured: 12 × minmax(0,150px), 8px gap, 24px page padding; 8 × 1fr on mobile) ── */
+@utility grid-layout {
+  display: grid; gap: var(--col-gap); padding-inline: var(--gutter);
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  @media (min-width: 768px) { grid-template-columns: repeat(12, minmax(0, 150px)); justify-content: center; }
+}
+
+/* ── Type scale (measured from scale.com; desktop ≥768 / mobile) ── */
+@utility header1 { font-size: 2.5rem; line-height: 1.05; font-weight: 400; letter-spacing: -.01em; @media (min-width: 768px) { font-size: 7.25rem; line-height: 1; } }
+@utility header2 { font-size: 2rem; line-height: 1.05; font-weight: 400; letter-spacing: -.01em; @media (min-width: 768px) { font-size: 4rem; } }
+@utility header3 { font-size: 1.5rem; line-height: 1.05; font-weight: 400; letter-spacing: -.01em; @media (min-width: 768px) { font-size: 2.5rem; line-height: 1.25; } }
+@utility header4 { font-size: 1.5rem; line-height: 1.05; font-weight: 400; letter-spacing: -.01em; @media (min-width: 768px) { font-size: 2rem; line-height: 1.2; } }
+@utility header5 { font-size: 1.375rem; line-height: 1.05; font-weight: 400; letter-spacing: -.01em; @media (min-width: 768px) { font-size: 1.5rem; line-height: 1.5; } }
+@utility body1 { font-size: 1rem; line-height: 1.45; @media (min-width: 768px) { font-size: 1.25rem; line-height: 1.5; } }
+@utility body2 { font-size: .875rem; line-height: 1.35; @media (min-width: 768px) { font-size: 1rem; line-height: 1.5; } }
+@utility body3 { font-size: .875rem; line-height: 1.5; }
+@utility detail-mono { font-family: var(--font-mono); text-transform: uppercase; font-size: .625rem; line-height: 1.2; letter-spacing: .04em; @media (min-width: 768px) { font-size: .813rem; } }
+
+/* word splitting used by reveal hooks */
+.word { display: inline-block; will-change: auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

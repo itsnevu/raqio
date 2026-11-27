@@ -1,4 +1,8 @@
 packages:
   - 'apps/web'
   - 'apps/scraping'
+  - 'apps/site'
   - 'packages/*'
+allowBuilds:
+  '@tailwindcss/oxide': true
+  esbuild: true
