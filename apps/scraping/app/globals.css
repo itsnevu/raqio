@@ -1,5 +1,5 @@
-/* Token Raqio, sama dengan apps/site. Terang adalah bawaan; gelap hanya saat sistem memakai mode gelap
-   (prefers-color-scheme) atau <html data-theme="dark">. <html data-theme="light"> memaksa terang.
+/* Token Raqio, sama dengan apps/site. Terang selalu menjadi bawaan (mode gelap sistem diabaikan); gelap hanya lewat
+   tombol tema di sidebar, yang memasang <html data-theme="dark"> (cookie raqio_theme, dibaca app/layout.tsx).
    --good = aksen (dulu amber); --good-ink = warna teks di atas --good. Semua pasangan teks >= 4.5:1. */
 :root {
   --raqio-font: var(--font-figtree), "Segoe UI", system-ui, sans-serif;
@@ -12,16 +12,6 @@
   --wa: #6C4CF1; --c1: #6C4CF1; --c2: #A7A7B2;
   --sidebar-bg: #FFFFFF;
   color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-  --bg: #0A0A0F; --panel: #111119; --sunk: #181822; --line: #242430; --line-2: #1A1A23;
-  --text: #F5F5F7; --muted: #9A9AA8; --faint: color-mix(in srgb, #9A9AA8 80%, #0A0A0F);
-  --ink: #F5F5F7; --ink-text: #0A0A0F; --accent: #F5F5F7; --accent-soft: #181822;
-  --warn: #FF6B4A; --bad: #FF5A4E; --good: #A78BFA; --good-ink: #0A0A0F; --wa: #A78BFA; --c1: #A78BFA; --c2: #5B5B6B;
-  --sidebar-bg: #0D0D14;
-  color-scheme: dark;
-  }
 }
 :root[data-theme="dark"] {
   --bg: #0A0A0F; --panel: #111119; --sunk: #181822; --line: #242430; --line-2: #1A1A23;
@@ -272,7 +262,7 @@ select option:checked, select option:hover { background: var(--sunk); color: var
 .bz-logo .muted-note { display: flex; flex-direction: column; gap: 2px; }
 .bz-logo .muted-note small { color: var(--faint); font-size: 11px; }
 
-/* Tema ruang kerja: terang bawaan, gelap mengikuti mode gelap sistem. Tombol utama --ink = --accent-primary #6C4CF1.
+/* Tema ruang kerja: terang bawaan, gelap hanya bila dipilih lewat tombol tema. Tombol utama --ink = --accent-primary #6C4CF1.
    Teks aktif/sorotan: terang memakai ungu digelapkan (5,6:1 di atas sorotan), gelap memakai --highlight #A78BFA (7,3:1). */
 :root:has(.scraping-sidebar) {
   color-scheme: light;
@@ -285,18 +275,6 @@ select option:checked, select option:hover { background: var(--sunk); color: var
   --wa: #22D3A6; --warn: #C2410C; --bad: #C8321A; --c1: #6C4CF1; --c2: #5B8DEF;
   --sidebar-bg: #FFFFFF;
   --radius-card: 12px; --radius-control: 6px;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]):has(.scraping-sidebar) {
-    color-scheme: dark;
-    --bg: #0A0A0F; --panel: #111119; --sunk: #181822;
-    --line: rgba(245,245,247,.12); --line-2: rgba(245,245,247,.06);
-    --text: #F5F5F7; --muted: #9A9AA8; --faint: color-mix(in srgb, #9A9AA8 90%, #0A0A0F);
-    --ink: #6C4CF1; --ink-text: #F5F5F7; --accent: #A78BFA; --good: #A78BFA; --good-ink: #0A0A0F;
-    --accent-soft: rgba(167,139,250,.13); --workspace-accent-hover: color-mix(in srgb, #6C4CF1 86%, #F5F5F7);
-    --warn: #FF6B4A; --bad: #ff9c94; --c1: #A78BFA;
-    --sidebar-bg: #0D0D14;
-  }
 }
 :root[data-theme="dark"]:has(.scraping-sidebar) {
   color-scheme: dark;
@@ -461,3 +439,17 @@ body:has(> .scraping-sidebar) .rtabs button.on { color: var(--workspace-accent-h
   .fab .fab-mark { width: 22px; }
 }
 @media (prefers-reduced-motion: reduce) { .fab, .fab .fab-mark { transition: none; } }
+
+/* Tombol tema di sidebar: tampil seperti item navigasi, di atas menu Akun. */
+.scraping-sidebar nav .theme-toggle {
+  display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 8px 12px; border: 0; border-radius: 8px;
+  background: transparent; color: var(--muted); font: inherit; font-size: 12px; text-align: left; cursor: pointer;
+}
+.scraping-sidebar nav .theme-toggle:hover { background: var(--sunk); color: var(--text); }
+.scraping-sidebar nav .theme-toggle svg { width: 18px; height: 18px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+@media (min-width: 821px) {
+  .scraping-sidebar nav .theme-toggle { gap: 12px; padding: 11px 13px; border-top: 1px solid var(--line-2); border-radius: 0 0 8px 8px; }
+}
+@media (min-width: 821px) {
+  .scraping-sidebar nav .theme-toggle + .more { border-top: 0; padding-top: 0; }
+}

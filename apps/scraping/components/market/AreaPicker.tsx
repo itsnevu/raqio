@@ -25,8 +25,7 @@ export default function AreaPicker({ onPick }: { onPick: (name: string) => void 
       const m = L.map(box.current).setView([-2.6, 118], 5); // seluruh Indonesia
       // tile CARTO (boleh dipakai langsung dengan atribusi), bukan tile.openstreetmap.org yang memblokir
       // aplikasi anonim (403 "Access blocked"). Varian mengikuti tema: dark_all / light_all.
-      const forced = document.documentElement.dataset.theme; // tema mengikuti sistem kecuali <html data-theme> dipasang
-      const light = forced ? forced === "light" : !window.matchMedia("(prefers-color-scheme: dark)").matches;
+      const light = document.documentElement.dataset.theme !== "dark"; // terang bawaan, gelap lewat tombol tema
       L.tileLayer(`https://{s}.basemaps.cartocdn.com/${light ? "light_all" : "dark_all"}/{z}/{x}/{y}{r}.png`, {
         subdomains: "abcd",
         maxZoom: 20,

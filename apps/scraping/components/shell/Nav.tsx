@@ -13,6 +13,7 @@ import { isAuthPage, isBarePage } from "@/lib/routes";
 import { clearOrgStorage, lsGetGlobal } from "@/lib/storage";
 import type { Me } from "@/lib/api";
 import VerifyBanner from "./VerifyBanner";
+import ThemeToggle from "./ThemeToggle";
 
 const NAV: [string, string, string][] = [
   ["/market", "Riset", "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm5 12 4 4"],
@@ -110,6 +111,7 @@ export default function Nav() {
             </a>
           )}
           </div>
+          <ThemeToggle />
           <details className="more" ref={moreRef}>
             <summary><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 9a7 7 0 0 1 14 0"/></svg>Akun</summary>
             <div className="menu">

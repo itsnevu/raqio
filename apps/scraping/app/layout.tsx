@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { Figtree } from "next/font/google";
 import "./globals.css";
 import "./tour.css";
@@ -31,8 +31,10 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const h = await headers();
   const nonce = h.get("x-nonce") ?? undefined;
   const lang = h.get("x-raqio-lang") === "en" ? "en" : "id";
+  // tema: terang bawaan; gelap hanya bila dipilih lewat tombol (components/shell/ThemeToggle.tsx)
+  const theme = (await cookies()).get("raqio_theme")?.value === "dark" ? "dark" : "light";
   return (
-    <html lang={lang} className={figtree.variable}>
+    <html lang={lang} className={figtree.variable} data-theme={theme}>
       <body>
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: SW_CLEANUP }} />
         <AccessLangProvider initial={lang}><ShellProvider>{children}</ShellProvider></AccessLangProvider>
