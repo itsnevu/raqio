@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 import { COOKIE } from "@/lib/auth";
 import { safeHttpUrl } from "@/lib/safe";
+import { publicOrigin } from "@/lib/publicOrigin";
 
 /**
  * Buka produk Raqio di host lain dengan tiket SSO sekali pakai (apps/api/sso.go). Cookie sesi Raqio tidak pernah
@@ -15,8 +16,8 @@ const TARGETS: Record<string, () => string | null> = {
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ product: string }> }) {
   const { product } = await params;
-  const back = (q: string) => NextResponse.redirect(new URL(`/pilih-produk?${q}`, req.url), 303);
-  const toLogin = () => NextResponse.redirect(new URL("/login?next=%2Fpilih-produk", req.url), 303);
+  const back = (q: string) => NextResponse.redirect(new URL(`/pilih-produk?${q}`, publicOrigin(req)), 303);
+  const toLogin = () => NextResponse.redirect(new URL("/login?next=%2Fpilih-produk", publicOrigin(req)), 303);
   const target = TARGETS[product]?.();
   if (!target) return back("error=unavailable");
   const session = (await cookies()).get(COOKIE);

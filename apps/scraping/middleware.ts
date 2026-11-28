@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { COOKIE, verifyToken } from "@/lib/auth";
 import { buildCsp, makeNonce } from "@/lib/csp";
 import { isPublicPath } from "@/lib/routes";
+import { publicOrigin } from "@/lib/publicOrigin";
 
 // Semua halaman butuh sesi. Endpoint data juga dilindungi di sini (cek tanda tangan) dan di Go (cek DB).
 // Tiap respons membawa CSP dengan nonce; Next memakai nonce yang sama untuk skripnya sendiri (dibaca dari header request).
@@ -41,7 +42,7 @@ export async function middleware(req: NextRequest) {
   if (process.env.AUTO_GUEST === "1" && pathname !== "/pilih-produk") url.searchParams.set("auto", "1");
   const { lang, fromQuery } = langOf(req);
   if (fromQuery) url.searchParams.set("lang", lang);
-  return NextResponse.redirect(url);
+  return NextResponse.redirect(new URL(url.pathname + url.search, publicOrigin(req)));
 }
 
 export const config = {
