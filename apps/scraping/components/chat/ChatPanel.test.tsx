@@ -67,7 +67,7 @@ describe("ChatPanel", () => {
     const fetchMock = mockFetch({
       ...BASE,
       "GET /chat/suggestions": { suggestions: ["Siapa pemimpin pasar?", "dua", "tiga", "empat", "lima"] },
-      "POST /chat": { job: 9, sid: "s-baru" },
+      "POST /api/chat": { job: 9, sid: "s-baru" },
       "GET /chat/poll": { done: true, answer: "Jawaban singkat.", steps: [] },
     });
     const user = userEvent.setup();
@@ -76,7 +76,7 @@ describe("ChatPanel", () => {
     expect(within(chips).getAllByRole("button")).toHaveLength(4);
     await user.click(within(chips).getByRole("button", { name: "Siapa pemimpin pasar?" }));
     expect(await screen.findByText("Jawaban singkat.")).toBeInTheDocument();
-    expect(lastBody(fetchMock, "/chat")).toEqual({ sid: "s-baru", message: "Siapa pemimpin pasar?", context: { page: "/" } });
+    expect(lastBody(fetchMock, "/api/chat")).toEqual({ sid: "s-baru", message: "Siapa pemimpin pasar?", context: { page: "/" } });
     expect(fetchMock.mock.calls.some(([u]) => String(u).startsWith("/chat/suggestions?page=%2F"))).toBe(true);
   });
 
@@ -91,7 +91,7 @@ describe("ChatPanel", () => {
     let polls = 0;
     mockFetch({
       ...BASE,
-      "POST /chat": { job: 7, sid: "s-baru" },
+      "POST /api/chat": { job: 7, sid: "s-baru" },
       "GET /chat/poll": () => {
         polls += 1;
         return polls === 1
@@ -111,7 +111,7 @@ describe("ChatPanel", () => {
   });
 
   it("kunci API belum diisi: pesan 'belum dikonfigurasi' tampil", async () => {
-    mockFetch({ ...BASE, "POST /chat": json({ error: "OPENROUTER_API_KEY belum diisi" }, 500) });
+    mockFetch({ ...BASE, "POST /api/chat": json({ error: "OPENROUTER_API_KEY belum diisi" }, 500) });
     const user = userEvent.setup();
     const ta = await openPanel();
     await user.type(ta, "halo{Enter}");
@@ -130,7 +130,7 @@ describe("ChatPanel", () => {
   });
 
   it("409 chat_busy: 'Agent masih menjawab'", async () => {
-    mockFetch({ ...BASE, "POST /chat": json({ error: "Masih ada job.", code: "chat_busy" }, 409) });
+    mockFetch({ ...BASE, "POST /api/chat": json({ error: "Masih ada job.", code: "chat_busy" }, 409) });
     const user = userEvent.setup();
     const ta = await openPanel();
     await user.type(ta, "halo{Enter}");
@@ -138,7 +138,7 @@ describe("ChatPanel", () => {
   });
 
   it("402 quota_exceeded: pesan kuota dengan tautan ke Pengaturan", async () => {
-    mockFetch({ ...BASE, "POST /chat": json({ error: "Kuota chat habis", code: "quota_exceeded" }, 402) });
+    mockFetch({ ...BASE, "POST /api/chat": json({ error: "Kuota chat habis", code: "quota_exceeded" }, 402) });
     const user = userEvent.setup();
     const ta = await openPanel();
     await user.type(ta, "halo{Enter}");

@@ -45,6 +45,8 @@ const nextConfig: NextConfig = {
       beforeFiles: [
         { source: "/api/campaigns", destination: `${API}/campaigns` },
         { source: "/api/campaigns/:path*", destination: `${API}/campaigns/:path*` },
+        // kirim pesan asisten: POST /chat jatuh ke halaman Next /chat (HTML 200, bukan API), jadi klien memakai /api/chat
+        { source: "/api/chat", destination: `${API}/chat` },
       ],
       afterFiles: API_PATHS.map((source) => ({ source, destination: `${API}${source}` })),
       fallback: [],

@@ -324,7 +324,7 @@ export async function ask(text: string) {
     msgs: [...state.msgs, { id: meId, role: "user", text, steps: [], done: true }, placeholder(botId)],
   });
   try {
-    const j = await apiPost<ChatSendResponse>("/chat", { sid: state.sid, message: text, context: getPageContext(here()) });
+    const j = await apiPost<ChatSendResponse>("/api/chat", { sid: state.sid, message: text, context: getPageContext(here()) });
     if (j && typeof j.sid === "string" && j.sid && j.sid !== state.sid) sidPersist(j.sid);
     if (j == null || j.job == null || j.job === "") throw new Error("Server tidak mengembalikan id job.");
     start(j.job, botId);

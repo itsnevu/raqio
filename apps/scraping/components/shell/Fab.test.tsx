@@ -23,7 +23,7 @@ describe("Fab", () => {
       "GET /chat/sessions": { sessions: [] },
       "GET /chat/suggestions": { suggestions: ["Apa yang berubah minggu ini?"] },
       "POST /chat/sid": { sid: "s-fab" },
-      "POST /chat": { job: 2, sid: "s-fab" },
+      "POST /api/chat": { job: 2, sid: "s-fab" },
       "GET /chat/poll": { done: true, answer: "Dari panel." },
     });
     const user = userEvent.setup();
@@ -39,7 +39,7 @@ describe("Fab", () => {
     expect(within(dialog).getByRole("button", { name: "Apa yang berubah minggu ini?" })).toBeInTheDocument();
     await user.type(ta, "halo dari market{Enter}");
     expect(await within(dialog).findByText("Dari panel.")).toBeInTheDocument();
-    expect(lastBody(fetchMock, "/chat")).toEqual({ sid: "s-fab", message: "halo dari market", context: { page: "/market" } });
+    expect(lastBody(fetchMock, "/api/chat")).toEqual({ sid: "s-fab", message: "halo dari market", context: { page: "/market" } });
     expect(fetchMock.mock.calls.some(([u]) => String(u).startsWith("/chat/suggestions?page=%2Fmarket"))).toBe(true);
   });
 });
