@@ -64,7 +64,7 @@ ssh quarn-vps 'docker exec raqio-api-1 /api invites create -n 3 -products scrapi
 
 Workflow ada di `.github/workflows/deploy.yml`. Jalankan dari tab Actions > Deploy > Run workflow.
 
-- Secret `VPS_SSH_KEY` (environment `production`) berisi kunci privat `~/.ssh/raqio_ci`.
+- Secret `VPS_SSH_KEY` (environment `Raqio`) berisi kunci privat `~/.ssh/raqio_ci`.
 - Di server, kunci itu hanya boleh menjalankan `raqio-gate` (`restrict,command=...`).
 - Deploy otomatis setelah CI hijau di `main` hanya aktif bila repository variable `AUTO_DEPLOY=1`.
 
