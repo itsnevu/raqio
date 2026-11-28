@@ -30,9 +30,10 @@ log() { printf '→ %s\n' "$*"; }
 warn() { printf '! %s\n' "$*" >&2; }
 die() { warn "$*"; exit 1; }
 
-# perintah sebagai user raqio dengan env bersih (rahasia root dan api.env tidak ikut)
+# perintah sebagai user raqio dengan env bersih (rahasia root dan api.env tidak ikut). env -C /: mulai dari /, bukan
+# cwd root (/root tidak bisa dibaca raqio; Node gagal mencari package.json di sana)
 as_app() {
-  sudo -u "$APPUSER" -H env -i HOME="/home/$APPUSER" PATH=/usr/local/bin:/usr/bin:/bin LANG=C.UTF-8 \
+  sudo -u "$APPUSER" -H env -i -C / HOME="/home/$APPUSER" PATH=/usr/local/bin:/usr/bin:/bin LANG=C.UTF-8 \
     COREPACK_ENABLE_DOWNLOAD_PROMPT=0 NEXT_TELEMETRY_DISABLED=1 TURBO_TELEMETRY_DISABLED=1 DO_NOT_TRACK=1 \
     PM2_HOME="/home/$APPUSER/.pm2" "$@"
 }
