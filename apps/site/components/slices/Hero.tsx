@@ -114,11 +114,13 @@ export function Hero() {
       };
       ScrollTrigger.create({ trigger: root.current, start: "top top", end: "bottom bottom", onUpdate: (st) => show(WINDOWS.findIndex(([a, b]) => st.progress >= a && st.progress < b)) });
     });
+    // GSAP now owns every start state: lift the pre-hydration CSS mask (globals.css, [data-hero]:not([data-ready]))
+    root.current?.setAttribute("data-ready", "");
     return () => mm.revert();
   });
 
   return (
-    <section ref={root} data-theme="dark" data-theme-offset="300" className="relative bg-ink md:h-[450dvh] md:bg-fg" aria-label={ui.sections.intro}>
+    <section ref={root} data-hero data-theme="dark" data-theme-offset="300" className="relative bg-ink md:h-[450dvh] md:bg-fg" aria-label={ui.sections.intro}>
       <div data-bg className="pointer-events-none absolute inset-0 bg-ink opacity-100 md:opacity-0" aria-hidden />
       <div data-pin className="relative overflow-hidden md:sticky md:top-0 md:h-dvh">
         {/* 3D rig: the video card + wireframe layers (CSS 3D, no WebGL) */}
