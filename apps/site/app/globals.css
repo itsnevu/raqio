@@ -59,7 +59,7 @@ html.lenis, html.lenis body { height: auto; }
 /* Hero (desktop, motion on): the server HTML carries no scroll state, so until Hero's GSAP setup adds data-ready it painted every
    stage at once (three stage texts, the wire planes, a full-bleed card) on first load and refresh. Hold the progress-0 frame instead:
    card inset 88/18/18/18 like the rig's start scale, stages and planes hidden. Only with scripting on, so no-JS readers keep the text. */
-@media (min-width: 768px) and (prefers-reduced-motion: no-preference) and (scripting: enabled) {
+@media (prefers-reduced-motion: no-preference) and (scripting: enabled) {
   [data-hero]:not([data-ready]) :is([data-stage], [data-layer]) { visibility: hidden; opacity: 0; }
   [data-hero]:not([data-ready]) [data-card] { clip-path: inset(88px 18px 18px round 16px); }
 }

@@ -35,14 +35,16 @@ export function Hero() {
     const headWords = splitWords(q<HTMLElement>("[data-headline]")[0]);
     const mm = gsap.matchMedia();
 
-    mm.add({ desk: "(min-width: 768px)", reduced: "(prefers-reduced-motion: reduce)" }, (ctx) => {
+    mm.add({ desk: "(min-width: 768px)", reduced: "(prefers-reduced-motion: reduce)", motion: "(prefers-reduced-motion: no-preference)" }, (ctx) => {
       const { desk } = ctx.conditions as { desk: boolean; reduced: boolean };
-      if (reduced || !desk) {
+      if (reduced) {
         gsap.set(q("[data-bg]"), { opacity: 1 });
         stages.forEach((s, i) => { gsap.set(s, { autoAlpha: 1 }); if (reduced) gsap.set(words[i], { opacity: 1 });
           else { gsap.set(words[i], { opacity: 0 }); ScrollTrigger.create({ trigger: s, start: "top 80%", once: true, onEnter: () => gsap.to(words[i], { opacity: 1, duration: 0.45, stagger: 0.025, ease: "power2.out" }) }); } });
         return;
       }
+      // HP: koreografi sama dengan desktop; kartu naik ke atas dan teks tahap di bawahnya (bukan kiri/kanan)
+      const P = desk ? { k: 1, y1: "-4vh", y2: 0, xb: "17vw", xc: "-22vw" } : { k: 1.25, y1: "-20vh", y2: "-20vh", xb: "0vw", xc: "0vw" };
       gsap.from(headWords, { y: 30, opacity: 0, duration: 0.7, stagger: 0.022, ease: "expo.out", delay: 0.15 });
 
       const rig = q("[data-rig]")[0]; const w = rig.offsetWidth, h = rig.offsetHeight;
@@ -63,16 +65,16 @@ export function Hero() {
         .to(q("[data-scroll-hint]"), { autoAlpha: 0, duration: 0.02, ease: "none" }, 0.01)
         .to(q("[data-bg]"), { opacity: 1, duration: 0.07, ease: "none" }, 0.02)
         // 2 · diagonal 3D panel at centre-top, wire layers come out of it
-        .to(rig, { scaleX: 0.36, scaleY: 0.36, y: "-4vh", rotationY: -30, rotationX: 10, rotationZ: -4, duration: 0.07 }, 0.05)
+        .to(rig, { scaleX: 0.36 * P.k, scaleY: 0.36 * P.k, y: P.y1, rotationY: -30, rotationX: 10, rotationZ: -4, duration: 0.07 }, 0.05)
         .to(q("[data-card]"), { borderRadius: 40, duration: 0.07 }, 0.05)
         .to(layers, { opacity: 1, z: z(60), xPercent: xs(2.2), duration: 0.07, stagger: 0.006 }, 0.06)
         .to(rig, { rotationY: -36, duration: 0.28, ease: "none" }, 0.12)
         // 3 · panel → right (copy left), layers spread further
-        .to(rig, { x: "17vw", y: 0, rotationY: -38, rotationX: 6, rotationZ: -2, scaleX: 0.46, scaleY: 0.46, duration: 0.1 }, 0.4)
+        .to(rig, { x: P.xb, y: P.y2, rotationY: -38, rotationX: 6, rotationZ: -2, scaleX: 0.46 * P.k, scaleY: 0.46 * P.k, duration: 0.1 }, 0.4)
         .to(layers, { z: z(95), xPercent: xs(-1.8), duration: 0.1 }, 0.4)
         .to(rig, { rotationY: -34, duration: 0.22, ease: "none" }, 0.5)
         // 4 · panel → left (copy right: WA-Suite), rotate the other way
-        .to(rig, { x: "-22vw", rotationY: -36, rotationX: 6, rotationZ: 2, scaleX: 0.44, scaleY: 0.44, duration: 0.1 }, 0.72)
+        .to(rig, { x: P.xc, rotationY: -36, rotationX: 6, rotationZ: 2, scaleX: 0.44 * P.k, scaleY: 0.44 * P.k, duration: 0.1 }, 0.72)
         .to(layers, { z: z(90), xPercent: xs(1), duration: 0.1 }, 0.72)
         .to(rig, { rotationY: -32, duration: 0.14, ease: "none" }, 0.82)
         // exit (measured parallaxOut y −10px, power3.in)
@@ -120,11 +122,11 @@ export function Hero() {
   });
 
   return (
-    <section ref={root} data-hero data-theme="dark" data-theme-offset="300" className="relative bg-ink md:h-[450dvh] md:bg-fg" aria-label={ui.sections.intro}>
-      <div data-bg className="pointer-events-none absolute inset-0 bg-ink opacity-100 md:opacity-0" aria-hidden />
-      <div data-pin className="relative overflow-hidden md:sticky md:top-0 md:h-dvh">
+    <section ref={root} data-hero data-theme="dark" data-theme-offset="300" className="relative bg-ink md:h-[450dvh] md:bg-fg max-md:motion-safe:h-[450dvh] max-md:motion-safe:bg-fg" aria-label={ui.sections.intro}>
+      <div data-bg className="pointer-events-none absolute inset-0 bg-ink opacity-100 md:opacity-0 max-md:motion-safe:opacity-0" aria-hidden />
+      <div data-pin className="relative overflow-hidden md:sticky md:top-0 md:h-dvh max-md:motion-safe:sticky max-md:motion-safe:top-0 max-md:motion-safe:h-dvh">
         {/* 3D rig: the video card + wireframe layers (CSS 3D, no WebGL) */}
-        <div className="absolute inset-0 hidden [perspective:1700px] md:block" aria-hidden>
+        <div className="absolute inset-0 hidden [perspective:1700px] md:block max-md:motion-safe:block" aria-hidden>
           <div data-tilt className="absolute inset-0 origin-center [transform-style:preserve-3d]">
           <div data-rig className="absolute inset-0 origin-center [transform-style:preserve-3d]">
             {/* back: live edge drawing of the video + outline frames */}
@@ -145,7 +147,7 @@ export function Hero() {
           </div>
         </div>
 
-        <div className="relative flex min-h-[70svh] items-center justify-center px-6 pt-24 md:h-full md:min-h-0 md:px-8 md:pt-0">
+        <div className="relative flex min-h-[70svh] items-center justify-center px-6 pt-24 md:h-full md:min-h-0 md:px-8 md:pt-0 max-md:motion-safe:h-full max-md:motion-safe:min-h-0 max-md:motion-safe:pt-0">
           <h1 data-headline className="header2 max-w-[18ch] text-balance text-center text-fg">{hero.headline}</h1>
         </div>
         <div data-scroll-hint className="absolute bottom-[72px] right-[72px] hidden items-center gap-4 text-fg md:flex">
@@ -154,15 +156,15 @@ export function Hero() {
         </div>
 
         {/* stage copy: A centre-bottom, B left, C right (as in the reference frames) */}
-        <div className="relative px-6 pb-20 pt-10 md:absolute md:inset-0 md:p-0">
+        <div className="relative px-6 pb-20 pt-10 md:absolute md:inset-0 md:p-0 max-md:motion-safe:absolute max-md:motion-safe:inset-0 max-md:motion-safe:p-0">
           {hero.stages.map((s, i) => (
-            <div key={i} data-stage className={`mb-16 flex flex-col items-center gap-4 text-center text-fg md:absolute md:mb-0 ${STAGE_POS[i]}`}>
+            <div key={i} data-stage className={`mb-16 flex flex-col items-center gap-4 text-center text-fg md:absolute md:mb-0 max-md:motion-safe:absolute max-md:motion-safe:mb-0 max-md:motion-safe:inset-x-5 max-md:motion-safe:bottom-[7vh] md:bottom-auto ${STAGE_POS[i]}`}>
               {s.eyebrow && <div data-fade><Eyebrow className="text-fg-muted">{s.eyebrow}</Eyebrow></div>}
               <h2 data-title className={`max-w-[22ch] text-balance ${i === 0 ? "header4" : "header3"}`}>{s.title}</h2>
               <p data-fade className="body2 max-w-[48ch] text-fg-muted">{s.body}</p>
               {s.cta && <div data-fade className="pt-2"><Button href={s.cta.href}>{s.cta.label}</Button></div>}
-              {i === 1 && <div data-fade className="pt-6"><SourceLogos label={hero.sourcesLabel} /></div>}
-              {i === 2 && <div data-fade className="pt-6"><WhatsAppFlow label={hero.waLabel} /></div>}
+              {i === 1 && <div data-fade className="pt-6 max-md:motion-safe:hidden"><SourceLogos label={hero.sourcesLabel} /></div>}
+              {i === 2 && <div data-fade className="pt-6 max-md:motion-safe:hidden"><WhatsAppFlow label={hero.waLabel} /></div>}
             </div>
           ))}
         </div>
