@@ -1,6 +1,6 @@
 name: Deploy
 
-# Deploy ke VPS raqio.xyz dengan deploy/deploy.sh (perintah yang sama dengan dari laptop).
+# Deploy ke VPS raqio.id dengan deploy/deploy.sh (perintah yang sama dengan dari laptop).
 # Penutup celah man-in-the-middle:
 #   - kunci host server dipin di deploy/vps/known_hosts (StrictHostKeyChecking=yes, hanya ssh-ed25519);
 #     tidak ada ssh-keyscan atau "accept-new", jadi server palsu langsung ditolak

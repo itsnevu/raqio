@@ -15,17 +15,17 @@
 	}
 }
 
-raqio.xyz {
+raqio.id {
 	encode zstd gzip
 	import raqio_headers
 	reverse_proxy 127.0.0.1:3120
 }
 
-www.raqio.xyz {
-	redir https://raqio.xyz{uri} permanent
+www.raqio.id {
+	redir https://raqio.id{uri} permanent
 }
 
-app.raqio.xyz {
+app.raqio.id {
 	encode zstd gzip
 	import raqio_headers
 	# /metrics bukan untuk internet; Prometheus (bila dipakai) scrape api:8080 langsung di jaringan docker
@@ -38,10 +38,15 @@ app.raqio.xyz {
 }
 
 # API publik untuk aplikasi mobile dan penukaran tiket SSO dari WA-Suite (POST /auth/sso/redeem)
-api.raqio.xyz {
+api.raqio.id {
 	encode zstd gzip
 	import raqio_headers
 	@metrics path /metrics /metrics/*
 	respond @metrics 404
 	reverse_proxy 127.0.0.1:8130
+}
+
+# domain lama: tautan lama tetap sampai, diarahkan permanen ke raqio.id
+raqio.xyz, www.raqio.xyz {
+	redir https://raqio.id{uri} permanent
 }

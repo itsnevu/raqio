@@ -107,7 +107,7 @@ if [ ! -f "$ROOT/shared/api.env" ]; then
     cat > "$ROOT/shared/api.env" <<ENV
 # Dibuat provision.sh $(date -u +%F). Rahasia acak BARU; jangan di-commit, jangan dicetak.
 # Dipakai docker compose (api, worker, postgres, backup). Setelah mengubah: bash deploy/deploy.sh api
-DOMAIN=app.raqio.xyz
+DOMAIN=app.raqio.id
 API_PORT=8130
 PG_PASSWORD=$(openssl rand -hex 24)
 # harus sama persis dengan AUTH_SECRET di app.env
@@ -119,7 +119,7 @@ INVITE_ONLY=1
 ALLOW_REGISTER=1
 DOCS=0
 CHAT_ENABLED=1
-SMTP_FROM="Raqio <no-reply@raqio.xyz>"
+SMTP_FROM="Raqio <no-reply@raqio.id>"
 # ---- kunci layanan luar: isi manual (nilai lama dianggap bocor, pakai yang baru) ----
 SMTP_HOST=
 SMTP_PORT=587
@@ -138,9 +138,9 @@ ENV
     cat > "$ROOT/shared/app.env" <<ENV
 # Dibuat provision.sh $(date -u +%F). Dipakai build + pm2 raqio-app (apps/scraping). Setelah mengubah: bash deploy/deploy.sh app
 API_URL=http://127.0.0.1:8130
-APP_URL=https://app.raqio.xyz
-NEXT_PUBLIC_APP_URL=https://app.raqio.xyz
-NEXT_PUBLIC_MARKETING_URL=https://raqio.xyz
+APP_URL=https://app.raqio.id
+NEXT_PUBLIC_APP_URL=https://app.raqio.id
+NEXT_PUBLIC_MARKETING_URL=https://raqio.id
 AUTH_SECRET=$AUTH_SECRET
 AUTO_GUEST=0
 # alamat WA-Suite untuk SSO (kosong = tombol Customer Service menampilkan "belum tersedia")
@@ -148,7 +148,7 @@ WASUITE_APP_URL=
 ENV
     cat > "$ROOT/shared/site.env" <<ENV
 # Dibuat provision.sh $(date -u +%F). Dipakai build + pm2 raqio-site (apps/site). Setelah mengubah: bash deploy/deploy.sh site
-NEXT_PUBLIC_SCRAPING_APP_URL=https://app.raqio.xyz
+NEXT_PUBLIC_SCRAPING_APP_URL=https://app.raqio.id
 ENV
   )
   unset AUTH_SECRET

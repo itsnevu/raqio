@@ -1,4 +1,4 @@
-# Override untuk VPS raqio.xyz, dipakai bersama deploy/compose.yml:
+# Override untuk VPS raqio.id, dipakai bersama deploy/compose.yml:
 #   RELEASE=<sha> docker compose -p raqio --env-file /opt/raqio/shared/api.env \
 #     -f deploy/compose.yml -f deploy/vps/compose.vps.yml up -d --no-build postgres backup worker api
 #
