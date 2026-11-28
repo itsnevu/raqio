@@ -1,0 +1,22 @@
+# Override untuk VPS raqio.xyz, dipakai bersama deploy/compose.yml:
+#   RELEASE=<sha> docker compose -p raqio --env-file /opt/raqio/shared/api.env \
+#     -f deploy/compose.yml -f deploy/vps/compose.vps.yml up -d --no-build postgres backup worker api
+#
+# Di VPS ini Caddy dan Next berjalan di host (Caddy systemd + pm2 user raqio), jadi service caddy dan web dari
+# compose.yml dimatikan lewat profile. API hanya terbuka di 127.0.0.1 (ufw tidak menyaring port yang dipublikasi
+# docker, jadi jangan pernah publikasi ke 0.0.0.0). Image diberi tag per release supaya rollback cukup
+# `up --no-build` dengan RELEASE lama, tanpa build ulang.
+
+services:
+  caddy:
+    profiles: ["all-in-docker"]
+  web:
+    profiles: ["all-in-docker"]
+
+  api:
+    image: raqio-api:${RELEASE:?RELEASE kosong, jalankan lewat deploy/remote-deploy.sh}
+    ports:
+      - "127.0.0.1:${API_PORT:-8130}:8080"
+
+  worker:
+    image: raqio-worker:${RELEASE:?RELEASE kosong, jalankan lewat deploy/remote-deploy.sh}

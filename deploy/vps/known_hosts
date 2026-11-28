@@ -1,0 +1,3 @@
+# Kunci host VPS raqio.xyz (Contabo, reinstall 2026-11-28). Fingerprint dicek manual: SHA256:9oyKu2vhxjHky7sAoYWkieVXRnBju4+303etasXOuG0
+# deploy.sh dan CI hanya menerima kunci ini (StrictHostKeyChecking=yes); kalau server diinstal ulang, ganti baris ini setelah cek fingerprint lewat jalur lain.
+37.60.232.191 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIN+BH/pmlWMTUbQUVD+Z8HHaXI1/UUvuf3RtMIkd/LPg

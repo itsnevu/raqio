@@ -1,0 +1,67 @@
+name: Deploy
+
+# Deploy ke VPS raqio.xyz dengan deploy/deploy.sh (perintah yang sama dengan dari laptop).
+# Penutup celah man-in-the-middle:
+#   - kunci host server dipin di deploy/vps/known_hosts (StrictHostKeyChecking=yes, hanya ssh-ed25519);
+#     tidak ada ssh-keyscan atau "accept-new", jadi server palsu langsung ditolak
+#   - kunci SSH CI di server dibatasi ke /opt/raqio/bin/raqio-gate (restrict,command=...): tanpa shell/forwarding
+#   - arsip dicek sha256 di server sebelum dibuka; dependensi dikunci lockfile/go.sum
+#   - action dipin ke commit SHA, token GITHUB_TOKEN hanya baca, kredensial git tidak disimpan
+#
+# Jalankan manual: tab Actions > Deploy > Run workflow (pilih branch dan target).
+# Deploy otomatis setelah CI hijau di main: set repository variable AUTO_DEPLOY=1 (bawaan mati).
+# Secret yang dibutuhkan (Settings > Environments > production): VPS_SSH_KEY = isi ~/.ssh/raqio_ci (kunci privat CI).
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Bagian yang di-deploy
+        type: choice
+        options: [all, site, app, api]
+        default: all
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (vars.AUTO_DEPLOY == '1' && github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-24.04
+    environment: production
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
+
+      - name: Pasang kunci SSH CI
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/raqio_ci
+          chmod 600 ~/.ssh/raqio_ci
+          ssh-keygen -y -f ~/.ssh/raqio_ci > /dev/null
+
+      - name: Deploy
+        env:
+          TARGET: ${{ inputs.target || 'all' }}
+          RAQIO_HOST: root@37.60.232.191
+          RAQIO_SSH_OPTS: -i /home/runner/.ssh/raqio_ci -o IdentitiesOnly=yes
+        run: bash deploy/deploy.sh "$TARGET"
+
+      - name: Hapus kunci SSH
+        if: always()
+        run: rm -f ~/.ssh/raqio_ci

@@ -82,6 +82,10 @@ services:
       METRICS_TOKEN: ${METRICS_TOKEN:-}
       DOCS: ${DOCS:-0}
       ALLOW_REGISTER: ${ALLOW_REGISTER:-1}
+      # akses lewat undangan (bawaan 1): login email yang belum terdaftar ditolak dan dicatat
+      INVITE_ONLY: ${INVITE_ONLY:-1}
+      # penukaran tiket SSO WA-Suite (POST /auth/sso/redeem); kosong = endpoint mati (404)
+      SSO_SECRET: ${SSO_SECRET:-}
       # asisten chat (job kind chat di worker); 0 = endpoint /chat membalas 503
       CHAT_ENABLED: ${CHAT_ENABLED:-1}
       # alarm operasional (panic, lonjakan 5xx, job gagal beruntun, webhook menyerah, DB putus)

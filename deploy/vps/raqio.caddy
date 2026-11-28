@@ -1,0 +1,47 @@
+# raqio di VPS: site (pm2 raqio-site, 127.0.0.1:3120), app (pm2 raqio-app, 127.0.0.1:3121),
+# API Go (docker, 127.0.0.1:8130). Dipasang deploy/remote-deploy.sh ke /etc/caddy/sites/raqio.caddy,
+# divalidasi, lalu `caddy reload` (bukan restart, jadi situs lain di Caddy yang sama tidak putus).
+
+(raqio_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+		-Server
+		-X-Powered-By
+		# dipasang setelah respons upstream supaya tidak ditimpa header dari Next
+		defer
+	}
+}
+
+raqio.xyz {
+	encode zstd gzip
+	import raqio_headers
+	reverse_proxy 127.0.0.1:3120
+}
+
+www.raqio.xyz {
+	redir https://raqio.xyz{uri} permanent
+}
+
+app.raqio.xyz {
+	encode zstd gzip
+	import raqio_headers
+	# /metrics bukan untuk internet; Prometheus (bila dipakai) scrape api:8080 langsung di jaringan docker
+	@metrics path /metrics /metrics/*
+	respond @metrics 404
+	# Swagger (aktif hanya bila DOCS=1 di api.env) dilayani Go langsung, Next tidak meneruskannya
+	@api_langsung path /docs /docs/* /openapi.yaml
+	reverse_proxy @api_langsung 127.0.0.1:8130
+	reverse_proxy 127.0.0.1:3121
+}
+
+# API publik untuk aplikasi mobile dan penukaran tiket SSO dari WA-Suite (POST /auth/sso/redeem)
+api.raqio.xyz {
+	encode zstd gzip
+	import raqio_headers
+	@metrics path /metrics /metrics/*
+	respond @metrics 404
+	reverse_proxy 127.0.0.1:8130
+}
