@@ -120,13 +120,22 @@ build_next() { # <target>
 smoke_next() { # <target>
   local t="$1" port="${SMOKE[$1]}" logf="/tmp/raqio-smoke-$1.log"
   log "$t: uji build baru di 127.0.0.1:$port${CHECK[$t]} sebelum pindah"
-  as_app bash -c "set -a; . '$SHARED/$t.env'; set +a; export NODE_ENV=production PORT=$port; cd '$ROOT/builds/$SHA/${DIR[$t]}' && exec node node_modules/next/dist/bin/next start -p $port -H 127.0.0.1" >"$logf" 2>&1 &
+  stop_port "$port"
+  # 9>&-: proses uji tidak ikut memegang kunci deploy milik raqio-gate
+  as_app bash -c "set -a; . '$SHARED/$t.env'; set +a; export NODE_ENV=production PORT=$port; cd '$ROOT/builds/$SHA/${DIR[$t]}' && exec node node_modules/next/dist/bin/next start -p $port -H 127.0.0.1" >"$logf" 2>&1 9>&- &
   local pid=$! ok=0
   wait_ok "http://127.0.0.1:$port${CHECK[$t]}" 90 || ok=1
-  kill "$pid" 2>/dev/null || true
+  # dimatikan lewat port: $! adalah subshell fungsi, dan Next mengganti nama prosesnya jadi "next-server"
+  stop_port "$port"
   wait "$pid" 2>/dev/null || true
-  pkill -u "$APPUSER" -f "next start -p $port " 2>/dev/null || true
   if [ "$ok" != 0 ]; then tail -n 40 "$logf" >&2; die "$t: build baru tidak menjawab, deploy dibatalkan (yang live tidak berubah)"; fi
+}
+
+# hentikan proses apa pun yang mendengarkan di port uji (hanya port uji 3130/3131, bukan port live)
+stop_port() {
+  fuser -s -k -TERM -n tcp "$1" 2>/dev/null || return 0
+  for _ in $(seq 1 10); do fuser -s -n tcp "$1" 2>/dev/null || return 0; sleep 1; done
+  fuser -s -k -KILL -n tcp "$1" 2>/dev/null || true
 }
 
 build_api() {
