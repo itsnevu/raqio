@@ -332,6 +332,12 @@ body:has(> .scraping-sidebar) .btn:not(.ghost):hover:not(:disabled) { background
   .scraping-sidebar nav .scraping-nav-list a,.scraping-sidebar nav .more summary { padding-inline: 8px; min-height: 44px; }
   .scraping-sidebar nav .more .menu { top: calc(100% + 4px); }
   body:has(> .scraping-sidebar) .wrap { padding: 16px 16px 60px; }
+  /* Logo, tema, dan Akun satu baris di atas; daftar menu mendapat baris penuh di bawahnya.
+     Sebelumnya ketiganya berbagi satu baris dan daftar menu hanya kebagian ~140 px di HP 390 px (Riset + "Prosp…"). */
+  .scraping-sidebar .brand { position: absolute; inset-block-start: 10px; inset-inline-start: 14px; height: 44px; }
+  .scraping-sidebar nav { flex-wrap: wrap; row-gap: 2px; }
+  .scraping-sidebar nav .theme-toggle { margin-inline-start: auto; }
+  .scraping-sidebar .scraping-nav-list { order: 3; flex: 1 0 100%; }
 }
 
 /* Satu font dan ketebalan untuk seluruh aplikasi, sama seperti WA-Suite. Halaman cetak dikecualikan. */

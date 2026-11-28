@@ -13,7 +13,7 @@ export default function ReportHeader({ R, rival, watched, watchBusy, printHref, 
       <div>
         <h2>{R.industry} · {R.area}</h2>
         <div className="meta">
-          Discrape {new Date(R.created).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })} dari Google Maps ·{" "}
+          Diambil {new Date(R.created).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })} dari Google Maps ·{" "}
           {rival ? <>dilihat sebagai <b className="goal-tag">pesaing</b></> : <>dilihat sebagai <b className="goal-tag">calon klien</b></>}{" "}
           <button type="button" className="mini" style={{ marginLeft: 6 }} onClick={onSwapGoal}>{rival ? "ubah jadi calon klien" : "ubah jadi pesaing"}</button>
         </div>
