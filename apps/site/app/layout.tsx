@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Figtree, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { SmoothScroll } from "@/components/layout/SmoothScroll";
@@ -8,9 +8,11 @@ import { LangProvider, LangKeyed } from "@/content/i18n";
 import { LANG_COOKIE, type Lang } from "@/content/lang";
 import "./globals.css";
 
-// Figtree: closest free match to Aeonik (width err 1.5%, x-height err 1.7%; research/TOKENS.measured.md). Self-hosted by next/font.
-const sans = Figtree({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-figtree", display: "swap" });
-const mono = Geist_Mono({ subsets: ["latin"], weight: ["400"], variable: "--font-geist-mono", display: "swap" });
+// Figtree: closest free match to Aeonik (width err 1.5%, x-height err 1.7%; research/TOKENS.measured.md).
+// Font files live in app/fonts (Google Fonts latin subset, OFL): the build never fetches from Google, which
+// failed from the VPS and adds a third-party dependency to every production build.
+const sans = localFont({ src: "./fonts/figtree-latin.woff2", weight: "300 900", variable: "--font-figtree", display: "swap" });
+const mono = localFont({ src: "./fonts/geist-mono-latin.woff2", weight: "400", variable: "--font-geist-mono", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Raqio: Know your market. Reach your customers.",

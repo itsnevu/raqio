@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import { cookies, headers } from "next/headers";
-import { Figtree } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import "./tour.css";
 import { ShellProvider } from "@/components/Shell";
 import { AccessLangProvider } from "@/lib/access-lang";
 
 
-// Tipografi yang sama dengan situs Raqio (apps/site): Figtree, di-self-host oleh next/font.
-const figtree = Figtree({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-figtree", display: "swap" });
+// Tipografi yang sama dengan situs Raqio (apps/site): Figtree variable (latin, OFL) dari app/fonts, jadi build
+// tidak mengunduh apa pun dari Google Fonts (gagal dari VPS, dan menambah ketergantungan pihak ketiga).
+const figtree = localFont({ src: "./fonts/figtree-latin.woff2", weight: "300 900", variable: "--font-figtree", display: "swap" });
 
 const BASE = (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || "http://localhost:3002").replace(/\/+$/, "");
 
